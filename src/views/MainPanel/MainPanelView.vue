@@ -2,8 +2,8 @@
 import HeaderBarView from "@/components/HeaderBar/HeaderBarView.vue";
 import PlayerView from "@/components/Player/PlayerView.vue";
 
-import IconArrowUp from "@/components/icons/icon-arrow-up.vue";
-import IconArrowDown from "@/components/icons/icon-arrow-down.vue";
+import IconArrowUp from "@/components/Icons/IconArrowUp.vue";
+import IconArrowDown from "@/components/Icons/IconArrowDown.vue";
 
 import { storeAside } from "@/stores/storeAside";
 import { storePlayer } from "@/stores/storePlayer";

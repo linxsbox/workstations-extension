@@ -12,10 +12,9 @@
     "build:ext": "vite build --mode production"
   },
   "dependencies": {
-    "@linxs/toolkit": "^0.2.4",
-    "naive-ui": "^2.37.3",
+    "@linxs/toolkit": "^0.2.5",
+    "naive-ui": "^2.40.3",
     "pinia": "2.2.6",
-    "terser": "^5.37.0",
     "vue": "3.5.13",
     "vue-router": "4.3.0"
   },
@@ -28,6 +27,7 @@
     "rollup-plugin-visualizer": "^5.12.0",
     "sass": "1.71.0",
     "tailwindcss": "3.4.0",
+    "terser": "^5.37.0",
     "unplugin-auto-import": "0.17.5",
     "vite": "5.4.11"
   }

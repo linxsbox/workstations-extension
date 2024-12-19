@@ -21,11 +21,16 @@ export const themeOverrides = {
     cardColor: "var(--ui-modal-bg)", // Card 组件背景色
     modalColor: "var(--ui-modal-bg)", // Modal 组件背景色
   },
-  // Button: {
-  //   textColor: "var(--text-primary)", // 字体颜色
-  //   textColorDisabled: "var(--text-disabled)", // 字体禁用颜色
-  //   textColorPrimary: "var(--text-primary)", // 字体颜色
-  // },
+  Button: {
+    textColor: "var(--text-primary)", // 字体颜色
+    // textColorDisabled: "var(--text-disabled)", // 字体禁用颜色
+    // textColorPrimary: "var(--text-primary)", // 字体颜色
+    textColorError: "var(--color-error)", // type error 字体颜色
+    colorError: "var(--color-bg-error)",
+    colorHoverError: "var(--color-bg-error-hover)",
+    borderError: `1px solid var(--color-bg-error-hover)`,
+    borderHoverError: `1px solid var(--color-bg-error)`,
+  },
   Input: {
     textColor: "var(--text-primary)", // 字体颜色
     textColorDisabled: "var(--text-disabled)", // 字体禁用颜色
@@ -71,7 +76,6 @@ export const themeOverrides = {
     boxShadow: "inset 0 0 0 1px var(--ui-border-box-shadow)", // 组件边框颜色
     boxShadowDisabled: "inset 0 0 0 1px var(--ui-border-box-shadow)", // 组件边框颜色
   },
-
   Card: {
     textColor: "var(--text-secondary)", // 字体颜色
     titleTextColor: "var(--text-primary)", // 标题颜色
@@ -83,5 +87,14 @@ export const themeOverrides = {
     boxShadow: "0 0 0 1px var(--ui-border-box-shadow)", // 边框颜色
   },
   // Dialog: {},
+  Drawer: {
+    color: "var(--ui-drawer-bg)",
+    textColor: "var(--text-secondary)",
+    titleTextColor: "var(--text-primary)",
+  },
+  DrawerContent: {
+    textColor: "var(--text-secondary)",
+  },
+  // NDrawerContent
   // Tag: {},
 };

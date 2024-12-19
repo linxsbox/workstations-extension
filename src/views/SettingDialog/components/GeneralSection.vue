@@ -1,5 +1,8 @@
 <script setup>
 import { NRadioGroup, NRadio } from "naive-ui";
+import IconBrightnessAuto from "@/components/Icons/IconBrightnessAuto.vue";
+import IconBrightnessDark from "@/components/Icons/IconBrightnessDark.vue";
+import IconBrightnessLight from "@/components/Icons/IconBrightnessLight.vue";
 import { storeSettings } from "@/stores/storeSettings";
 import {
   SettingSectionEnum,
@@ -25,9 +28,21 @@ const fontSizeOptions = getSettingChildItems(
       <div class="px-5">
         <NRadioGroup v-model:value="store.themeMode" @update:value="store.setThemeMode">
           <div class="inline-flex gap-4">
-            <NRadio value="system">跟随系统</NRadio>
-            <NRadio value="light">明亮</NRadio>
-            <NRadio value="dark">深色</NRadio>
+            <NRadio value="system">
+              <div class="inline-flex flex-wrap items-center gap-1">
+                <IconBrightnessAuto class="text-xl" /> 跟随系统
+              </div>
+            </NRadio>
+            <NRadio value="light">
+              <div class="inline-flex flex-wrap items-center gap-1">
+                <IconBrightnessDark class="text-xl" />明亮
+              </div>
+            </NRadio>
+            <NRadio value="dark">
+              <div class="inline-flex flex-wrap items-center gap-1">
+                <IconBrightnessLight class="text-xl" /> 深色
+              </div>
+            </NRadio>
           </div>
         </NRadioGroup>
       </div>

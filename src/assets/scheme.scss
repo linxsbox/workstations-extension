@@ -35,7 +35,9 @@
   // --color-info: #1a73e8; // 信息
   // --color-success: #34a853; // 成功
   // --color-warning: #fbbc04; // 警告
-  // --color-error: #ea4335; // 错误
+  --color-error: #ea4335; // 错误
+  --color-bg-error: rgba(234, 68, 53, 0.25); // 错误
+  --color-bg-error-hover: rgba(234, 68, 53, 0.5); // 错误
 }
 
 @mixin light() {
@@ -71,6 +73,7 @@
 
   // 6. 组件特定颜色
   --ui-input-bg: var(--bg-base); // 输入框背景
+  --ui-drawer-bg: var(--color-white); // 抽屉组件背景
   --ui-modal-bg: #f8fafc; // 模态框背景
   --ui-modal-border: rgba(102, 102, 102, 0.35); // 模态框边框
   --ui-border-box-shadow: var(--color-black-alpha-5); // 边框
@@ -125,6 +128,7 @@
 
   // 6. 组件特定颜色
   --ui-input-bg: #141415; // 输入框背景
+  --ui-drawer-bg: var(--color-black); // 抽屉组件背景
   --ui-modal-bg: #1f1f22; // 模态框背景
   --ui-modal-border: rgba(102, 102, 102, 0.35); // 模态框边框
   --ui-border-box-shadow: var(--color-white-alpha-5); // 边框

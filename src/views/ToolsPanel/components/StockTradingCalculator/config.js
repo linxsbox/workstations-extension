@@ -50,3 +50,12 @@ export const importGroupForGithub = async function (url) {
     return { isError: true, message: "数据导入失败，请检查链接或数据格式问题" };
   }
 };
+
+// 交易类型转换所需值显示
+export const tradeTypeToValue = (type, isClass = false) => {
+  const tmp = {
+    BUY: !isClass ? "买" : "text-[var(--trade-type-buy-color)]",
+    SELL: !isClass ? "卖" : "text-[var(--trade-type-sell-color)]",
+  };
+  return tmp[type] || "???";
+};

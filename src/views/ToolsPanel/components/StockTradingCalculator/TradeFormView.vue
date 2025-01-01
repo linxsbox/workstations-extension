@@ -7,6 +7,7 @@ import {
   NRadioGroup,
   NRadioButton,
 } from "naive-ui";
+import { tradeTypeEnum } from "./config.js";
 
 const props = defineProps({
   code: {
@@ -15,12 +16,13 @@ const props = defineProps({
     required: true,
   },
 });
+
 const emit = defineEmits(["create"]);
 
 // Form state
 const formTradeRef = ref(null);
 const formTradeModel = ref({
-  tradeType: "BUY", // default to buy
+  tradeType: tradeTypeEnum.BUY, // default to buy
   volume: "100", // 交易数量
   price: "",
 });
@@ -64,8 +66,8 @@ const rules = {
 
 // Trade type options
 const tradeTypeOptions = [
-  { label: "买入", value: "BUY" },
-  { label: "卖出", value: "SELL" },
+  { label: "买入", value: tradeTypeEnum.BUY },
+  { label: "卖出", value: tradeTypeEnum.SELL },
 ];
 
 // Calculation result state
@@ -89,40 +91,105 @@ const calculateTrade = () => {
 
 // 新增指定分组的交易记录
 const handleSubmitTrade = () => {
+  if (!props.code) {
+    emit("create", {
+      data: null,
+      isSuccess: false,
+      message: "股票代码不能为空",
+    });
+    resolve(false);
+    return;
+  }
+
   formTradeRef.value?.validate((errors) => {
-    if (errors) {
-      emit("create", { data: null, isSuccess: false, message: "" });
-    } else {
-      emit("create", {
-        data: { ...formTradeModel.value },
-        isSuccess: true,
-        message: "",
-      });
+    if (errors) return;
 
+    emit("create", {
+      data: { ...formTradeModel.value },
+      isSuccess: true,
+      message: "",
+    });
+
+    formTradeModel.value.price = "";
+
+    calculationResult.value = {
+      totalAmount: "0.00",
+      commission: "0.00",
+    };
+
+    nextTick(async () => {
       formTradeRef.value?.restoreValidation();
-      formTradeModel.value.price = "";
 
-      calculationResult.value = {
-        totalAmount: "0.00",
-        commission: "0.00",
-      };
-    }
+      if (!tabIndex1El || !tabIndex3El) return;
+
+      formTradeModel.value.price = "";
+      tabIndex1El.focus();
+      tabIndex1El.select();
+    });
   });
 };
+
+let tabIndex1El = null;
+let tabIndex3El = null;
+// 设置输入项 tabindex
+const setInputFocusIndex = () => {
+  tabIndex1El = document.querySelector(".tabindex-1 input");
+  tabIndex3El = document.querySelector(".tabindex-3 input");
+
+  if (!tabIndex1El) return;
+  if (tabIndex1El.getAttribute("tabindex") === "1") return;
+
+  tabIndex1El.setAttribute("tabindex", 1);
+  tabIndex3El.setAttribute("tabindex", 3);
+};
+
+// 通过数字键选择交易类型
+const handleChioceTradeType = (e) => {
+  e.preventDefault();
+  console.log(e);
+  const n1 = ["1", 49];
+  const n2 = ["2", 50];
+  let keyupNum = -1;
+  if (n1.includes(e.key) || n1.includes(e.keyCode) || n1.includes(e.which)) {
+    keyupNum = 0;
+  } else if (
+    n2.includes(e.key) ||
+    n2.includes(e.keyCode) ||
+    n2.includes(e.which)
+  ) {
+    keyupNum = 1;
+  } else {
+    return;
+  }
+
+  formTradeModel.value.tradeType = [tradeTypeEnum.BUY, tradeTypeEnum.SELL][
+    keyupNum
+  ];
+
+  tabIndex3El;
+  if (!tabIndex3El) return;
+  formTradeModel.value.price = "";
+  tabIndex3El.focus();
+};
+
+onMounted(() => {
+  setInputFocusIndex();
+});
 </script>
 
 <template>
   <!-- 交易记录分组 -->
   <NForm
-  ref="formTradeRef"
-  class=""
+    ref="formTradeRef"
+    class=""
     :model="formTradeModel"
-    :rules="rules.trade"
+    :rules="rules"
     size="small"
   >
     <div class="form-row flex gap-2">
       <NFormItem label="交易数量" path="volume">
         <NInput
+          class="tabindex-1"
           v-model:value="formTradeModel.volume"
           placeholder=""
           @input="calculateTrade"
@@ -131,10 +198,12 @@ const handleSubmitTrade = () => {
 
       <NFormItem label="交易价格" path="price">
         <NInput
+          class="tabindex-3"
           v-model:value="formTradeModel.price"
           :precision="3"
           placeholder=""
           @input="calculateTrade"
+          @keyup.enter="handleSubmitTrade"
         />
       </NFormItem>
 
@@ -150,9 +219,11 @@ const handleSubmitTrade = () => {
         <NRadioGroup
           :class="['trade-type', formTradeModel.tradeType]"
           v-model:value="formTradeModel.tradeType"
+          tabindex="2"
+          @keyup="handleChioceTradeType"
         >
           <NRadioButton
-            :class="`trade-type-${option.value}`"
+            :class="`trade-type-${option.value} `"
             v-for="option in tradeTypeOptions"
             :key="option.value"
             :value="option.value"
@@ -171,7 +242,7 @@ const handleSubmitTrade = () => {
 
 <style lang="scss" scoped>
 .trade-type {
-  --n-button-color: rgba(var(--trade-type-inverse-rgb), 0.4) !important;
+  --n-button-color: rgba(var(--trade-type-inverse-rgb), 0.25) !important;
   --n-button-color-active: rgba(var(--trade-type-rgb), 0.1) !important;
   --n-button-text-color-active: var(--trade-type-color) !important;
   --n-button-text-color-hover: var(--trade-type-inverse-color) !important;

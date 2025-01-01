@@ -1,6 +1,6 @@
 <script setup>
 import { NButton, NScrollbar, NEmpty, NModal, useMessage } from "naive-ui";
-import { clipboard } from "./config.js";
+import { clipboard } from "@linxs/toolkit";
 
 const props = defineProps({
   show: { type: Boolean, default: false },

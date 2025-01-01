@@ -51,6 +51,11 @@ export const importGroupForGithub = async function (url) {
   }
 };
 
+export const tradeTypeEnum = {
+  BUY: "BUY",
+  SELL: "SELL",
+};
+
 // 交易类型转换所需值显示
 export const tradeTypeToValue = (type, isClass = false) => {
   const tmp = {

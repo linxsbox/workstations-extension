@@ -5,7 +5,7 @@ import { settingMenus } from "@/stores/storeSettings/config";
 import GeneralSection from "./components/GeneralSection.vue";
 import NotificationSection from "./components/NotificationSection.vue";
 import AdvancedSection from "./components/AdvancedSection.vue";
-import { useScrollNavigation } from "@/hooks/useScrollNavigation";
+import { useScrollNavigation } from "@linxs/toolkit-vue";
 
 const store = storeSettings();
 const { showSettingDialog, activeSettingSection } = storeToRefs(store);

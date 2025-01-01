@@ -1,7 +1,14 @@
 <script setup>
 import { NForm, NFormItem, NInput, NButton } from "naive-ui";
 
-const emit = defineEmits(["create"]);
+const props = defineProps({
+  group: {
+    type: Object,
+    default: () => {},
+  },
+});
+
+const emit = defineEmits(["create", "change", "blur"]);
 
 // Form state
 const formGroupRef = ref(null);
@@ -53,6 +60,26 @@ const handleCreateGroup = () => {
     }
   });
 };
+
+// 更新股票代码
+const handleChangeStockCode = () => {
+  emit("change", formGroupModel.value.stockCode);
+};
+
+// 更新股票代码
+const handleBlurStockCode = () => {
+  emit("blur", formGroupModel.value.stockCode);
+};
+
+watch(
+  () => props.group,
+  (newVal) => {
+    formGroupModel.value = {
+      groupName: newVal.groupName,
+      stockCode: newVal.stockCode,
+    };
+  }
+);
 </script>
 
 <template>
@@ -73,6 +100,8 @@ const handleCreateGroup = () => {
       <NInput
         v-model:value="formGroupModel.stockCode"
         placeholder="请输入股票代码"
+        @change="handleChangeStockCode"
+        @blur="handleBlurStockCode"
       />
     </NFormItem>
     <NFormItem class="flex-none" label="">

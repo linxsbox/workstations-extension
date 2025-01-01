@@ -16,25 +16,29 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["switch", "delete"]);
+const emit = defineEmits(["select", "delete"]);
 
-const handleSwitchGroup = (group) => emit("switch", group);
-const handleDeleteGroup = (code) => emit("delete", code);
+const handleSelected = (group) => emit("select", group);
+const handleDeleteGroup = (event) => {
+  event.stopPropagation(); // 阻止事件冒泡
+  emit("delete", props.group.code);
+};
 </script>
 
 <template>
   <section
     class="group-item relative w-[200px] h-[130px] p-2 rounded-md cursor-pointer"
-    @click="handleSwitchGroup(props.group)"
+    @click.stop="handleSelected(props.group)"
   >
     <NPopconfirm
       positive-text="删除"
       negative-text="取消"
-      @positive-click="handleDeleteGroup(props.group.code)"
+      @positive-click.stop="handleDeleteGroup"
     >
       删除此分组？
       <template #trigger>
         <IconDelete
+          @click.stop="() => {}"
           class="icon-delete absolute top-2 right-2 text-base cursor-pointer"
         />
       </template>

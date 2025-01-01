@@ -18,9 +18,12 @@ const message = useMessage();
 
 // Initialize group manager
 const groupManager = new StockGroupManager();
-const TradeType = groupManager.TradeType;
 
-const stockCode = ref(""); // 输入的股票代码
+// 当前分组
+const currentGroup = ref({
+  groupName: "",
+  stockCode: "",
+});
 const groupList = ref([]); // 分组列表
 const currentTradeHistory = ref([]); // 当前交易历史
 const groupUsages = ref([]); // 记录交易习惯
@@ -57,8 +60,6 @@ const handleCreateGroup = (result) => {
 
   const data = result.data;
 
-  stockCode.value = data.stockCode;
-
   const group = groupManager.getGroupByCode(data.stockCode);
   if (group) return message.warning("股票分组已存在");
 
@@ -70,12 +71,11 @@ const handleCreateGroup = (result) => {
 };
 
 // 切换当前分组
-const handleSwitchGroup = (group) => {
-  groupList.value.find;
-  formGroupRef.value?.restoreValidation();
-  formGroupModel.value.groupName = group.name;
-  formGroupModel.value.stockCode = group.code;
-
+const handleSelectedGroup = (group) => {
+  currentGroup.value = {
+    groupName: group.name,
+    stockCode: group.code,
+  };
   updateCurrentTradeHistory(group.code);
 };
 
@@ -84,11 +84,13 @@ const handleDeleteGroup = (stockCode) => {
   groupManager.deleteGroupByCode(stockCode);
   updateGroupList();
   currentTradeHistory.value = [];
+};
 
-  if (formGroupModel.value.stockCode === stockCode) {
-    formGroupModel.value.groupName = "";
-    formGroupModel.value.stockCode = "";
-  }
+const handleChangeStockCode = (stockCode) => {
+  currentGroup.value.stockCode = stockCode;
+};
+const handleBlurStockCode = (stockCode) => {
+  currentGroup.value.stockCode = stockCode;
 };
 
 // 新增指定分组的交易记录
@@ -98,18 +100,18 @@ const handleSubmitTrade = (result) => {
     return;
   }
 
-  if (!stockCode.value) {
+  if (!currentGroup.value.stockCode) {
     return message.error("股票代码不能为空");
   }
 
   const data = result.data;
 
-  const group = groupManager.getGroupByCode(stockCode.value);
+  const group = groupManager.getGroupByCode(currentGroup.value.stockCode);
   if (!group) {
     return message.error("股票分组不存在");
   }
 
-  let success = groupManager.addTrade(stockCode.value, {
+  let success = groupManager.addTrade(currentGroup.value.stockCode, {
     type: data.tradeType,
     price: data.price,
     volume: data.volume,
@@ -119,7 +121,7 @@ const handleSubmitTrade = (result) => {
     return message.error("添加交易失败");
   }
 
-  updateCurrentTradeHistory(stockCode.value);
+  updateCurrentTradeHistory(currentGroup.value.stockCode);
 
   updateGroupList();
 };
@@ -143,6 +145,7 @@ const handleShowImportDialog = (type) => {
     }
   }
 };
+
 // 触发导入
 const handleImport = async () => {
   isImporting.value = true;
@@ -176,10 +179,18 @@ const handleImport = async () => {
       <div class="form-group flex">
         <section class="form-group flex-none flex flex-col">
           <!-- 股票分组 -->
-          <GroupFormView @create="handleCreateGroup" />
+          <GroupFormView
+            :group="currentGroup"
+            @create="handleCreateGroup"
+            @change="handleChangeStockCode"
+            @blur="handleBlurStockCode"
+          />
 
           <!-- 添加交易记录 -->
-          <TradeFormView :code="stockCode" @create="handleSubmitTrade" />
+          <TradeFormView
+            :code="currentGroup.stockCode"
+            @create="handleSubmitTrade"
+          />
         </section>
 
         <!-- <NDivider class="vertical-divider" vertical /> -->
@@ -224,7 +235,7 @@ const handleImport = async () => {
             <GroupItemView
               :group="group"
               :lastTrade="getLastTradeInfo(group.trades)"
-              @switch="handleSwitchGroup"
+              @select="handleSelectedGroup"
               @delete="handleDeleteGroup"
             />
           </template>

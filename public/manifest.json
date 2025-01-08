@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_manifest_app_name__",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "__MSG_manifest_app_description__",
   "author": "Lin.xs",
   "default_locale": "zh_CN",
@@ -21,7 +21,9 @@
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
-
-  "permissions": ["alarms", "storage", "topSites"],
-  "host_permissions": ["http://*/*", "https://*/*"]
+  "permissions": ["alarms", "storage", "topSites", "scripting", "activeTab"],
+  "host_permissions": ["http://*/*", "https://*/*", "chrome-extension://*/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
 }

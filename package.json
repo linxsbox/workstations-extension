@@ -2,7 +2,7 @@
   "name": "workstations-extension",
   "author": "Lin.xs",
   "private": true,
-  "version": "0.1.2",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,10 +14,12 @@
   "dependencies": {
     "@linxs/toolkit": "^0.3.0",
     "@linxs/toolkit-vue": "^0.1.3",
+    "@vue/compiler-sfc": "^3.5.13",
     "naive-ui": "^2.40.3",
     "pinia": "2.2.6",
     "vue": "3.5.13",
-    "vue-router": "4.3.0"
+    "vue-router": "4.3.0",
+    "vue3-sfc-loader": "^0.9.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",

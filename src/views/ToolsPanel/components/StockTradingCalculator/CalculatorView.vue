@@ -10,11 +10,13 @@ import {
 } from "naive-ui";
 import { StockGroupManager, defaultStorage } from "@linxs/toolkit";
 import DataImportExport from "@/components/DataImportExportManager/DataImportExport.vue";
+import IconRedo from "@/components/Icons/IconRedo.vue";
+import { importDataForGithub } from "@/utils";
 import GroupFormView from "./GroupFormView.vue";
 import GroupItemView from "./GroupItemView.vue";
 import TradeFormView from "./TradeFormView.vue";
-import IconRedo from "@/components/Icons/IconRedo.vue";
-import { importGroupForGithub, tradeTypeToValue } from "./config";
+
+import { tradeTypeToValue } from "./config";
 
 const { localStorage } = defaultStorage();
 
@@ -161,7 +163,7 @@ const handleImport = async () => {
   isImporting.value = true;
 
   try {
-    const res = await importGroupForGithub(importUrl.value);
+    const res = await importDataForGithub(importUrl.value);
 
     if (res.isError) {
       return message.error(res.message || "数据导入失败");

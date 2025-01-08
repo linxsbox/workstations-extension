@@ -38,9 +38,11 @@ const cleanupWatch = watch(
       </Transition>
     </div>
 
-
-    <footer :class="['footer relative', { 'show': showPalyer }]">
-      <div class="show-palyer-button absolute bottom-full w-16 z-1 cursor-pointer" @click="showPalyer = !showPalyer">
+    <footer :class="['footer relative', { show: showPalyer }]">
+      <div
+        class="show-palyer-button absolute bottom-full w-16 z-1 cursor-pointer"
+        @click="showPalyer = !showPalyer"
+      >
         <IconArrowUp class="m-auto" v-show="!showPalyer" />
         <IconArrowDown class="m-auto" v-show="showPalyer" />
       </div>
@@ -59,11 +61,7 @@ const cleanupWatch = watch(
   transition: all 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) 0.15s;
 }
 
-.panel-switch-leave-to {
-  opacity: 0;
-  transform: translateX(15%);
-}
-
+.panel-switch-leave-to,
 .panel-switch-enter-from {
   opacity: 0;
   transform: translateX(15%);
@@ -82,7 +80,6 @@ const cleanupWatch = watch(
   transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1),
     max-height 0.1s linear;
   transition-delay: 0s, 0.25s;
-
 
   &.show {
     max-height: 90px;

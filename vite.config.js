@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
       }),
       copy({
         verbose: true,
-        copyOnce: !isDevMode,
+        // copyOnce: !isDevMode,
         hook: "closeBundle",
         targets: [
           {

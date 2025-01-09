@@ -6,24 +6,33 @@
   "author": "Lin.xs",
   "default_locale": "zh_CN",
   "icons": {
-    "16": "icons/logo-x16.png",
-    "48": "icons/logo-x48.png",
-    "128": "icons/logo-x128.png"
+    "16": "icons/icon16.svg",
+    "48": "icons/icon48.svg",
+    "128": "icons/icon128.svg"
   },
   "background": {
     "service_worker": "background/service_worker.js"
   },
   "content_scripts": [],
   "action": {
-    "default_title": "",
-    "default_popup": ""
+    "default_title": "我的工作台",
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16": "icons/icon16.svg",
+      "48": "icons/icon48.svg",
+      "128": "icons/icon128.svg"
+    }
   },
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
-  "permissions": ["alarms", "storage", "topSites", "scripting", "activeTab"],
-  "host_permissions": ["http://*/*", "https://*/*", "chrome-extension://*/*"],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
-  }
+  "permissions": [
+    "alarms",
+    "storage",
+    "topSites",
+    "favicon",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": ["http://*/*", "https://*/*", "chrome-extension://*/*"]
 }

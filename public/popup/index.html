@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>我的工作台</title>
+    <style>
+        body {
+            width: 160px;
+            padding: 4px;
+            margin: 0;
+            font-size: 14px;
+            background-color: #f4f4f4;
+            user-select: none;
+        }
+
+        .naive-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            background-color: #d3d3d3;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .naive-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .naive-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #d3d3d3;
+            transition: 0.4s;
+            border-radius: 20px;
+        }
+
+        .naive-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        .naive-switch input:checked+.naive-switch-slider {
+            background-color: #18a058;
+        }
+
+        .naive-switch input:checked+.naive-switch-slider:before {
+            transform: translateX(20px);
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .setting-label {
+            font-size: 14px;
+            color: #333;
+        }
+
+        #app {
+            gap: 4px;
+        }
+
+        .menu-item {
+            display: block;
+            gap: 6px;
+            width: 100%;
+            padding: 4px 6px;
+            border-radius: 8px;
+            color: #333;
+            text-decoration: none;
+            box-sizing: border-box;
+            cursor: pointer;
+        }
+
+        .menu-item:hover {
+            background-color: #ccc;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="flex flex-col">
+        <a class="menu-item flex items-center" id="openWorkbench">
+            <img src="../icons/icon16.svg" width="16" height="16" alt="Extension Icon" />
+            <span>我的工作台</span>
+        </a>
+        <div class="menu-item flex items-center">
+            <img src="../icons/icon16.svg" width="16" height="16" alt="Extension Icon" />
+            <span>覆盖新标签</span>
+            <label class="naive-switch">
+                <input type="checkbox" id="useCustomNewTab" />
+                <span class="naive-switch-slider"></span>
+            </label>
+        </div>
+        <div class="menu-item flex items-center">
+
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>

@@ -10,6 +10,7 @@ import {
 } from "naive-ui";
 import { StockGroupManager, defaultStorage } from "@linxs/toolkit";
 import DataImportExport from "@/components/DataImportExportManager/DataImportExport.vue";
+import IconRefresh from "@/components/Icons/IconRefresh.vue";
 import IconRedo from "@/components/Icons/IconRedo.vue";
 import { importDataForGithub } from "@/utils";
 import GroupFormView from "./GroupFormView.vue";
@@ -33,6 +34,9 @@ const currentGroup = ref({
 const groupList = ref([]); // 分组列表
 const currentTradeHistory = ref([]); // 当前交易历史
 const groupUsages = ref([]); // 记录交易习惯
+const activeTradeItem = ref(-1); // 当前选中的交易记录
+const isGroupRefreshing = ref(false);
+
 const GROUP_USAGE_KEY = "GROUP_USAGE";
 onMounted(() => {
   updateGroupList();
@@ -99,6 +103,18 @@ const handleBlurStockCode = (stockCode) => {
   currentGroup.value.stockCode = stockCode;
 };
 
+// 刷新分组
+const handleRefreshGroups = () => {
+  if (isGroupRefreshing.value) return;
+  isGroupRefreshing.value = true;
+
+  groupManager.updateGroupByCode();
+
+  setTimeout(() => {
+    isGroupRefreshing.value = false;
+  }, 1000);
+};
+
 // 新增指定分组的交易记录
 const handleSubmitTrade = (result) => {
   if (!result.isSuccess) {
@@ -135,7 +151,9 @@ const handleSubmitTrade = (result) => {
 // 撤销此笔交易
 const handleRevokeTradeItem = (index) => {
   const tradeItem = currentTradeHistory.value[index];
-  groupManager.revokeTradeItem(currentGroup.value.stockCode, tradeItem);
+  groupManager.deleteTradeItem(currentGroup.value.stockCode, tradeItem);
+
+  groupManager.updateGroupByCode(currentGroup.value.stockCode);
 };
 
 // 显示导入对话框
@@ -219,7 +237,16 @@ const handleImport = async () => {
         <h2
           class="flex justify-between items-center pb-3 text-xl font-bold flex-none"
         >
-          <span>分组列表</span>
+          <div class="group-list-title flex items-center gap-2">
+            <span>分组列表</span>
+            <IconRefresh
+              :class="[
+                'icon-refresh cursor-pointer',
+                { 'is-refresh': isGroupRefreshing },
+              ]"
+              @click="handleRefreshGroups"
+            />
+          </div>
           <div class="inline-flex items-center gap-2 text-sm">
             <NButton
               type="primary"
@@ -266,29 +293,40 @@ const handleImport = async () => {
         <h2 class="pb-3 text-xl font-bold">交易历史</h2>
       </div>
       <NScrollbar class="trade-list" content-class="flex flex-col gap-2">
-        <section class="trade-item p-2" v-for="trade in currentTradeHistory">
-          <div class="flex justify-between items-center">
-            <span :class="tradeTypeToValue(trade.type, true)">
-              [{{ tradeTypeToValue(trade.type) }}]
-            </span>
-            <NPopconfirm
-              positive-text="撤销"
-              negative-text="取消"
-              @positive-click.stop="handleRevokeTradeItem(index)"
-            >
-              撤销此笔交易
-              <template #trigger>
-                <IconRedo
-                  class="revoke text-base cursor-pointer rotate-y-180"
-                  title=""
-                />
-              </template>
-            </NPopconfirm>
-          </div>
-          <div>成交金额：{{ trade.amount }}</div>
-          <div>成交价格：{{ trade.price }}</div>
-          <div>成交数量：{{ trade.volume }}</div>
-        </section>
+        <template v-for="(trade, index) in currentTradeHistory">
+          <div
+            class="w-full h-[1px] bg-[var(--border-color)]"
+            v-if="index !== 0"
+          ></div>
+          <section
+            class="trade-item p-2 rounded-md"
+            :class="{ active: index === activeTradeItem }"
+            @click="activeTradeItem = index"
+          >
+            <div class="flex justify-between items-center">
+              <span :class="tradeTypeToValue(trade.type, true)">
+                [{{ tradeTypeToValue(trade.type) }}]
+              </span>
+              <NPopconfirm
+                positive-text="撤销"
+                negative-text="取消"
+                @positive-click.stop="handleRevokeTradeItem(index)"
+              >
+                撤销此笔交易
+                <template #trigger>
+                  <IconRedo
+                    class="revoke text-base cursor-pointer rotate-y-180"
+                    title=""
+                  />
+                </template>
+              </NPopconfirm>
+            </div>
+            <div>成交价格：{{ trade.price }}</div>
+            <div>成交数量：{{ trade.volume }}</div>
+            <div>成交金额：{{ trade.amount }}</div>
+          </section>
+        </template>
+
         <template v-if="!currentTradeHistory.length">
           <NEmpty class="pt-10 mx-auto" description="暂无历史" />
         </template>
@@ -321,14 +359,39 @@ const handleImport = async () => {
 
 <style lang="scss" scoped>
 .stock-trading-calculator {
-  --trade-type-buy-color: #f05f5a;
-  --trade-type-sell-color: #3da02c;
+  --trade-type-buy-color: #3da02c;
+  --trade-type-sell-color: #f05f5a;
+}
+
+.group-list-title {
+  .icon-refresh {
+    &.is-refresh {
+      animation: rotateRefreshing 1s linear;
+    }
+
+    @keyframes rotateRefreshing {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  }
 }
 
 .trade-item {
-  border-top: 1px solid var(--border-color);
-  &:hover .revoke {
-    opacity: 1;
+  border: 1px solid transparent;
+
+  &:hover {
+    background-color: var(--interactive-bg-hover);
+    .revoke {
+      opacity: 1;
+    }
+  }
+  &.active {
+    background-color: var(--interactive-bg-hover-1);
+    border-color: var(--interactive-bg-active-1);
   }
 
   .revoke {

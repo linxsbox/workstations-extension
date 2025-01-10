@@ -97,7 +97,6 @@ const handleSubmitTrade = () => {
       isSuccess: false,
       message: "股票代码不能为空",
     });
-    resolve(false);
     return;
   }
 
@@ -120,7 +119,7 @@ const handleSubmitTrade = () => {
     nextTick(async () => {
       formTradeRef.value?.restoreValidation();
 
-      if (!tabIndex1El || !tabIndex3El) return;
+      if (!tabIndex1El || !tabIndex2El) return;
 
       formTradeModel.value.price = "";
       tabIndex1El.focus();
@@ -130,20 +129,26 @@ const handleSubmitTrade = () => {
 };
 
 let tabIndex1El = null;
-let tabIndex3El = null;
+let tabIndex2El = null;
 // 设置输入项 tabindex
 const setInputFocusIndex = () => {
   tabIndex1El = document.querySelector(".tabindex-1 input");
-  tabIndex3El = document.querySelector(".tabindex-3 input");
+  tabIndex2El = document.querySelector(".tabindex-2 input");
 
   if (!tabIndex1El) return;
   if (tabIndex1El.getAttribute("tabindex") === "1") return;
 
   tabIndex1El.setAttribute("tabindex", 1);
-  tabIndex3El.setAttribute("tabindex", 3);
+  tabIndex2El.setAttribute("tabindex", 2);
+};
+
+// 提交交易数量
+const handleSubmitVolume = () => {
+  tabIndex2El && tabIndex2El.focus();
 };
 
 // 通过数字键选择交易类型
+const tradeType = ref(null);
 const handleChioceTradeType = (e) => {
   e.preventDefault();
   console.log(e);
@@ -166,10 +171,17 @@ const handleChioceTradeType = (e) => {
     keyupNum
   ];
 
-  tabIndex3El;
-  if (!tabIndex3El) return;
+  if (!tabIndex2El) return;
   formTradeModel.value.price = "";
-  tabIndex3El.focus();
+  tabIndex2El.focus();
+};
+
+//
+const handleFocusTradeType = (e) => {
+  e.preventDefault();
+  console.log(2);
+
+  tradeType.value && tradeType.value.selfElRef && tradeType.value.selfElRef.focus();
 };
 
 onMounted(() => {
@@ -193,16 +205,19 @@ onMounted(() => {
           v-model:value="formTradeModel.volume"
           placeholder=""
           @input="calculateTrade"
+          @keyup.tab="handleFocusTradeType"
+          @keyup.enter="handleSubmitVolume"
         />
       </NFormItem>
 
       <NFormItem label="交易价格" path="price">
         <NInput
-          class="tabindex-3"
+          class="tabindex-2"
           v-model:value="formTradeModel.price"
           :precision="3"
           placeholder=""
           @input="calculateTrade"
+          @keyup.tab="handleFocusTradeType"
           @keyup.enter="handleSubmitTrade"
         />
       </NFormItem>
@@ -217,9 +232,10 @@ onMounted(() => {
     <div class="form-row flex gap-2">
       <NFormItem label="交易类型" path="tradeType" :show-feedback="false">
         <NRadioGroup
+          ref="tradeType"
           :class="['trade-type', formTradeModel.tradeType]"
           v-model:value="formTradeModel.tradeType"
-          tabindex="2"
+          tabindex="3"
           @keyup="handleChioceTradeType"
         >
           <NRadioButton
@@ -253,9 +269,9 @@ onMounted(() => {
 
   &.BUY {
     --trade-type-color: var(--trade-type-buy-color);
-    --trade-type-rgb: 240, 95, 90;
+    --trade-type-rgb: 61, 160, 44;
     --trade-type-inverse-color: var(--trade-type-sell-color);
-    --trade-type-inverse-rgb: 61, 160, 44;
+    --trade-type-inverse-rgb: 240, 95, 90;
 
     .trade-type-SELL {
       color: var(--trade-type-inverse-color);
@@ -269,9 +285,9 @@ onMounted(() => {
 
   &.SELL {
     --trade-type-color: var(--trade-type-sell-color);
-    --trade-type-rgb: 61, 160, 44;
+    --trade-type-rgb: 240, 95, 90;
     --trade-type-inverse-color: var(--trade-type-buy-color);
-    --trade-type-inverse-rgb: 240, 95, 90;
+    --trade-type-inverse-rgb: 61, 160, 44;
 
     .trade-type-BUY {
       color: var(--trade-type-inverse-color);

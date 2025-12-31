@@ -6,6 +6,7 @@ import MainPanelView from "./views/MainPanel/MainPanelView.vue";
 import AsidePanelView from "./views/AsidePanel/AsidePanelView.vue";
 import SettingDialog from "./components/dialogs/SettingDialog/SettingDialog.vue";
 import RssManagementDialog from "./components/dialogs/RssManagementDialog/RssManagementDialog.vue";
+import PlayerTestModal from "./components/dialogs/PlayerTestModal.vue";
 
 import { storeRss } from "@/stores/modules/rss/index";
 import { storeSettings } from "@/stores/modules/settings/index";
@@ -33,6 +34,7 @@ onMounted(() => {
 
       <SettingDialog />
       <RssManagementDialog />
+      <PlayerTestModal />
     </NMessageProvider>
   </NConfigProvider>
 </template>
@@ -44,5 +46,11 @@ onMounted(() => {
   height: inherit;
   margin: inherit;
   overflow: inherit;
+  position: relative;
+}
+
+:deep(.test-btn) {
+  position: fixed;
+  z-index: 10000 !important;
 }
 </style>

@@ -187,3 +187,34 @@ export default [
     },
   },
 ];
+
+
+  // fetch(`https://getpodcast.xyz/`).then(async (res) => {
+  //   console.log();
+
+  //   const parser = new DOMParser();
+  //   const xmlDoc = parser.parseFromString(await res.text(), "text/html");
+  //   console.log(xmlDoc);
+  //   xmlDoc.querySelectorAll(".pic_list").forEach((item) => {
+  //     item.querySelectorAll("li").forEach((liItem) => {
+  //       try {
+  //         console.log(
+  //         liItem.querySelector(".title").textContent,
+  //         liItem.querySelector("a").href,
+  //         liItem.querySelector("img").src
+  //       );
+  //       }catch (error) {
+  //         console.log(liItem);
+  //       }
+  //     });
+  //   });
+  // });
+  // fetch(`  https://ask.xiaoyuzhoufm.com/api/keyword/search`,{
+  //   method: "POST",
+  //   headers: {
+  //     "Content-Type": "application/json",
+  //   },
+  //   body: JSON.stringify({ query: "1" }),
+  // }).then(async (res) => {
+  //   console.log(await res.json());
+  // })

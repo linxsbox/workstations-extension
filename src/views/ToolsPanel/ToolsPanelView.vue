@@ -157,7 +157,7 @@ const handleDeleteItem = (name = "") => {
           </header>
         </template>
 
-        <Transition name="fade" mode="out-in">
+        <!-- <Transition name="fade" mode="out-in"> -->
           <component
             :is="currentActiveTool.component"
             v-if="currentActiveTool"
@@ -165,7 +165,7 @@ const handleDeleteItem = (name = "") => {
           <div class="flex justify-center items-center h-full" v-else>
             <IconExtension class="icon-extension text-7xl" />
           </div>
-        </Transition>
+        <!-- </Transition> -->
 
         <!-- <template #footer>
       </template> -->

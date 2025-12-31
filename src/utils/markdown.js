@@ -1,4 +1,5 @@
 import MarkdownIt from "markdown-it";
+import DOMPurify from "dompurify";
 
 const mdIt = MarkdownIt({
   html: true,
@@ -28,5 +29,5 @@ mdIt.renderer.rules.fence = function (tokens, idx, options, env, slf) {
 };
 
 export const renderMarkdown = async (text = "") => {
-  return mdIt.render(text);
+  return DOMPurify.sanitize(mdIt.render(text) || "");
 };

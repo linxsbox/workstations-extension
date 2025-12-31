@@ -8,6 +8,9 @@ import IconArrowDown from "@/components/Icons/IconArrowDown.vue";
 import { storeAside } from "@/stores/storeAside";
 import { storePlayer } from "@/stores/storePlayer";
 
+import AudioService from "@/services/audio/index.js";
+import { onMounted } from "vue";
+
 const store = storeAside();
 const { getActivePanel } = storeToRefs(store);
 
@@ -24,6 +27,16 @@ const cleanupWatch = watch(
     }
   }
 );
+
+onMounted(async () => {
+  const audioService = new AudioService();
+
+  await audioService.load(
+    "https://freetyst.nf.migu.cn/public/product9th/product47/2025/04/1714/2016%E5%B9%B401%E6%9C%8812%E6%97%A510%E7%82%B910%E5%88%86%E5%86%85%E5%AE%B9%E5%87%86%E5%85%A5%E7%9B%B8%E4%BF%A1%E9%9F%B3%E4%B9%905024%E9%A6%96/%E6%A0%87%E6%B8%85%E9%AB%98%E6%B8%85/MP3_128_16_Stero/64049300175141353.mp3?channelid=02&msisdn=97e69aaa-81b4-484a-a12d-75988e57ccd8&Tim=1748229296857&Key=18e7d803438f7595"
+  );
+
+  audioService.play();
+});
 </script>
 
 <template>

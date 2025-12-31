@@ -277,6 +277,10 @@ const setAudioPause = (isPlayer) => {
   isPlayer && store.pause();
 };
 
+const handleUpdateVolume = (value) => {
+  audio.value.volume = value / 100;
+};
+
 /** 获取是否播放状态 */
 const getIsPlaying = computed(() => {
   return getPlayStatus.value.isPlaying;
@@ -369,6 +373,22 @@ const setThemeStyle = (theme) => {
           v-if="isBackRate"
         >
           {{ backRate === 1 ? "1.x" : "2.x" }}
+        </div>
+        <div>
+          <NPopover
+            placement="bottom"
+            trigger="click"
+            @update:show="handleUpdateShow"
+          >
+            <template #trigger>
+              <n-button>点击</n-button>
+            </template>
+            <NSlider
+              :default-value="volume"
+              :on-update:value="handleUpdateVolume"
+              vertical
+            />
+          </NPopover>
         </div>
       </div>
       <div class="player-play-info select-text">

@@ -1,15 +1,10 @@
 import { defineStore } from "pinia";
-import { defaultStorage } from "@linxs/toolkit";
+import { storageManager, STORAGE_KEYS } from "../../storage";
 import { panelConfig, DEFAULT_PANEL, isPanelValid } from "../../config/panelConfig";
 
-const { localStorage } = defaultStorage();
-
-// 本地存储 key
-const STORAGE_KEY = "PANEL_ACTIVE";
-
-// 从本地存储获取上次的面板，如果没有则使用默认值
+// 从存储获取上次的面板，如果没有则使用默认值
 const getStoredPanel = () => {
-  const storedPanel = localStorage.get(STORAGE_KEY);
+  const storedPanel = storageManager.get(STORAGE_KEYS.PANEL_ACTIVE);
   return storedPanel || DEFAULT_PANEL;
 };
 
@@ -45,8 +40,8 @@ export const storeAside = defineStore("aside", {
       try {
         this.activePanel = panelKey;
         this.activeMenuId = panelConfig[panelKey].id;
-        // 保存到本地存储
-        localStorage.set(STORAGE_KEY, panelKey);
+        // 保存到存储
+        storageManager.set(STORAGE_KEYS.PANEL_ACTIVE, panelKey);
       } catch (error) {
         this.resetToDefault();
       }
@@ -55,8 +50,8 @@ export const storeAside = defineStore("aside", {
     resetToDefault() {
       this.activePanel = DEFAULT_PANEL;
       this.activeMenuId = panelConfig[DEFAULT_PANEL].id;
-      // 清除本地存储
-      localStorage.remove(STORAGE_KEY);
+      // 清除存储
+      storageManager.remove(STORAGE_KEYS.PANEL_ACTIVE);
     },
   },
 });

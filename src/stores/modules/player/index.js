@@ -1,9 +1,6 @@
 import { defineStore } from "pinia";
-import { defaultStorage } from "@linxs/toolkit";
+import { storageManager, STORAGE_KEYS } from "../../storage";
 
-const { localStorage } = defaultStorage();
-
-const STORAGE_KEY = "PLAY_HISTORY";
 const MAX_HISTORY_LENGTH = 50; // 最大历史记录数
 
 export const storePlayer = defineStore("player", {
@@ -21,7 +18,7 @@ export const storePlayer = defineStore("player", {
     // 播放列表
     playlist: [],
     // 播放历史
-    playHistory: localStorage.get(STORAGE_KEY) || [],
+    playHistory: storageManager.get(STORAGE_KEYS.PLAY_HISTORY) || [],
   }),
 
   getters: {
@@ -82,13 +79,13 @@ export const storePlayer = defineStore("player", {
       if (this.playHistory.length > MAX_HISTORY_LENGTH) {
         this.playHistory = this.playHistory.slice(0, MAX_HISTORY_LENGTH);
       }
-      localStorage.set(STORAGE_KEY, this.playHistory);
+      storageManager.set(STORAGE_KEYS.PLAY_HISTORY, this.playHistory);
     },
 
     // 清空播放历史
     clearHistory() {
       this.playHistory = [];
-      localStorage.set(STORAGE_KEY, []);
+      storageManager.set(STORAGE_KEYS.PLAY_HISTORY, []);
     },
 
     // 添加到播放列表

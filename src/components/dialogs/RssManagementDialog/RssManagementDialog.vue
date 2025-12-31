@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from "vue";
 import { NModal, NScrollbar, NDivider } from "naive-ui";
 import { storeRss } from "@/stores/modules/rss";
 import { useScrollNavigation } from "@linxs/toolkit-vue";

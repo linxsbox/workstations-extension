@@ -1,10 +1,10 @@
 <script setup>
+import { ref, watch, onMounted, nextTick } from "vue";
+import { storeToRefs } from "pinia";
 import { NModal, NScrollbar, NDivider } from "naive-ui";
 import { storeSettings } from "@/stores/modules/settings";
-import { settingMenus } from "@/stores/modules/settings/config";
-import GeneralSection from "./components/GeneralSection.vue";
-import NotificationSection from "./components/NotificationSection.vue";
-import AdvancedSection from "./components/AdvancedSection.vue";
+import { settingSchema } from "@/stores/modules/settings/config";
+import SettingSection from "./components/SettingSection.vue";
 import { useScrollNavigation } from "@linxs/toolkit-vue";
 
 const store = storeSettings();
@@ -16,7 +16,8 @@ const {
   scrollToSection, // 滚动到指定部分
   calculateSectionPositions, // 计算各个部分的位置
   handleScroll, // 处理滚动事件
-} = useScrollNavigation(contentRef, settingMenus, (menuId) => {
+  sectionPositions, // 部分位置信息
+} = useScrollNavigation(contentRef, settingSchema, (menuId) => {
   store.switchSettingSection(menuId);
 });
 
@@ -54,13 +55,13 @@ watch(showSettingDialog, (isShow) => {
         <NScrollbar>
           <nav class="aside-nav flex flex-col gap-2">
             <button
-              v-for="menu in settingMenus"
-              :key="menu.id"
+              v-for="section in settingSchema"
+              :key="section.id"
               class="aside-nav-button px-4 py-2 text-left rounded-md bg-transparent"
-              :class="{ active: activeSettingSection === menu.id }"
-              @click="scrollToSection(menu.id)"
+              :class="{ active: activeSettingSection === section.id }"
+              @click="scrollToSection(section.id)"
             >
-              {{ menu.label }}
+              {{ section.label }}
             </button>
           </nav>
         </NScrollbar>
@@ -70,17 +71,12 @@ watch(showSettingDialog, (isShow) => {
       <div class="flex-1">
         <NScrollbar ref="contentRef" @scroll="handleScroll">
           <div class="setting-content pr-4">
-            <div id="section-general" class="setting-section mb-8">
-              <GeneralSection />
-            </div>
-            <NDivider />
-            <div id="section-notification" class="setting-section mb-8">
-              <NotificationSection />
-            </div>
-            <NDivider />
-            <div id="section-advanced">
-              <AdvancedSection />
-            </div>
+            <template v-for="(section, index) in settingSchema" :key="section.id">
+              <div :id="`section-${section.id}`" class="setting-section mb-8">
+                <SettingSection :section="section" />
+              </div>
+              <NDivider v-if="index < settingSchema.length - 1" />
+            </template>
           </div>
         </NScrollbar>
       </div>

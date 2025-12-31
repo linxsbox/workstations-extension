@@ -1,4 +1,3 @@
-import { localStorage } from "@linxs/toolkit";
 import { rmSecAndZone, timeBefore, sec2min } from "@/utils/time";
 import {
   hex2rgb,
@@ -6,8 +5,7 @@ import {
   getNodeTextContent,
   parseXML,
 } from "@linxs/toolkit";
-
-const STORAGE_KEY = "CACHE_IMAGE";
+import { storageManager, STORAGE_KEYS } from "../storage";
 
 const dataType = ["播客", "IT资讯", "新闻资讯"];
 export const rssGroupType = Object.freeze({
@@ -16,15 +14,12 @@ export const rssGroupType = Object.freeze({
 });
 
 const setCacheImage = async (id, url) => {
-  let imgData = localStorage.get(STORAGE_KEY);
-  if (!imgData) {
-    imgData = {};
-  }
+  let imgData = storageManager.get(STORAGE_KEYS.CACHE_IMAGE) || {};
 
   if (!imgData[id]) {
     const imgBase64 = await image2Base64(url);
     imgData[id] = imgBase64;
-    localStorage.set(STORAGE_KEY, imgData);
+    storageManager.set(STORAGE_KEYS.CACHE_IMAGE, imgData);
   }
 
   return imgData[id];

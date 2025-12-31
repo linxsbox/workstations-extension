@@ -1,10 +1,7 @@
 import { defineStore } from "pinia";
-import { defaultStorage } from "@linxs/toolkit";
+import { storageManager } from "../../storage";
 import { getPanelKeys, isPanelValid } from "../../config/panelConfig";
 
-const { localStorage } = defaultStorage();
-
-const STORAGE_KEY_PREFIX = "USER_TAB_";
 const MAX_TABS = 6;
 const DEFAULT_TABS = [{ id: "all", label: "全部" }];
 
@@ -15,7 +12,7 @@ const initializePanelTabsState = () => {
   getPanelKeys().forEach((panelKey) => {
     if (!isPanelValid(panelKey)) return;
 
-    const stored = localStorage.get(`${STORAGE_KEY_PREFIX}${panelKey}`) || {};
+    const stored = storageManager.getTabState(panelKey) || {};
     state[panelKey] = {
       tabs: [...DEFAULT_TABS],
       activeId: stored.activeId || "all",
@@ -108,7 +105,7 @@ export const storeTab = defineStore("tab", {
 
     // 从本地存储加载状态
     loadFromStorage(panelKey) {
-      const stored = localStorage.get(`${STORAGE_KEY_PREFIX}${panelKey}`);
+      const stored = storageManager.getTabState(panelKey);
       if (stored) {
         // 确保始终包含"全部" tab
         if (!stored.tabs.some((tab) => tab.id === "all")) {
@@ -122,7 +119,7 @@ export const storeTab = defineStore("tab", {
     saveToStorage(panelKey) {
       const panel = this.panelTabs[panelKey];
       if (panel) {
-        localStorage.set(`${STORAGE_KEY_PREFIX}${panelKey}`, panel);
+        storageManager.setTabState(panelKey, panel);
       }
     },
 

@@ -1,6 +1,6 @@
 <script setup>
 import HeaderBarView from "@/components/common/HeaderBar/HeaderBarView.vue";
-import PlayerView from "@/components/player/Player/PlayerView.vue";
+import PlayerView from "@/components/player/PlayerView.vue";
 
 import IconArrowUp from "@/components/common/Icons/IconArrowUp.vue";
 import IconArrowDown from "@/components/common/Icons/IconArrowDown.vue";

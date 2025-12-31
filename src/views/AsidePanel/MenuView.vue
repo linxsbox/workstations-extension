@@ -1,4 +1,5 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { storeAside } from "@/stores/modules/aside";
 
 const store = storeAside();

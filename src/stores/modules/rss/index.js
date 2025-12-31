@@ -1,24 +1,21 @@
 import { defineStore } from "pinia";
 import {
   isArray,
-  defaultStorage,
   calculateTimeDifference,
   genISOWithZoneToDate,
 } from "@linxs/toolkit";
+import { storageManager, STORAGE_KEYS } from "../../storage";
 import { RSS_SOURCE_TYPES } from "./config";
 import { RssProcessorFactory } from "@/services/rss/processor";
 import { storeTab } from "../tab/index";
 import { DEFAULT_PANEL } from "@/stores/config";
-
-const { localStorage } = defaultStorage();
-const STORAGE_KEY = "USER_RSS_SOURCES";
 
 export const storeRss = defineStore({
   id: "StoreRss",
 
   state: () => ({
     // RSS 源列表
-    sources: localStorage.get(STORAGE_KEY) || [],
+    sources: storageManager.get(STORAGE_KEYS.RSS_SOURCES) || [],
     // 添加源对话框显示状态
     showAddDialog: false,
     // 当前显示的数据内容
@@ -94,9 +91,9 @@ export const storeRss = defineStore({
       }
     },
 
-    // 保存到 localStorage
+    // 保存到存储
     saveSources() {
-      localStorage.set(STORAGE_KEY, this.sources);
+      storageManager.set(STORAGE_KEYS.RSS_SOURCES, this.sources);
     },
 
     // 初始化

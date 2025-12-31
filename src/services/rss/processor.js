@@ -9,7 +9,7 @@ import {
   parseXML,
   getNodeTextContent,
 } from "@linxs/toolkit";
-import { RssSourceTypeEnum } from "./config";
+import { RssSourceTypeEnum } from "@/stores/modules/rss/config";
 
 const { localStorage } = defaultStorage();
 

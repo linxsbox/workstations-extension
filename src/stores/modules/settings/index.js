@@ -1,28 +1,31 @@
 import { defineStore } from "pinia";
-import { defaultStorage } from "@linxs/toolkit";
+import { storageManager, STORAGE_KEYS } from "../../storage";
 import { SettingSectionEnum } from "./config";
 
-const { localStorage } = defaultStorage();
-
-const STORAGE_KEY = "USER_RSS_ACTIVE";
-const STORAGE_KEYS = {
-  THEME: "USER_THEME_MODE",
-  FONT_SIZE: "USER_FONT_SIZE",
-};
-
-// 从 localStorage 获取存储的值
-const storedTheme = localStorage.get(STORAGE_KEYS.THEME);
-const storedFontSize = localStorage.get(STORAGE_KEYS.FONT_SIZE);
+// 从存储中获取用户偏好设置
+const storedTheme = storageManager.get(STORAGE_KEYS.THEME_MODE);
+const storedFontSize = storageManager.get(STORAGE_KEYS.FONT_SIZE);
 
 export const storeSettings = defineStore({
   id: "StoreSettings",
   state: () => ({
     showSettingDialog: false,
     activeSettingSection: SettingSectionEnum.GENERAL,
+
     // 主题设置：system(跟随系统), dark(深色), light(明亮)
     themeMode: storedTheme || "system",
-    // 字体大小：默认 14px
+
+    // 字体大小：默认 16px
     fontSize: storedFontSize || 16,
+
+    // 语言（待实现）
+    language: 'zh-CN',
+
+    // 通知类型（待实现）
+    notificationType: 'all',
+
+    // 提示音（待实现）
+    soundEnabled: true,
   }),
 
   getters: {
@@ -36,10 +39,6 @@ export const storeSettings = defineStore({
 
   actions: {
     init() {},
-    setRssTypeActive(key) {
-      if (!key) return;
-      localStorage.set(STORAGE_KEY, key);
-    },
 
     // 打开设置面板
     openSetting(section = SettingSectionEnum.GENERAL) {
@@ -62,14 +61,14 @@ export const storeSettings = defineStore({
     // 设置主题
     setThemeMode(mode) {
       this.themeMode = mode;
-      localStorage.set(STORAGE_KEYS.THEME, mode);
+      storageManager.set(STORAGE_KEYS.THEME_MODE, mode);
       updateThemeMode(this.isDarkMode);
     },
 
     // 设置字体大小
     setFontSize(size) {
       this.fontSize = size;
-      localStorage.set(STORAGE_KEYS.FONT_SIZE, size);
+      storageManager.set(STORAGE_KEYS.FONT_SIZE, size);
       updateFontSize(size);
     },
 
@@ -93,6 +92,24 @@ export const storeSettings = defineStore({
         // 添加新的监听器
         darkModeMediaQuery.addEventListener("change", mediaQueryHandler);
       }
+    },
+
+    // 设置语言（待实现）
+    setLanguage(language) {
+      this.language = language;
+      // TODO: 实现语言切换逻辑
+    },
+
+    // 设置通知类型（待实现）
+    setNotificationType(type) {
+      this.notificationType = type;
+      // TODO: 实现通知类型切换逻辑
+    },
+
+    // 设置提示音开关（待实现）
+    setSoundEnabled(enabled) {
+      this.soundEnabled = enabled;
+      // TODO: 实现提示音开关逻辑
     },
   },
 });

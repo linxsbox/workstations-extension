@@ -6,9 +6,9 @@ import {
   genISOWithZoneToDate,
 } from "@linxs/toolkit";
 import { RSS_SOURCE_TYPES } from "./config";
-import { RssProcessorFactory } from "./processor";
-import { storeTab } from "../storeTab/index";
-import { DEFAULT_PANEL } from "@/stores/panelConfig";
+import { RssProcessorFactory } from "@/services/rss/processor";
+import { storeTab } from "../tab/index";
+import { DEFAULT_PANEL } from "@/stores/config";
 
 const { localStorage } = defaultStorage();
 const STORAGE_KEY = "USER_RSS_SOURCES";

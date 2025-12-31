@@ -1,5 +1,5 @@
 <script setup>
-import { storeAside } from "@/stores/storeAside";
+import { storeAside } from "@/stores/modules/aside";
 
 const store = storeAside();
 const { getMenuItems, getActiveMenuId } = storeToRefs(store);

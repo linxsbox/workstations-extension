@@ -1,8 +1,8 @@
 <script setup>
 import { NScrollbar } from "naive-ui";
-import TabBarView from "@/components/TabBar/TabBarView.vue";
+import TabBarView from "@/components/common/TabBar/TabBarView.vue";
 import RssListView from "./RssListView.vue";
-import { storeRss } from "@/stores/storeRss";
+import { storeRss } from "@/stores/modules/rss";
 
 const store = storeRss();
 const { getCurrentList } = storeToRefs(store);

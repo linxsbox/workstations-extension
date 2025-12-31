@@ -9,9 +9,9 @@ import {
   NModal,
   useMessage,
 } from "naive-ui";
-import TabBarView from "@/components/TabBar/TabBarView.vue";
-import IconClose from "@/components/Icons/IconClose.vue";
-import IconExtension from "@/components/Icons/IconExtension.vue";
+import TabBarView from "@/components/common/TabBar/TabBarView.vue";
+import IconClose from "@/components/common/Icons/IconClose.vue";
+import IconExtension from "@/components/common/Icons/IconExtension.vue";
 import { toolsList, loadGithubToolsCfg } from "./config.js";
 
 const message = useMessage();

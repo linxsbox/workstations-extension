@@ -1,6 +1,6 @@
 <script setup>
 import { NPopconfirm } from "naive-ui";
-import IconDelete from "@/components/Icons/IconDelete.vue";
+import IconDelete from "@/components/common/Icons/IconDelete.vue";
 import { tradeTypeToValue } from "./config.js";
 
 const props = defineProps({

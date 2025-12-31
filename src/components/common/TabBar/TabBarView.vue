@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { storeTab } from "@/stores/storeTab";
+import { storeTab } from "@/stores/modules/tab";
 
 const props = defineProps({
   // 当前面板的 key

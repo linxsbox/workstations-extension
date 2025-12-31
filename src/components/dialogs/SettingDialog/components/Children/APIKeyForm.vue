@@ -1,7 +1,7 @@
 <script setup>
 import { NFormItem, NInput, NPopover, useMessage } from "naive-ui";
 import { defaultStorage, debounce } from "@linxs/toolkit";
-import IconHelp from "@/components/Icons/IconHelp.vue";
+import IconHelp from "@/components/common/Icons/IconHelp.vue";
 
 const message = useMessage();
 const { localStorage } = defaultStorage();

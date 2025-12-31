@@ -4,11 +4,11 @@ import { themeOverrides } from "./theme/index.js";
 
 import MainPanelView from "./views/MainPanel/MainPanelView.vue";
 import AsidePanelView from "./views/AsidePanel/AsidePanelView.vue";
-import SettingDialog from "./views/SettingDialog/SettingDialog.vue";
-import RssManagementDialog from "./views/RssManagementDialog/RssManagementDialog.vue";
+import SettingDialog from "./components/dialogs/SettingDialog/SettingDialog.vue";
+import RssManagementDialog from "./components/dialogs/RssManagementDialog/RssManagementDialog.vue";
 
-import { storeRss } from "@/stores/storeRss/index";
-import { storeSettings } from "@/stores/storeSettings/index";
+import { storeRss } from "@/stores/modules/rss/index";
+import { storeSettings } from "@/stores/modules/settings/index";
 import { onMounted } from "vue";
 
 const storeRssInstance = storeRss();

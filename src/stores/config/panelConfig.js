@@ -2,10 +2,10 @@ import { markRaw } from "vue";
 import RssPanelView from "@/views/RssPanel/RssPanelView.vue";
 import ToolsPanelView from "@/views/ToolsPanel/ToolsPanelView.vue";
 
-import IconHome from "@/components/Icons/IconHome.vue";
-import IconWork from "@/components/Icons/IconWork.vue";
-import IconMark from "@/components/Icons/IconMark.vue";
-import IconShare from "@/components/Icons/IconShare.vue";
+import IconHome from "@/components/common/Icons/IconHome.vue";
+import IconWork from "@/components/common/Icons/IconWork.vue";
+import IconMark from "@/components/common/Icons/IconMark.vue";
+import IconShare from "@/components/common/Icons/IconShare.vue";
 
 // 面板配置
 export const panelConfig = {

@@ -1,7 +1,7 @@
 <script setup>
 import { NModal, NScrollbar, NDivider } from "naive-ui";
-import { storeSettings } from "@/stores/storeSettings";
-import { settingMenus } from "@/stores/storeSettings/config";
+import { storeSettings } from "@/stores/modules/settings";
+import { settingMenus } from "@/stores/modules/settings/config";
 import GeneralSection from "./components/GeneralSection.vue";
 import NotificationSection from "./components/NotificationSection.vue";
 import AdvancedSection from "./components/AdvancedSection.vue";

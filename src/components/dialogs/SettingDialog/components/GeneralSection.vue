@@ -1,14 +1,14 @@
 <script setup>
 import { NRadioGroup, NRadio } from "naive-ui";
-import IconBrightnessAuto from "@/components/Icons/IconBrightnessAuto.vue";
-import IconBrightnessDark from "@/components/Icons/IconBrightnessDark.vue";
-import IconBrightnessLight from "@/components/Icons/IconBrightnessLight.vue";
-import { storeSettings } from "@/stores/storeSettings";
+import IconBrightnessAuto from "@/components/common/Icons/IconBrightnessAuto.vue";
+import IconBrightnessDark from "@/components/common/Icons/IconBrightnessDark.vue";
+import IconBrightnessLight from "@/components/common/Icons/IconBrightnessLight.vue";
+import { storeSettings } from "@/stores/modules/settings";
 import {
   SettingSectionEnum,
   settingChildKeys,
   getSettingChildItems,
-} from "@/stores/storeSettings/config";
+} from "@/stores/modules/settings/config";
 
 const store = storeSettings();
 

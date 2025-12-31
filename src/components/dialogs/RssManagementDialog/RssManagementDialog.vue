@@ -1,6 +1,6 @@
 <script setup>
 import { NModal, NScrollbar, NDivider } from "naive-ui";
-import { storeRss } from "@/stores/storeRss";
+import { storeRss } from "@/stores/modules/rss";
 import { useScrollNavigation } from "@linxs/toolkit-vue";
 import SearchPodcastView from "./components/SearchPodcastView.vue";
 import AddFormView from "./components/AddFormView.vue";

@@ -1,8 +1,8 @@
 <script setup>
 import SearchBox from "./SearchBox.vue";
-import IconSettings from "@/components/Icons/IconSettings.vue";
-import { storeSettings } from "@/stores/storeSettings";
-import { SettingSectionEnum } from "@/stores/storeSettings/config";
+import IconSettings from "@/components/common/Icons/IconSettings.vue";
+import { storeSettings } from "@/stores/modules/settings";
+import { SettingSectionEnum } from "@/stores/modules/settings/config";
 
 const store = storeSettings();
 </script>

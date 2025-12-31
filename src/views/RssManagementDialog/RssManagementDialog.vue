@@ -2,6 +2,7 @@
 import { NModal, NScrollbar, NDivider } from "naive-ui";
 import { storeRss } from "@/stores/storeRss";
 import { useScrollNavigation } from "@linxs/toolkit-vue";
+import SearchPodcastView from "./components/SearchPodcastView.vue";
 import AddFormView from "./components/AddFormView.vue";
 import ManagentFormView from "./components/ManagentFormView.vue";
 
@@ -10,7 +11,8 @@ const store = storeRss();
 const contentRef = ref(null);
 const activeMenus = ref("addrss");
 const menus = [
-  { id: "addrss", label: "添加订阅源" },
+  { id: "podcast", label: "添加播客订阅" },
+  { id: "rss", label: "添加订阅源" },
   { id: "management", label: "管理订阅源" },
 ];
 
@@ -46,7 +48,11 @@ const {
       </aside>
       <div class="flex-1">
         <NScrollbar ref="contentRef" @scroll="handleScroll">
-          <div id="section-addrss">
+          <div id="section-podcast">
+            <SearchPodcastView />
+          </div>
+          <NDivider />
+          <div id="section-rss">
             <AddFormView />
           </div>
           <NDivider />

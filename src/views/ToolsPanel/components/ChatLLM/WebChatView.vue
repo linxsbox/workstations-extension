@@ -1,8 +1,8 @@
 <script setup>
 import { NInput, NScrollbar, NPopconfirm, useMessage } from "naive-ui";
 import { defaultStorage, clipboard, eventListener } from "@linxs/toolkit";
-import IconArrowCircleUp from "@/components/Icons/IconArrowCircleUp.vue";
-import IconDelete from "@/components/Icons/IconDelete.vue";
+import IconArrowCircleUp from "@/components/common/Icons/IconArrowCircleUp.vue";
+import IconDelete from "@/components/common/Icons/IconDelete.vue";
 import { renderMarkdown } from "@/utils/markdown";
 import { fetchModelApi } from "./config.js";
 

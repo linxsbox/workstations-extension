@@ -1,13 +1,13 @@
 <script setup>
 import { NInput, NButton, NTag, NPopconfirm, useMessage } from "naive-ui";
 import { isEmptyObject } from "@linxs/toolkit";
-import IconClose from "@/components/Icons/IconClose.vue";
-import DataImportExport from "@/components/DataImportExportManager/DataImportExport.vue";
-import { storeRss } from "@/stores/storeRss";
-import { storeAside } from "@/stores/storeAside";
-import { storeTab } from "@/stores/storeTab";
-import { DEFAULT_PANEL } from "@/stores/panelConfig";
-import { RSS_SOURCE_TYPES } from "@/stores/storeRss/config";
+import IconClose from "@/components/common/Icons/IconClose.vue";
+import DataImportExport from "@/components/widgets/DataImportExport/DataImportExport.vue";
+import { storeRss } from "@/stores/modules/rss";
+import { storeAside } from "@/stores/modules/aside";
+import { storeTab } from "@/stores/modules/tab";
+import { DEFAULT_PANEL } from "@/stores/config";
+import { RSS_SOURCE_TYPES } from "@/stores/modules/rss/config";
 
 const store = storeRss();
 

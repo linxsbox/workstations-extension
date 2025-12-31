@@ -5,7 +5,7 @@ export const toolsList = [
   {
     name: "股票交易计算器",
     icon: markRaw(
-      defineAsyncComponent(() => import("@/components/Icons/IconCalculate.vue"))
+      defineAsyncComponent(() => import("@/components/common/Icons/IconCalculate.vue"))
     ),
     component: markRaw(
       defineAsyncComponent(() =>
@@ -17,7 +17,7 @@ export const toolsList = [
   {
     name: "神奇海螺",
     icon: markRaw(
-      defineAsyncComponent(() => import("@/components/Icons/IconSentimentVerySatisfied.vue"))
+      defineAsyncComponent(() => import("@/components/common/Icons/IconSentimentVerySatisfied.vue"))
     ),
     component: markRaw(
       defineAsyncComponent(() => import("./components/ChatLLM/WebChatView.vue"))

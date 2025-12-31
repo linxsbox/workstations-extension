@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { defaultStorage } from "@linxs/toolkit";
-import { panelConfig, DEFAULT_PANEL, isPanelValid } from "../panelConfig";
+import { panelConfig, DEFAULT_PANEL, isPanelValid } from "../../config/panelConfig";
 
 const { localStorage } = defaultStorage();
 

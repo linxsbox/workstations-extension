@@ -1,7 +1,7 @@
 <script setup>
 import { eventListener, isObject, isValidNumber } from "@linxs/toolkit";
 import PlayButton from "../PlayButton/PlayButton.vue";
-import { storePlayer } from "@/stores/storePlayer";
+import { storePlayer } from "@/stores/modules/player";
 import { formatPlayTime, PlayerProgressDnD, updateMediaCover } from "./config";
 
 const props = defineProps({

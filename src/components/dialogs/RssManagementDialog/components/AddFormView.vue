@@ -10,15 +10,15 @@ import {
   NCheckboxGroup,
   useMessage,
 } from "naive-ui";
-import { storeRss } from "@/stores/storeRss";
+import { storeRss } from "@/stores/modules/rss";
 import {
   RssSourceTypeEnum,
   RSS_SOURCE_TYPES,
   KR36_RSS_OPTIONS,
-} from "@/stores/storeRss/config";
-import { storeAside } from "@/stores/storeAside";
-import { storeTab } from "@/stores/storeTab";
-import { DEFAULT_PANEL } from "@/stores/panelConfig";
+} from "@/stores/modules/rss/config";
+import { storeAside } from "@/stores/modules/aside";
+import { storeTab } from "@/stores/modules/tab";
+import { DEFAULT_PANEL } from "@/stores/config";
 
 const store = storeRss();
 const message = useMessage();

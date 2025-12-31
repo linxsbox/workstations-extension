@@ -1,12 +1,12 @@
 <script setup>
-import HeaderBarView from "@/components/HeaderBar/HeaderBarView.vue";
-import PlayerView from "@/components/Player/PlayerView.vue";
+import HeaderBarView from "@/components/common/HeaderBar/HeaderBarView.vue";
+import PlayerView from "@/components/player/Player/PlayerView.vue";
 
-import IconArrowUp from "@/components/Icons/IconArrowUp.vue";
-import IconArrowDown from "@/components/Icons/IconArrowDown.vue";
+import IconArrowUp from "@/components/common/Icons/IconArrowUp.vue";
+import IconArrowDown from "@/components/common/Icons/IconArrowDown.vue";
 
-import { storeAside } from "@/stores/storeAside";
-import { storePlayer } from "@/stores/storePlayer";
+import { storeAside } from "@/stores/modules/aside";
+import { storePlayer } from "@/stores/modules/player";
 
 import AudioService from "@/services/audio/index.js";
 import { onMounted } from "vue";

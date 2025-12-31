@@ -1,7 +1,7 @@
 <script setup>
 import { isObject, isEmptyObject } from "@linxs/toolkit";
-import PlayButton from "@/components/PlayButton/PlayButton.vue";
-import { storePlayer } from "@/stores/storePlayer";
+import PlayButton from "@/components/player/PlayButton/PlayButton.vue";
+import { storePlayer } from "@/stores/modules/player";
 
 const props = defineProps({
   data: {

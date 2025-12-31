@@ -32,15 +32,6 @@ export const settingMenus = [
     ],
   },
   {
-    id: SettingSectionEnum.RSS,
-    label: "订阅源管理",
-    sections: [
-      { title: "订阅源列表", items: [] },
-      { title: "导入导出", items: [] },
-      { title: "更新设置", items: [] },
-    ],
-  },
-  {
     id: SettingSectionEnum.NOTIFICATION,
     label: "通知设置",
     sections: [

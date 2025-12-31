@@ -1,6 +1,6 @@
 <script setup>
-import IconRss from "@/components/Icons/IconRss.vue";
-import { storeRss } from "@/stores/storeRss";
+import IconRss from "@/components/common/Icons/IconRss.vue";
+import { storeRss } from "@/stores/modules/rss";
 
 const store = storeRss();
 

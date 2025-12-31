@@ -9,9 +9,9 @@ import {
   useMessage,
 } from "naive-ui";
 import { StockGroupManager, defaultStorage } from "@linxs/toolkit";
-import DataImportExport from "@/components/DataImportExportManager/DataImportExport.vue";
-import IconRefresh from "@/components/Icons/IconRefresh.vue";
-import IconRedo from "@/components/Icons/IconRedo.vue";
+import DataImportExport from "@/components/widgets/DataImportExport/DataImportExport.vue";
+import IconRefresh from "@/components/common/Icons/IconRefresh.vue";
+import IconRedo from "@/components/common/Icons/IconRedo.vue";
 import { importDataForGithub } from "@/utils";
 import GroupFormView from "./GroupFormView.vue";
 import GroupItemView from "./GroupItemView.vue";

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { storageManager, STORAGE_KEYS } from "../../storage";
 import { audioManager } from "@/services/audio/manager";
-import { PlayMode, PlayModeConfig, Playlist, PlayQueue } from "./types";
+import { PlayMode, PlayModeConfig, Playlist, PlayQueue, ViewMode } from "./types";
 
 const MAX_HISTORY_LENGTH = 50;
 
@@ -24,7 +24,7 @@ export const storePlayer = defineStore("player", {
 
     // 控制选项
     volume: storageManager.get(STORAGE_KEYS.VOLUME, 1),
-    playbackRate: 1,
+    playbackRate: storageManager.getSession(STORAGE_KEYS.PLAYBACK_RATE, 1), // 从 sessionStorage 读取，默认 1
 
     // 播放历史
     playHistory: storageManager.get(STORAGE_KEYS.PLAY_HISTORY) || [],
@@ -36,6 +36,12 @@ export const storePlayer = defineStore("player", {
     // 播放队列和循环模式
     playQueue: new PlayQueue(),
     playMode: PlayMode.LOOP,
+
+    // 视图模式
+    viewMode: storageManager.get(STORAGE_KEYS.VIEW_MODE, ViewMode.LIST),
+
+    // 播放器显示状态
+    isPlayerVisible: false,
 
     // 后端信息
     backendName: "Unknown",
@@ -52,6 +58,8 @@ export const storePlayer = defineStore("player", {
     getPlayMode: (state) => state.playMode,
     getPlayModeConfig: (state) => PlayModeConfig[state.playMode],
     getPlayHistory: (state) => state.playHistory,
+    getViewMode: (state) => state.viewMode,
+    getIsPlayerVisible: (state) => state.isPlayerVisible,
     isPlayable: (state) => state.playStatus.src && !state.playStatus.isError,
     progressPercent: (state) =>
       state.duration ? (state.currentTime / state.duration) * 100 : 0,
@@ -120,14 +128,32 @@ export const storePlayer = defineStore("player", {
      * 加载音频
      */
     async loadAudio(src, metadata = {}) {
+      console.log('[Player] 开始加载音频:', src, metadata);
+
       this.playStatus.src = src;
       this.playStatus.title = metadata.title || "";
       this.playStatus.pid = metadata.pid || "";
       this.playStatus.album = metadata.album || null;
+      this.playStatus.isError = false;
+      this.playStatus.isLoading = true;
 
-      const success = await audioManager.load(src, metadata);
-      if (!success) {
+      try {
+        const success = await audioManager.load(src, metadata);
+        console.log('[Player] 音频加载结果:', success);
+
+        if (!success) {
+          this.playStatus.isError = true;
+          this.playStatus.isLoading = false;
+          console.error('[Player] 音频加载失败');
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('[Player] 音频加载异常:', error);
         this.playStatus.isError = true;
+        this.playStatus.isLoading = false;
+        return false;
       }
     },
 
@@ -135,9 +161,16 @@ export const storePlayer = defineStore("player", {
      * 播放
      */
     play() {
-      if (!this.isPlayable) return false;
+      console.log('[Player] 尝试播放, isPlayable:', this.isPlayable, 'playStatus:', this.playStatus);
+
+      if (!this.isPlayable) {
+        console.warn('[Player] 无法播放 - isPlayable 为 false');
+        return false;
+      }
 
       const success = audioManager.play();
+      console.log('[Player] audioManager.play() 结果:', success);
+
       if (success) {
         this.playStatus.isPlaying = true;
         this.playStatus.isError = false;
@@ -149,7 +182,11 @@ export const storePlayer = defineStore("player", {
      * 暂停
      */
     pause() {
+      console.log('[Player] 尝试暂停');
+
       const success = audioManager.pause();
+      console.log('[Player] audioManager.pause() 结果:', success);
+
       if (success) {
         this.playStatus.isPlaying = false;
       }
@@ -199,6 +236,8 @@ export const storePlayer = defineStore("player", {
       const validRate = Math.max(0.5, Math.min(4, rate));
       audioManager.setPlaybackRate(validRate);
       this.playbackRate = validRate;
+      // 保存到 sessionStorage，页面刷新保持，但关闭浏览器后重置为 1
+      storageManager.setSession(STORAGE_KEYS.PLAYBACK_RATE, validRate);
     },
 
     /**
@@ -251,12 +290,43 @@ export const storePlayer = defineStore("player", {
     },
 
     /**
-     * 添加到播放列表
+     * 添加到播放列表（队列末尾）
      */
     addToPlaylist(audio) {
       if (!this.playQueue.tracks.some((item) => item.src === audio.src)) {
         this.playQueue.addTrack(audio);
       }
+    },
+
+    /**
+     * 加入队列 - 添加到队列末尾
+     */
+    addToQueue(track) {
+      if (!this.playQueue.tracks.some((item) => item.src === track.src)) {
+        this.playQueue.addTrack(track);
+        return true;
+      }
+      return false;
+    },
+
+    /**
+     * 加入播放 - 添加为下一首播放
+     */
+    addToPlayNext(track) {
+      // 如果队列中已存在，先移除
+      const existingIndex = this.playQueue.tracks.findIndex((item) => item.src === track.src);
+      if (existingIndex > -1) {
+        this.playQueue.removeTrack(this.playQueue.tracks[existingIndex].id);
+      }
+
+      // 插入到当前播放索引的下一位
+      const nextIndex = this.playQueue.currentIndex + 1;
+      this.playQueue.tracks.splice(nextIndex, 0, {
+        ...track,
+        id: track.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      });
+
+      return true;
     },
 
     /**
@@ -474,6 +544,33 @@ export const storePlayer = defineStore("player", {
      */
     savePlaylists() {
       storageManager.set(STORAGE_KEYS.PLAYLISTS, this.playlists);
+    },
+
+    /**
+     * 设置视图模式
+     */
+    setViewMode(mode) {
+      if (!ViewMode[mode.toUpperCase()]) {
+        console.warn(`Invalid view mode: ${mode}`);
+        return false;
+      }
+      this.viewMode = mode;
+      storageManager.set(STORAGE_KEYS.VIEW_MODE, mode);
+      return true;
+    },
+
+    /**
+     * 显示播放器
+     */
+    showPlayer() {
+      this.isPlayerVisible = true;
+    },
+
+    /**
+     * 隐藏播放器
+     */
+    hidePlayer() {
+      this.isPlayerVisible = false;
     },
   },
 });

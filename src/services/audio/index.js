@@ -1,205 +1,60 @@
 /**
- * Audio Service
- * A modular audio service for web applications
+ * 后端导出和优先级配置
  */
 
-import { AudioCore } from "./audioCore.js";
-import { AudioControls } from "./audioControls.js";
-import { AudioSession } from "./audioSession.js";
-import { AudioCache } from "./audioCache.js";
-import { DEFAULT_CACHE_NAME, DEFAULT_CACHE_SIZE } from "./audioUtils.js";
+export { AudioBackend } from './AudioBackend.js';
+export { HybridAudioBackend } from './HybridAudioBackend.js';
+export { WebAudioBackend } from './WebAudioBackend.js';
+export { HTML5AudioBackend } from './HTML5AudioBackend.js';
 
 /**
- * Main AudioService class that combines all audio modules
+ * 后端优先级链
+ * 按优先级尝试初始化，如果不支持则使用下一个
+ *
+ * 优先级：HybridAudio > WebAudio > HTML5Audio
+ *
+ * HybridAudio：结合 HTML5 Audio 的流式加载和 Web Audio API 的高级功能
+ * WebAudio：纯 Web Audio API，需要完整下载（降级方案 1）
+ * HTML5Audio：纯 HTML5 Audio，流式播放但无高级功能（降级方案 2）
  */
-export class AudioService {
-  constructor(options = {}) {
-    // Initialize core audio
-    this.core = new AudioCore({
-      autoResume: options.autoResume !== false,
-      autoResumeDelay: options.autoResumeDelay || 1000,
-      ...options.core,
-    });
+export const BACKEND_PRIORITY = [
+  {
+    name: 'HybridAudio',
+    backend: () => import('./HybridAudioBackend.js').then(m => m.HybridAudioBackend),
+    supported: () => {
+      // 需要同时支持 Audio 元素和 Web Audio API
+      return !!(window.Audio && (window.AudioContext || window.webkitAudioContext));
+    },
+  },
+  {
+    name: 'WebAudio',
+    backend: () => import('./WebAudioBackend.js').then(m => m.WebAudioBackend),
+    supported: () => !!(window.AudioContext || window.webkitAudioContext),
+  },
+  {
+    name: 'HTML5Audio',
+    backend: () => import('./HTML5AudioBackend.js').then(m => m.HTML5AudioBackend),
+    supported: () => !!window.Audio,
+  },
+];
 
-    // Initialize controls
-    this.controls = new AudioControls(this.core, {
-      autoPlay: options.autoPlay || false,
-      muted: options.muted || false,
-      volume: options.volume || 0.8,
-      ...options.controls,
-    });
-
-    // Initialize session (media controls, etc.)
-    this.session = new AudioSession(this.controls, {
-      title: options.title || "Audio Player",
-      artist: options.artist || "",
-      album: options.album || "",
-      artwork: options.artwork || [],
-      ...options.session,
-    });
-
-    // Initialize cache if supported
-    if (AudioCache.isSupported) {
-      this.cache = new AudioCache({
-        cacheName: options.cacheName || DEFAULT_CACHE_NAME,
-        maxCacheSize: options.maxCacheSize || DEFAULT_CACHE_SIZE,
-        ...options.cache,
-      });
-    }
-
-    // Store options for later use
-    this.options = options;
-  }
-
-  /**
-   * Load audio from a URL or source object
-   * @param {string|Object} source - URL or source object with metadata
-   * @param {boolean} useCache - Whether to use cache if available
-   * @returns {Promise<string>} The URL of the loaded audio
-   */
-  async load(source, useCache = true) {
-    try {
-      let url = typeof source === "string" ? source : source.src;
-
-      // Try to get from cache if enabled and available
-      if (useCache && this.cache) {
-        const cached = await this.cache.getCachedAudio(url);
-        if (cached) {
-          // Use cached audio
-          url = URL.createObjectURL(await cached.blob());
-        } else if (this.cache.offlineMode) {
-          throw new Error("Audio not available in offline mode");
-        } else if (this.options.cacheOnPlay !== false) {
-          // Cache in background if not already cached
-          this.cache.cacheAudio(url).catch(console.error);
-        }
+/**
+ * 自动选择合适的后端
+ * @returns {AudioBackend} 音频后端实例
+ */
+export async function selectBackend(options = {}) {
+  for (const { name, backend: getBackend, supported } of BACKEND_PRIORITY) {
+    if (supported()) {
+      try {
+        const BackendClass = await getBackend();
+        console.log(`Selected audio backend: ${name}`);
+        return new BackendClass(options);
+      } catch (error) {
+        console.warn(`Failed to initialize ${name} backend:`, error);
+        continue;
       }
-
-      // Load the audio
-      await this.core.load(url);
-
-      // Update session metadata if source has metadata
-      if (typeof source === "object" && this.session) {
-        this.session.updateMetadata({
-          title: source.title,
-          artist: source.artist,
-          album: source.album,
-          artwork: source.artwork,
-        });
-      }
-
-      return url;
-    } catch (error) {
-      console.error("Error loading audio:", error);
-      throw error;
     }
   }
 
-  /**
-   * Play the currently loaded audio
-   * @returns {Promise<boolean>} Resolves to true if playback started successfully
-   */
-  play() {
-    try {
-      this.controls.play();
-      return true;
-    } catch (error) {
-      console.error("Error starting playback:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Load and play audio in one call
-   * @param {string|Object} source - URL or source object with metadata
-   * @param {boolean} useCache - Whether to use cache if available
-   * @returns {Promise<boolean>} Resolves when audio starts playing
-   */
-  async autoPlay(source, useCache = true) {
-    await this.load(source, useCache);
-    return this.play();
-  }
-
-  /**
-   * Pause playback
-   */
-  pause() {
-    this.controls.pause();
-  }
-
-  /**
-   * Toggle play/pause
-   */
-  togglePlay() {
-    this.controls.togglePlay();
-  }
-
-  /**
-   * Stop playback and reset position
-   */
-  stop() {
-    this.controls.stop();
-  }
-
-  /**
-   * Seek to a specific time
-   * @param {number} time - Time in seconds
-   */
-  seek(time) {
-    this.controls.seekTo(time);
-  }
-
-  /**
-   * Set volume (0-1)
-   * @param {number} volume - Volume level (0-1)
-   */
-  setVolume(volume) {
-    this.controls.setVolume(volume);
-  }
-
-  /**
-   * Toggle mute
-   */
-  toggleMute() {
-    this.controls.toggleMute();
-  }
-
-  /**
-   * Set playback rate (0.5-4)
-   * @param {number} rate - Playback rate (0.5-4)
-   */
-  setPlaybackRate(rate) {
-    this.controls.setPlaybackRate(rate);
-  }
-
-  /**
-   * Clean up resources
-   */
-  destroy() {
-    if (this.session) {
-      this.session.destroy();
-      this.session = null;
-    }
-
-    if (this.controls) {
-      this.controls.destroy();
-      this.controls = null;
-    }
-
-    if (this.core) {
-      this.core.destroy();
-      this.core = null;
-    }
-
-    if (this.cache) {
-      this.cache.destroy();
-      this.cache = null;
-    }
-  }
+  throw new Error('No audio backend available - neither Web Audio nor HTML5 Audio is supported');
 }
-
-// Export all modules for individual use
-export { AudioCore, AudioControls, AudioSession, AudioCache };
-
-// Export default instance
-export default AudioService;

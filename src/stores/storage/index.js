@@ -1,6 +1,6 @@
 import { defaultStorage } from "@linxs/toolkit";
 
-const { localStorage } = defaultStorage();
+const { localStorage, sessionStorage } = defaultStorage();
 
 /**
  * 统一的存储键定义
@@ -19,8 +19,10 @@ export const STORAGE_KEYS = {
 
   // 播放器相关
   VOLUME: "USER_VOLUME",
+  PLAYBACK_RATE: "USER_PLAYBACK_RATE", // 使用 sessionStorage
   PLAY_HISTORY: "PLAY_HISTORY",
   PLAYLISTS: "USER_PLAYLISTS",
+  VIEW_MODE: "PLAYER_VIEW_MODE", // 播放器视图模式
 
   // 业务数据
   RSS_SOURCES: "USER_RSS_SOURCES",
@@ -57,6 +59,34 @@ class StorageManager {
    */
   remove(key) {
     localStorage.remove(key);
+  }
+
+  /**
+   * 获取 sessionStorage 值
+   * @param {string} key - 存储键
+   * @param {*} defaultValue - 默认值（可选）
+   * @returns {*} 存储的值或默认值
+   */
+  getSession(key, defaultValue) {
+    const value = sessionStorage.get(key);
+    return value !== undefined && value !== null ? value : defaultValue;
+  }
+
+  /**
+   * 设置 sessionStorage 值
+   * @param {string} key - 存储键
+   * @param {*} value - 要存储的值
+   */
+  setSession(key, value) {
+    sessionStorage.set(key, value);
+  }
+
+  /**
+   * 删除 sessionStorage 值
+   * @param {string} key - 存储键
+   */
+  removeSession(key) {
+    sessionStorage.remove(key);
   }
 
   /**

@@ -1,21 +1,25 @@
 <script setup>
-import { NConfigProvider, NMessageProvider } from "naive-ui";
+import { NConfigProvider, NMessageProvider, NDialogProvider } from "naive-ui";
+
 import { themeOverrides } from "./theme/index.js";
 
 import MainPanelView from "./views/MainPanel/MainPanelView.vue";
 import AsidePanelView from "./views/AsidePanel/AsidePanelView.vue";
 import SettingDialog from "./components/dialogs/SettingDialog/SettingDialog.vue";
 import RssManagementDialog from "./components/dialogs/RssManagementDialog/RssManagementDialog.vue";
-import PlayerTestModal from "./components/dialogs/PlayerTestModal.vue";
+import PlayerView from "./components/player/PlayerView.vue";
 
 import { storeRss } from "@/stores/modules/rss/index";
 import { storeSettings } from "@/stores/modules/settings/index";
-import { onMounted } from "vue";
+import { storePlayer } from "@/stores/modules/player/index";
+import { onMounted, nextTick } from "vue";
 
 const storeRssInstance = storeRss();
 storeRssInstance.init();
 
 const storeSettingsInstance = storeSettings();
+
+const storePlayerInstance = storePlayer();
 
 onMounted(() => {
   storeSettingsInstance.initializeSettings();
@@ -29,12 +33,17 @@ onMounted(() => {
 <template>
   <NConfigProvider class="inherit-app" :theme-overrides="themeOverrides">
     <NMessageProvider>
-      <AsidePanelView />
-      <MainPanelView />
+      <NDialogProvider>
+        <AsidePanelView />
+        <MainPanelView />
 
-      <SettingDialog />
-      <RssManagementDialog />
-      <PlayerTestModal />
+        <SettingDialog />
+        <RssManagementDialog />
+
+        <PlayerView />
+
+        <div class="fixed bottom-5 right-5 cursor-pointer" @click="storePlayerInstance.showPlayer()">打开播放器</div>
+      </NDialogProvider>
     </NMessageProvider>
   </NConfigProvider>
 </template>
@@ -47,10 +56,5 @@ onMounted(() => {
   margin: inherit;
   overflow: inherit;
   position: relative;
-}
-
-:deep(.test-btn) {
-  position: fixed;
-  z-index: 10000 !important;
 }
 </style>

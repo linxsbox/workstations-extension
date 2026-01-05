@@ -148,7 +148,7 @@ const handleClose = () => {
     >
       <!-- Header 头部 -->
       <header
-        class="player-header absolute top-0 left-0 ring-0 z-10 w-full h-10 flex items-center"
+        class="player-header absolute top-0 left-0 right-0 z-10 w-full h-10 flex items-center"
       >
         <!-- 左侧：模式切换 -->
         <div class="header-left h-full flex-none flex items-center gap-1">
@@ -179,7 +179,7 @@ const handleClose = () => {
         </div>
       </header>
 
-      <section>
+      <section class="bg-white/15 backdrop-blur-sm">
         <!-- 动态模式组件 -->
         <component
           :is="currentModeComponent"

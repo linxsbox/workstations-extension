@@ -3,16 +3,21 @@ import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { NPopover, NSlider, NPopselect } from "naive-ui";
 import { storePlayer } from "@/stores/modules/player";
-import { PlayModeConfig } from "@/stores/modules/player/types";
+import { PlayMode, PlayModeConfig } from "@/stores/modules/player/types";
 import IconVolumeUp from "@/components/common/Icons/IconVolumeUp.vue";
 import IconVolumeDown from "@/components/common/Icons/IconVolumeDown.vue";
 import IconVolumeMute from "@/components/common/Icons/IconVolumeMute.vue";
 import IconVolumeOff from "@/components/common/Icons/IconVolumeOff.vue";
+import IconSquare from "@/components/common/Icons/IconSquare.vue";
+import IconRepeat from "@/components/common/Icons/IconRepeat.vue";
+import IconRepeatOne from "@/components/common/Icons/IconRepeatOne.vue";
+import IconShuffle from "@/components/common/Icons/IconShuffle.vue";
+import IconPlayListNote from "@/components/common/Icons/IconPlayListNote.vue";
 
 const props = defineProps({
-  showBackRate: { type: Boolean, default: true },
   showStop: { type: Boolean, default: true },
   showVolume: { type: Boolean, default: true },
+  showBackRate: { type: Boolean, default: true },
   showPlayMode: { type: Boolean, default: true },
 });
 
@@ -28,6 +33,22 @@ const getIsPlayerEnable = computed(() => {
 /** 当前播放模式配置 */
 const currentPlayModeConfig = computed(() => {
   return PlayModeConfig[playMode.value] || PlayModeConfig.loop;
+});
+
+/** 当前播放模式图标组件 */
+const currentPlayModeIcon = computed(() => {
+  switch (playMode.value) {
+    case PlayMode.SEQUENTIAL:
+      return IconPlayListNote; // 顺序播放
+    case PlayMode.LOOP:
+      return IconRepeat; // 列表循环
+    case PlayMode.RANDOM:
+      return IconShuffle; // 随机播放
+    case PlayMode.SINGLE:
+      return IconRepeatOne; // 单曲循环
+    default:
+      return IconRepeat;
+  }
 });
 
 /** 倍速选项 */
@@ -147,18 +168,16 @@ const handleSwitchPlayMode = () => {
       aria-label="停止"
       title="停止"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor" />
-      </svg>
+      <IconSquare class="text-2xl" />
     </button>
 
     <!-- 音量控制 -->
     <div v-if="showVolume">
       <NPopover
+        class="p-2"
         placement="bottom"
         trigger="click"
         :show-arrow="false"
-        style="padding: 12px 8px"
       >
         <template #trigger>
           <button
@@ -166,24 +185,18 @@ const handleSwitchPlayMode = () => {
             :aria-label="volumeIconTitle"
             :title="volumeIconTitle"
           >
-            <component :is="currentVolumeIcon" class="volume-icon" />
+            <component :is="currentVolumeIcon" class="volume-icon text-2xl" />
           </button>
         </template>
-        <div class="flex flex-col items-center gap-2 min-w-10">
-          <!-- 静音切换按钮 -->
-          <button
-            class="mute-toggle-btn text-xs px-2 py-1 rounded hover:bg-gray-100 transition-colors"
-            @click="toggleMute"
-            :title="isMuted ? '取消静音' : '静音'"
-          >
-            {{ isMuted ? "🔇" : "🔊" }}
-          </button>
-
+        <div class="flex flex-col items-center gap-2 w-6">
+          <!-- 音量百分比 -->
           <div
-            class="volume-value w-6 text-xs font-medium text-gray-700 text-center"
+            class="volume-value w-6 text-xs text-[var(--text-color-3)] text-center cursor-pointer"
           >
             {{ volumePercent }}
           </div>
+
+          <!-- 音量滑块 -->
           <NSlider
             v-model:value="volumePercent"
             vertical
@@ -193,6 +206,16 @@ const handleSwitchPlayMode = () => {
             :tooltip="false"
             style="height: 100px"
           />
+
+          <!-- 静音切换按钮 -->
+          <div
+            class="mute-toggle-btn transition-colors cursor-pointer"
+            @click="toggleMute"
+            :aria-label="isMuted ? '取消静音' : '静音'"
+            :title="isMuted ? '取消静音' : '静音'"
+          >
+            <IconVolumeOff class="text-lg text-[var(--text-color-3)]" />
+          </div>
         </div>
       </NPopover>
     </div>
@@ -206,7 +229,10 @@ const handleSwitchPlayMode = () => {
         size="small"
         trigger="click"
       >
-        <div class="palyer-back-rate" :title="`播放速率: ${playbackRateText}`">
+        <div
+          class="palyer-back-rate size-7 flex items-center justify-center rounded"
+          :title="`播放速率: ${playbackRateText}`"
+        >
           {{ playbackRateText }}
         </div>
       </NPopselect>
@@ -220,9 +246,7 @@ const handleSwitchPlayMode = () => {
       :aria-label="currentPlayModeConfig.label"
       :title="currentPlayModeConfig.label"
     >
-      <span class="mode-icon text-base">
-        {{ currentPlayModeConfig.icon }}
-      </span>
+      <component :is="currentPlayModeIcon" class="text-2xl" />
     </button>
   </div>
 </template>
@@ -263,20 +287,12 @@ const handleSwitchPlayMode = () => {
   }
 
   .palyer-back-rate {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 32px;
-    height: 24px;
-    padding: 4px 6px;
-    font-size: 12px;
-    line-height: 16px;
     color: var(--player-color, var(--player-color-default));
     background-color: rgba(
       var(--play-button-bg-color, var(--play-button-bg-color-default)),
       0.1
     );
-    border-radius: 999px;
+
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
@@ -286,31 +302,6 @@ const handleSwitchPlayMode = () => {
         var(--play-button-bg-color, var(--play-button-bg-color-default)),
         0.2
       );
-    }
-  }
-
-  .mode-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .volume-btn {
-    .volume-icon {
-      width: 20px;
-      height: 20px;
-    }
-  }
-
-  .mute-toggle-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    user-select: none;
-    color: #666;
-
-    &:hover {
-      color: #333;
     }
   }
 }

@@ -3,43 +3,49 @@
 import PlayerCover from '../PlayerCover.vue';
 import PlayerInfo from '../PlayerInfo.vue';
 import PlayerProgressBar from '../PlayerProgressBar.vue';
+import PlayerExtras from '../PlayerExtras.vue';
 // import { storeToRefs } from 'pinia';
 // import { ref, watch } from 'vue';
 // import PlayerControls from '../PlayerControls.vue';
-// import PlayerExtras from '../PlayerExtras.vue';
 // import PlayerQueue from '../PlayerQueue.vue';
 // import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
 
-// const props = defineProps({
-//   showBackRate: { type: Boolean, default: true },
-//   showStop: { type: Boolean, default: true },
-//   showVolume: { type: Boolean, default: true },
-//   showPlayMode: { type: Boolean, default: true },
-// });
+const props = defineProps({
+  showBackRate: { type: Boolean, default: true },
+  showStop: { type: Boolean, default: true },
+  showVolume: { type: Boolean, default: true },
+  showPlayMode: { type: Boolean, default: true },
+});
 
 // const player = storePlayer();
 </script>
 
 <template>
-  <div class="player-standard w-[95vw] h-[95vh] flex flex-col bg-white/15 backdrop-blur-sm">
+  <div class="player-standard w-[95vw] h-[95vh] flex flex-col">
     <!-- 上部：大封面背景 -->
     <div class="cover-section flex-1 relative">
       <!-- 大封面作为背景 -->
-      <PlayerCover asBackground size="large">
+      <PlayerCover asBackground size="large" v-if="false">
         <div class="content-overlay flex flex-col h-full items-center justify-center p-8">
           <!-- 歌词区域（预留） -->
-          <div class="lyrics-area flex-1 flex items-center justify-center text-white text-center">
+          <!-- <div class="lyrics-area flex-1 flex items-center justify-center text-white text-center">
             <div class="text-gray-300 text-sm">暂无歌词</div>
-          </div>
+          </div> -->
         </div>
       </PlayerCover>
     </div>
 
     <!-- 下部：播放条 -->
-    <div class="player-bar flex-none p-4">
-      <!-- 歌曲信息 -->
-      <div class="mb-2">
-        <PlayerInfo align="center" :showArtist="true" />
+    <div class="player-bar flex-none p-4 bg-white/15">
+      <!-- 歌曲信息和控制按钮 -->
+      <div class="flex justify-between items-center mb-4">
+        <PlayerInfo :showArtist="true" />
+        <PlayerExtras
+          :showBackRate="showBackRate"
+          :showStop="showStop"
+          :showVolume="showVolume"
+          :showPlayMode="showPlayMode"
+        />
       </div>
 
       <!-- 进度条 -->

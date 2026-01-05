@@ -2,7 +2,7 @@
 import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { isObject, isEmptyObject } from "@linxs/toolkit";
-import PlayButton from "@/components/player/PlayButton/PlayButton.vue";
+import PlayButton from "@/components/player/PlayButton.vue";
 import { storePlayer } from "@/stores/modules/player";
 
 const props = defineProps({

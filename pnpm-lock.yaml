@@ -8,12 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@linxs/amors':
+        specifier: ^0.3.1
+        version: 0.3.1
       '@linxs/toolkit':
-        specifier: ^0.4.2
-        version: 0.4.2
+        specifier: ^0.5.0
+        version: 0.5.0
       '@linxs/toolkit-vue':
-        specifier: ^0.1.3
-        version: 0.1.3(vue@3.5.13)
+        specifier: ^0.1.5
+        version: 0.1.5(vue@3.5.13)
       '@vue/compiler-sfc':
         specifier: ^3.5.13
         version: 3.5.26
@@ -280,13 +283,17 @@ packages:
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
-  '@linxs/toolkit-vue@0.1.3':
-    resolution: {integrity: sha512-4bXdSwkC1vfZS+Q7yR/5eiF8zx8SLSPW0DJ4tU2RXAQEHXPruN3vq6B02Y2TIVrCV5y3Jy5GvSLGr9IjY1sh5A==}
+  '@linxs/amors@0.3.1':
+    resolution: {integrity: sha512-perqbYo8Vdys4NqvR8sfxDICFMrvP3W3XSRqm5OoEsDn03vHZ9CEqGFOMqiTRNEF7/0ZIqyunjmUZYPhfM6SqQ==}
+    engines: {node: '>=16', npm: '>=7'}
+
+  '@linxs/toolkit-vue@0.1.5':
+    resolution: {integrity: sha512-H7Y3LuU7CB70YuH0owWpIBCT7xxabOZ6W6z9wDVzUjyVgfuG0ybglETT1L6TugsWVaHePsEbwAHgM36tWZiB4Q==}
     peerDependencies:
       vue: ^3.4.0
 
-  '@linxs/toolkit@0.4.2':
-    resolution: {integrity: sha512-r04Ajw0lc0LFHSm+NSxXmbyNQzMwu2joJADbD4OsmqZiQUlMw3/K9mCFoLbmyM8PSiTTp7ElJh6sB2mV4qes9w==}
+  '@linxs/toolkit@0.5.0':
+    resolution: {integrity: sha512-qFPmoJ+K3G7SKmhc4G5Fh31uCihTMuuHnlQLTJto+Xp8hF8+KRgy36oa9oWVkL94It4Sh1gZUpFuj7UVCEZnrQ==}
     engines: {node: '>=16', npm: '>=7'}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -1435,11 +1442,13 @@ snapshots:
 
   '@juggle/resize-observer@3.4.0': {}
 
-  '@linxs/toolkit-vue@0.1.3(vue@3.5.13)':
+  '@linxs/amors@0.3.1': {}
+
+  '@linxs/toolkit-vue@0.1.5(vue@3.5.13)':
     dependencies:
       vue: 3.5.13
 
-  '@linxs/toolkit@0.4.2': {}
+  '@linxs/toolkit@0.5.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

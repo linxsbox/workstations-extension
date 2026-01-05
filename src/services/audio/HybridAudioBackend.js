@@ -35,52 +35,46 @@ export class HybridAudioBackend extends AudioBackend {
    * ⚠️ 关键：MediaElementSource 只能创建一次，所以必须在构造函数中创建
    */
   init() {
-    try {
-      // 1. 创建 AudioContext（兼容 webkit）
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) {
-        throw new Error('Web Audio API is not supported');
-      }
-      this.audioContext = new AudioContext();
-
-      // 2. 创建 Audio 元素
-      this.audio = new Audio();
-      this.audio.crossOrigin = 'anonymous'; // 支持跨域资源
-
-      // 3. 创建 MediaElementSource - ⚠️ 检查支持性！
-      // 某些浏览器或某些情况下此方法不可用
-      if (
-        !this.audioContext.createMediaElementAudioSource ||
-        typeof this.audioContext.createMediaElementAudioSource !== 'function'
-      ) {
-        throw new Error('createMediaElementAudioSource is not supported');
-      }
-      this.mediaSource = this.audioContext.createMediaElementAudioSource(this.audio);
-
-      // 4. 创建频谱分析节点
-      this.analyser = this.audioContext.createAnalyser();
-      this.analyser.fftSize = 256; // FFT 大小，会产生 128 个频率带
-      this.analyser.smoothingTimeConstant = 0.8; // 平滑系数
-
-      // 5. 创建音量控制节点
-      this.gainNode = this.audioContext.createGain();
-      this.gainNode.gain.value = this.volume;
-
-      // 6. 连接音频处理链
-      // AudioElement → MediaElementSource → Analyser → GainNode → Destination
-      this.mediaSource.connect(this.analyser);
-      this.analyser.connect(this.gainNode);
-      this.gainNode.connect(this.audioContext.destination);
-
-      // 7. 设置原生事件监听和转发
-      this._setupAudioEvents();
-
-      console.log('Hybrid Audio Backend initialized successfully');
-      return true;
-    } catch (error) {
-      console.error('Failed to initialize Hybrid Audio Backend:', error);
-      return false;
+    // 1. 创建 AudioContext（兼容 webkit）
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) {
+      throw new Error('Web Audio API is not supported');
     }
+    this.audioContext = new AudioContext();
+
+    // 2. 创建 Audio 元素
+    this.audio = new Audio();
+    this.audio.crossOrigin = 'anonymous'; // 支持跨域资源
+
+    // 3. 创建 MediaElementSource - ⚠️ 检查支持性！
+    // 某些浏览器或某些情况下此方法不可用
+    if (
+      !this.audioContext.createMediaElementAudioSource ||
+      typeof this.audioContext.createMediaElementAudioSource !== 'function'
+    ) {
+      throw new Error('createMediaElementAudioSource is not supported');
+    }
+    this.mediaSource = this.audioContext.createMediaElementAudioSource(this.audio);
+
+    // 4. 创建频谱分析节点
+    this.analyser = this.audioContext.createAnalyser();
+    this.analyser.fftSize = 256; // FFT 大小，会产生 128 个频率带
+    this.analyser.smoothingTimeConstant = 0.8; // 平滑系数
+
+    // 5. 创建音量控制节点
+    this.gainNode = this.audioContext.createGain();
+    this.gainNode.gain.value = this.volume;
+
+    // 6. 连接音频处理链
+    // AudioElement → MediaElementSource → Analyser → GainNode → Destination
+    this.mediaSource.connect(this.analyser);
+    this.analyser.connect(this.gainNode);
+    this.gainNode.connect(this.audioContext.destination);
+
+    // 7. 设置原生事件监听和转发
+    this._setupAudioEvents();
+
+    console.log('Hybrid Audio Backend initialized successfully');
   }
 
   /**
@@ -90,9 +84,7 @@ export class HybridAudioBackend extends AudioBackend {
   async load(src, options = {}) {
     try {
       if (!this.audioContext) {
-        if (!this.init()) {
-          throw new Error('Audio context initialization failed');
-        }
+        throw new Error('Audio context not initialized');
       }
 
       // 停止当前播放

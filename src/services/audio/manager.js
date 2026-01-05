@@ -3,7 +3,7 @@
  * 隐藏后端实现细节，提供统一的 API
  */
 
-import { selectBackend, BACKEND_PRIORITY } from './backends/index.js';
+import { selectBackend, BACKEND_PRIORITY } from './index.js';
 
 export class AudioManager {
   constructor(options = {}) {

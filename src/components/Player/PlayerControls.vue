@@ -6,6 +6,19 @@ import PlayButton from './PlayButton.vue';
 import IconSkipPrevious from '@/components/common/Icons/IconSkipPrevious.vue';
 import IconSkipNext from '@/components/common/Icons/IconSkipNext.vue';
 
+const props = defineProps({
+  // 播放按钮尺寸（像素）
+  playButtonSize: {
+    type: Number,
+    default: 48
+  },
+  // 上一曲/下一曲按钮尺寸（像素）
+  skipButtonSize: {
+    type: Number,
+    default: 32
+  }
+});
+
 // Store
 const player = storePlayer();
 const { getPlayStatus } = storeToRefs(player);
@@ -54,17 +67,17 @@ const handleNext = () => {
 <template>
   <div class="player-controls flex justify-center items-center gap-2">
     <button
-      class="control-btn"
+      class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
       :disabled="!getIsPlayerEnable"
       @click="handlePrevious"
       aria-label="上一曲"
+      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
     >
-      <IconSkipPrevious class="control-icon" />
+      <IconSkipPrevious :style="{ fontSize: `${skipButtonSize}px` }" />
     </button>
 
     <PlayButton
-      class="play-button text-4xl"
-      style="color: var(--player-color, var(--player-color-default));"
+      :style="{ fontSize: `${playButtonSize}px`, color: 'var(--player-color, var(--player-color-default))' }"
       @play="handleChangePlayState(true)"
       @pause="handleChangePlayState(false)"
       :isPlay="getIsPlaying"
@@ -72,45 +85,16 @@ const handleNext = () => {
     />
 
     <button
-      class="control-btn"
+      class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
       :disabled="!getIsPlayerEnable"
       @click="handleNext"
       aria-label="下一曲"
+      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
     >
-      <IconSkipNext class="control-icon" />
+      <IconSkipNext :style="{ fontSize: `${skipButtonSize}px` }" />
     </button>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.player-controls {
-  .control-btn {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 32px;
-    height: 32px;
-    background: none;
-    border: none;
-    color: var(--player-color, var(--player-color-default));
-    cursor: pointer;
-    transition: all 0.2s ease;
-    opacity: 0.7;
-
-    &:hover:not(:disabled) {
-      opacity: 1;
-      transform: scale(1.1);
-    }
-
-    &:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    .control-icon {
-      width: 24px;
-      height: 24px;
-    }
-  }
-}
 </style>

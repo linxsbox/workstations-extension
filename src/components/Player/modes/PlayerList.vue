@@ -19,7 +19,7 @@ const props = defineProps({
     <!-- 上部：封面、歌曲信息、播放控制 -->
     <div class="flex flex-col items-center gap-3">
       <!-- 封面 -->
-      <PlayerCover size="medium" />
+      <PlayerCover :size="64" />
 
       <!-- 歌曲信息 + 播放控制 -->
       <div class="w-full flex flex-col items-center gap-3">

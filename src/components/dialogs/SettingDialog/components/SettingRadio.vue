@@ -33,7 +33,7 @@ const handleChange = (value) => {
           <component
             v-if="option.icon"
             :is="option.icon"
-            class="w-5 h-5 mt-0.5 text-gray-600 dark:text-gray-400"
+            class="size-5 mt-0.5 text-gray-600 dark:text-gray-400"
           />
 
           <div class="flex-1">

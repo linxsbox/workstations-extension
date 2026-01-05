@@ -1,8 +1,10 @@
 <script setup>
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import { NPopconfirm } from 'naive-ui';
 import { storePlayer } from '@/stores/modules/player';
 import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
+import IconPlaylistRemove from '@/components/common/Icons/IconPlaylistRemove.vue';
 
 const player = storePlayer();
 const { playQueue, currentTime, duration } = storeToRefs(player);
@@ -24,7 +26,11 @@ const getTrackDuration = (track, index) => {
 };
 
 // 播放指定轨道
-const handlePlayTrack = (trackId) => {
+const handlePlayTrack = (trackId, index) => {
+  // 如果是当前播放的轨道，直接返回
+  if (isCurrentTrack(index)) {
+    return;
+  }
   player.playTrackFromQueue(trackId);
 };
 
@@ -41,55 +47,66 @@ const isCurrentTrack = (index) => {
 </script>
 
 <template>
-  <div class="player-queue">
-    <div class="queue-header">
+  <div class="player-queue flex flex-col h-full bg-white/50 rounded-lg overflow-hidden">
+    <div class="queue-header flex justify-between items-center px-4 py-3 bg-white/50 border-b border-gray-200">
       <div class="flex items-center gap-2">
-        <IconQueueMusic class="queue-icon" />
-        <h3>播放队列 ({{ playQueue.getTrackCount() }})</h3>
+        <IconQueueMusic class="text-xl text-gray-600 flex-shrink-0" />
+        <h3 class="m-0 text-sm font-semibold text-gray-800">播放列表 ({{ playQueue.getTrackCount() }})</h3>
       </div>
-      <button
+      <NPopconfirm
         v-if="playQueue.tracks.length > 0"
-        @click="player.clearPlaylist()"
-        class="clear-btn"
-        title="清空队列"
+        @positive-click="player.clearPlaylist()"
+        positive-text="确认"
+        negative-text="取消"
       >
-        清空
-      </button>
+        <template #trigger>
+          <button
+            class="clear-btn flex items-center justify-center size-7 text-gray-600 bg-transparent rounded cursor-pointer transition-all hover:text-red-500"
+            title="清空列表"
+          >
+            <IconPlaylistRemove class="text-lg" />
+          </button>
+        </template>
+        确定要清空播放列表吗？
+      </NPopconfirm>
     </div>
 
-    <div v-if="playQueue.tracks.length === 0" class="empty-state">
-      队列为空
+    <div v-if="playQueue.tracks.length === 0" class="flex-1 flex items-center justify-center text-black/75 text-sm py-10 px-5">
+      播放列表为空
     </div>
 
-    <div v-else class="queue-list">
+    <div v-else class="queue-list flex-1 overflow-y-auto p-1">
       <div
         v-for="(track, index) in playQueue.tracks"
         :key="track.id"
         class="queue-item"
         :class="{ current: isCurrentTrack(index) }"
-        @click="handlePlayTrack(track.id)"
+        @dblclick="handlePlayTrack(track.id, index)"
       >
-        <!-- 左侧：编号/播放图标 -->
-        <div class="track-index">
-          <span v-if="!isCurrentTrack(index)" class="index-number">{{ index + 1 }}</span>
-          <svg v-else class="playing-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M8 5v14l11-7z" fill="currentColor"/>
-          </svg>
+        <!-- 左侧：编号 -->
+        <div class="flex-none w-6 h-6 flex items-center justify-center">
+          <span class="text-xs text-gray-400 font-medium">{{ index + 1 }}</span>
         </div>
 
         <!-- 中间：歌曲信息 -->
-        <div class="track-info">
-          <div class="track-title">{{ track.title || '未知歌曲' }}</div>
-          <div class="track-artist">{{ track.artist || '未知艺术家' }}</div>
+        <div class="flex-1 min-w-0 overflow-hidden">
+          <div class="text-[13px] font-medium text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis mb-0.5">
+            {{ track.title || '未知歌曲' }}
+          </div>
+          <div class="text-[11px] text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis">
+            {{ track.artist || '未知艺术家' }}
+          </div>
         </div>
 
         <!-- 右侧：时长和删除按钮 -->
-        <div class="track-actions">
-          <span class="track-duration">{{ formatTime(getTrackDuration(track, index)) }}</span>
+        <div class="flex-none flex items-center gap-2">
+          <span class="text-xs text-gray-400 tabular-nums min-w-[40px] text-right">
+            {{ formatTime(getTrackDuration(track, index)) }}
+          </span>
           <button
-            class="delete-btn"
+            class="delete-btn flex items-center justify-center w-6 h-6 p-0 bg-transparent border-none text-gray-400 cursor-pointer opacity-0 transition-all rounded hover:text-red-500 hover:bg-red-50"
             @click="handleRemoveTrack(track.id, $event)"
-            title="从队列中删除"
+            title="从列表中删除"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
@@ -102,71 +119,6 @@ const isCurrentTrack = (index) => {
 </template>
 
 <style lang="scss" scoped>
-.player-queue {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: #f9f9f9;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.queue-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: white;
-  border-bottom: 1px solid #eee;
-
-  .queue-icon {
-    width: 18px;
-    height: 18px;
-    color: #666;
-    flex-shrink: 0;
-  }
-
-  h3 {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #333;
-  }
-
-  .clear-btn {
-    padding: 4px 12px;
-    font-size: 12px;
-    color: #666;
-    background: none;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      color: #ff4d4f;
-      border-color: #ff4d4f;
-      background: #fff1f0;
-    }
-  }
-}
-
-.empty-state {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 14px;
-  padding: 40px 20px;
-}
-
-.queue-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 4px;
-}
-
 .queue-item {
   display: flex;
   align-items: center;
@@ -177,6 +129,7 @@ const isCurrentTrack = (index) => {
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
+  user-select: none;
 
   &:hover {
     background: #f5f5f5;
@@ -190,106 +143,14 @@ const isCurrentTrack = (index) => {
     background: #f0f4ff;
     border-left: 3px solid var(--player-color, #409eff);
 
-    .track-title {
-      color: var(--player-color, #409eff);
+    .text-gray-800 {
+      color: var(--player-color, #409eff) !important;
       font-weight: 600;
     }
 
-    .playing-icon {
-      color: var(--player-color, #409eff);
-    }
-  }
-}
-
-.track-index {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  .index-number {
-    font-size: 12px;
-    color: #999;
-    font-weight: 500;
-  }
-
-  .playing-icon {
-    animation: playing 1s ease-in-out infinite alternate;
-  }
-}
-
-@keyframes playing {
-  0% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1.1);
-  }
-}
-
-.track-info {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-
-  .track-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: #333;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 2px;
-  }
-
-  .track-artist {
-    font-size: 11px;
-    color: #999;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-.track-actions {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .track-duration {
-    font-size: 12px;
-    color: #999;
-    font-variant-numeric: tabular-nums;
-    min-width: 40px;
-    text-align: right;
-  }
-
-  .delete-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    background: none;
-    border: none;
-    color: #999;
-    cursor: pointer;
-    opacity: 0;
-    transition: all 0.2s;
-    border-radius: 4px;
-
-    &:hover {
-      color: #ff4d4f;
-      background: #fff1f0;
-    }
-
-    svg {
-      width: 16px;
-      height: 16px;
+    .text-gray-400 {
+      color: var(--player-color, #409eff) !important;
+      font-weight: 600;
     }
   }
 }

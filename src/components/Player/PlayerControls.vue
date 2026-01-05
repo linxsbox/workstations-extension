@@ -69,9 +69,10 @@ const handleNext = () => {
     <button
       class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
       :disabled="!getIsPlayerEnable"
+      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
       @click="handlePrevious"
       aria-label="上一曲"
-      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
+      title="上一曲"
     >
       <IconSkipPrevious :style="{ fontSize: `${skipButtonSize}px` }" />
     </button>
@@ -87,9 +88,10 @@ const handleNext = () => {
     <button
       class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
       :disabled="!getIsPlayerEnable"
+      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
       @click="handleNext"
       aria-label="下一曲"
-      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
+      title="下一曲"
     >
       <IconSkipNext :style="{ fontSize: `${skipButtonSize}px` }" />
     </button>

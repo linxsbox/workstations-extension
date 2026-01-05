@@ -9,6 +9,7 @@ import { updateMediaCover } from "./config";
 import PlayerMini from "./modes/PlayerMini.vue";
 import PlayerList from "./modes/PlayerList.vue";
 import PlayerStandard from "./modes/PlayerStandard.vue";
+import IconMinimize from "@/components/common/Icons/IconMinimize.vue";
 import IconClose from "@/components/common/Icons/IconClose.vue";
 
 const props = defineProps({
@@ -117,6 +118,12 @@ const setThemeStyle = (theme) => {
   };
 };
 
+/** 最小化播放器 */
+const handleMinimize = () => {
+  // 直接隐藏播放器，不停止播放
+  store.hidePlayer();
+};
+
 /** 关闭播放器 */
 const handleClose = () => {
   dialog.warning({
@@ -167,8 +174,17 @@ const handleClose = () => {
         <!-- 中间：占位 -->
         <div class="header-center h-full flex-1"></div>
 
-        <!-- 右侧：关闭按钮 -->
-        <div class="header-right h-full flex-none">
+        <!-- 右侧：最小化和关闭按钮 -->
+        <div class="header-right h-full flex-none flex items-center">
+          <!-- 最小化按钮 -->
+          <div
+            class="minimize-btn h-full w-10 flex items-center justify-center cursor-pointer"
+            @click="handleMinimize"
+            title="最小化播放器"
+          >
+            <IconMinimize class="text-2xl" />
+          </div>
+          <!-- 关闭按钮 -->
           <div
             class="close-btn h-full w-10 flex items-center justify-center cursor-pointer"
             @click="handleClose"
@@ -223,13 +239,23 @@ const handleClose = () => {
   }
 }
 
+.minimize-btn,
 .close-btn {
   color: var(--text-secondary, #666);
   transition: all 0.2s;
 
   &:hover {
-    color: #ff4d4f;
     background: rgba(255, 77, 79, 0.1);
   }
+}
+
+.minimize-btn:hover {
+  color: var(--player-color, #409eff);
+  background: rgba(64, 158, 255, 0.1);
+}
+
+.close-btn:hover {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
 }
 </style>

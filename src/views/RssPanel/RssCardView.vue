@@ -3,6 +3,7 @@ import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { isObject, isEmptyObject } from "@linxs/toolkit";
 import PlayButton from "@/components/player/PlayButton.vue";
+import AddToQueueButton from "@/components/player/AddToQueueButton.vue";
 import { storePlayer } from "@/stores/modules/player";
 
 const props = defineProps({
@@ -26,6 +27,25 @@ const { getPlayStatus } = storeToRefs(store);
 
 onMounted(() => {});
 
+// 获取专辑信息
+const getAlbumInfo = () => {
+  if (!isObject(props.album)) return null;
+  if (isEmptyObject(props.album)) return null;
+  return props.album;
+};
+
+// 构建轨道数据
+const buildTrackData = () => {
+  return {
+    title: props.data.title,
+    src: props.data.mediaUrl,
+    album: getAlbumInfo(),
+    pid: props.pid || "",
+    duration: props.data.duration || 0,
+    artist: props.data.author || "",
+  };
+};
+
 const isPlay = computed(() => {
   return (
     getPlayStatus.value.src === props.data.mediaUrl &&
@@ -34,31 +54,28 @@ const isPlay = computed(() => {
 });
 
 const clickPlay = () => {
+  if (!props.data.mediaUrl) return;
+
+  // 如果是当前播放的曲目
   if (getPlayStatus.value.src === props.data.mediaUrl) {
-    if (!props.data.mediaUrl) return;
     if (getPlayStatus.value.isError) {
       store.resetPlayer();
       return;
     }
-    getPlayStatus.value.isPlaying = true;
+    store.togglePlay();
     return;
   }
 
-  const isAlbum = () => {
-    if (!isObject(props.album)) return null;
-    if (isEmptyObject(props.album)) return null;
-    return props.album;
-  };
-
-  store.play({
-    title: props.data.title,
-    src: props.data.mediaUrl,
-    album: isAlbum(),
-    pid: props.pid || "",
-  });
+  // 添加到队列并播放
+  store.addAndPlay(buildTrackData());
+  // 显示播放器
+  store.showPlayer();
 };
+
 const clickPause = () => {
-  getPlayStatus.value.src === props.data.mediaUrl && store.pause();
+  if (getPlayStatus.value.src === props.data.mediaUrl) {
+    store.pause();
+  }
 };
 </script>
 
@@ -72,6 +89,13 @@ const clickPause = () => {
           @play="clickPlay"
           @pause="clickPause"
           :isPlay="isPlay"
+        />
+        <!-- 添加到播放列表按钮 -->
+        <AddToQueueButton
+          v-if="props.data.mediaUrl"
+          class="text-[var(--origin-theme)]"
+          :track="buildTrackData()"
+          :iconSize="36"
         />
       </div>
       <div class="right flex-1 flex flex-col gap-1">

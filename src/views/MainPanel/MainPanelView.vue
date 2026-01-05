@@ -3,8 +3,6 @@ import { ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import HeaderBarView from "@/components/common/HeaderBar/HeaderBarView.vue";
 import PlayerView from "@/components/player/PlayerView.vue";
-import IconArrowUp from "@/components/common/Icons/IconArrowUp.vue";
-import IconArrowDown from "@/components/common/Icons/IconArrowDown.vue";
 import { storeAside } from "@/stores/modules/aside";
 import { storePlayer } from "@/stores/modules/player";
 
@@ -38,14 +36,7 @@ const cleanupWatch = watch(
       </Transition>
     </div>
 
-    <footer :class="['footer relative', { show: showPalyer }]">
-      <div
-        class="show-palyer-button absolute bottom-full w-16 z-1 cursor-pointer"
-        @click="showPalyer = !showPalyer"
-      >
-        <IconArrowUp class="m-auto" v-show="!showPalyer" />
-        <IconArrowDown class="m-auto" v-show="showPalyer" />
-      </div>
+    <footer :class="['footer', { show: showPalyer }]">
       <PlayerView />
     </footer>
   </div>
@@ -85,13 +76,6 @@ const cleanupWatch = watch(
     max-height: 90px;
     transform: translate3d(0, 0%, 0);
     transition-delay: 0.1s, 0s;
-  }
-
-  .show-palyer-button {
-    font-size: 24px;
-    color: var(--text-primary);
-    background-color: var(--interactive-bg-default);
-    border-radius: var(--border-radius-4) var(--border-radius-4) 0 0;
   }
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import { NPopconfirm } from 'naive-ui';
+import { NPopconfirm, NScrollbar } from 'naive-ui';
 import { storePlayer } from '@/stores/modules/player';
 import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
 import IconPlaylistRemove from '@/components/common/Icons/IconPlaylistRemove.vue';
@@ -75,7 +75,7 @@ const isCurrentTrack = (index) => {
       播放列表为空
     </div>
 
-    <div v-else class="queue-list flex-1 overflow-y-auto p-1">
+    <NScrollbar v-else class="flex-1" content-class="p-1">
       <div
         v-for="(track, index) in playQueue.tracks"
         :key="track.id"
@@ -114,7 +114,7 @@ const isCurrentTrack = (index) => {
           </button>
         </div>
       </div>
-    </div>
+    </NScrollbar>
   </div>
 </template>
 
@@ -152,24 +152,6 @@ const isCurrentTrack = (index) => {
       color: var(--player-color, #409eff) !important;
       font-weight: 600;
     }
-  }
-}
-
-/* 滚动条样式 */
-.queue-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.queue-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.queue-list::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 3px;
-
-  &:hover {
-    background: #bbb;
   }
 }
 </style>

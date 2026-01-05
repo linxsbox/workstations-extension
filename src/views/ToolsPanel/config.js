@@ -23,6 +23,16 @@ export const toolsList = [
       defineAsyncComponent(() => import("./components/ChatLLM/WebChatView.vue"))
     ),
   },
+
+  {
+    name: "图标预览",
+    icon: markRaw(
+      defineAsyncComponent(() => import("@/components/common/Icons/IconFavoriteBorder.vue"))
+    ),
+    component: markRaw(
+      defineAsyncComponent(() => import("./components/IconsPreview/IconsPreviewView.vue"))
+    ),
+  },
 ];
 
 // 加载 github 配置，动态构建自定义组件

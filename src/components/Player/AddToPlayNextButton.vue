@@ -1,5 +1,4 @@
 <script setup>
-import { computed } from 'vue';
 import { storePlayer } from '@/stores/modules/player';
 import IconPlaylistPlay from '@/components/common/Icons/IconPlaylistPlay.vue';
 
@@ -13,10 +12,10 @@ const props = defineProps({
       return value && typeof value.src === 'string';
     }
   },
-  // 按钮尺寸：'small' | 'medium' | 'large'
-  size: {
-    type: String,
-    default: 'medium'
+  // 图标尺寸（像素）
+  iconSize: {
+    type: Number,
+    default: 24
   },
   // 是否显示为图标按钮（否则显示为带文字的按钮）
   iconOnly: {
@@ -33,26 +32,6 @@ const props = defineProps({
 const emit = defineEmits(['success', 'error']);
 
 const player = storePlayer();
-
-/** 获取按钮尺寸类名 */
-const sizeClass = computed(() => {
-  const sizeMap = {
-    small: 'size-6',
-    medium: 'size-8',
-    large: 'size-10'
-  };
-  return sizeMap[props.size] || sizeMap.medium;
-});
-
-/** 获取图标尺寸 */
-const iconSize = computed(() => {
-  const sizeMap = {
-    small: '16px',
-    medium: '20px',
-    large: '24px'
-  };
-  return sizeMap[props.size] || sizeMap.medium;
-});
 
 /** 添加为下一首播放 */
 const handleAddToPlayNext = () => {
@@ -77,27 +56,19 @@ const handleAddToPlayNext = () => {
 
 <template>
   <button
-    v-if="iconOnly"
     class="add-to-play-next-btn flex items-center justify-center rounded transition-all"
-    :class="[sizeClass, { 'opacity-50 cursor-not-allowed': disabled }]"
+    :class="{
+      'opacity-50 cursor-not-allowed': disabled,
+      'gap-2 px-3 py-1.5': !iconOnly
+    }"
     :disabled="disabled"
     @click.stop="handleAddToPlayNext"
     :title="`下一首播放${track.title ? ': ' + track.title : ''}`"
     :aria-label="'下一首播放'"
+    :style="{ fontSize: `${iconSize}px` }"
   >
-    <IconPlaylistPlay :style="{ width: iconSize, height: iconSize }" />
-  </button>
-
-  <button
-    v-else
-    class="add-to-play-next-btn-text flex items-center gap-2 px-3 py-1.5 rounded transition-all"
-    :class="{ 'opacity-50 cursor-not-allowed': disabled }"
-    :disabled="disabled"
-    @click.stop="handleAddToPlayNext"
-    :aria-label="'下一首播放'"
-  >
-    <IconPlaylistPlay :style="{ width: iconSize, height: iconSize }" />
-    <span class="text-sm">下一首播放</span>
+    <IconPlaylistPlay />
+    <span class="text-sm" v-if="!iconOnly">下一首播放</span>
   </button>
 </template>
 
@@ -115,23 +86,6 @@ const handleAddToPlayNext = () => {
 
   &:active:not(:disabled) {
     transform: scale(0.95);
-  }
-}
-
-.add-to-play-next-btn-text {
-  background: none;
-  border: 1px solid var(--border-color, #ddd);
-  color: var(--text-primary, #333);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    color: var(--player-color, #409eff);
-    border-color: var(--player-color, #409eff);
-    background: rgba(64, 158, 255, 0.05);
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.98);
   }
 }
 </style>

@@ -330,6 +330,29 @@ export const storePlayer = defineStore("player", {
     },
 
     /**
+     * 添加到队列并立即播放
+     */
+    addAndPlay(track) {
+      // 如果队列中已存在该轨道，先移除
+      const existingIndex = this.playQueue.tracks.findIndex((item) => item.src === track.src);
+      if (existingIndex > -1) {
+        this.playQueue.removeTrack(this.playQueue.tracks[existingIndex].id);
+      }
+
+      // 添加轨道到队列
+      const trackWithId = {
+        ...track,
+        id: track.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      };
+      this.playQueue.addTrack(trackWithId);
+
+      // 立即跳转到该轨道并播放
+      this.playTrackFromQueue(trackWithId.id);
+
+      return true;
+    },
+
+    /**
      * 清空播放列表
      */
     clearPlaylist() {

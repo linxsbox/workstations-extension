@@ -23,7 +23,7 @@ export const storePlayer = defineStore("player", {
     duration: 0,
 
     // 控制选项
-    volume: storageManager.get(STORAGE_KEYS.VOLUME, 1),
+    volume: storageManager.get(STORAGE_KEYS.VOLUME, 0.8),
     playbackRate: storageManager.getSession(STORAGE_KEYS.PLAYBACK_RATE, 1), // 从 sessionStorage 读取，默认 1
 
     // 播放历史

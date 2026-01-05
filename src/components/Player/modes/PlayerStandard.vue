@@ -1,14 +1,14 @@
 <script setup>
-// import { storePlayer } from '@/stores/modules/player';
+import { ref } from 'vue';
 import PlayerCover from '../PlayerCover.vue';
 import PlayerInfo from '../PlayerInfo.vue';
 import PlayerProgressBar from '../PlayerProgressBar.vue';
 import PlayerExtras from '../PlayerExtras.vue';
+import PlayerControls from '../PlayerControls.vue';
+import PlayerQueue from '../PlayerQueue.vue';
+import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
+// import { storePlayer } from '@/stores/modules/player';
 // import { storeToRefs } from 'pinia';
-// import { ref, watch } from 'vue';
-// import PlayerControls from '../PlayerControls.vue';
-// import PlayerQueue from '../PlayerQueue.vue';
-// import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
 
 const props = defineProps({
   showBackRate: { type: Boolean, default: true },
@@ -17,22 +17,44 @@ const props = defineProps({
   showPlayMode: { type: Boolean, default: true },
 });
 
+// 播放列表显示状态
+const isPlaylistVisible = ref(false);
+
+// 打开/关闭播放列表
+const handleTogglePlaylist = () => {
+  isPlaylistVisible.value = !isPlaylistVisible.value;
+};
+
 // const player = storePlayer();
 </script>
 
 <template>
   <div class="player-standard w-[95vw] h-[95vh] flex flex-col">
     <!-- 上部：大封面背景 -->
-    <div class="cover-section flex-1 relative">
+    <div class="cover-section flex-1 relative overflow-hidden">
       <!-- 大封面作为背景 -->
-      <PlayerCover asBackground size="large" v-if="false">
-        <div class="content-overlay flex flex-col h-full items-center justify-center p-8">
+      <PlayerCover asBackground :size="200">
+        <div class="content-overlay size-full flex flex-col  items-center justify-center p-8">
           <!-- 歌词区域（预留） -->
-          <!-- <div class="lyrics-area flex-1 flex items-center justify-center text-white text-center">
+          <div class="lyrics-area flex-1 flex items-center justify-center text-white text-center">
             <div class="text-gray-300 text-sm">暂无歌词</div>
-          </div> -->
+          </div>
+
+          <!-- 播放控制组件 -->
+          <PlayerControls />
         </div>
       </PlayerCover>
+
+      <!-- 从右侧滑出的播放列表 -->
+      <Transition name="slide-left">
+        <div
+          v-if="isPlaylistVisible"
+          class="playlist-panel absolute top-0 right-0 h-full w-80 flex flex-col pt-10 z-10"
+        >
+          <!-- 播放列表内容 -->
+          <PlayerQueue />
+        </div>
+      </Transition>
     </div>
 
     <!-- 下部：播放条 -->
@@ -45,7 +67,20 @@ const props = defineProps({
           :showStop="showStop"
           :showVolume="showVolume"
           :showPlayMode="showPlayMode"
-        />
+        >
+          <!-- 播放列表按钮 -->
+          <button
+            class="extra-btn bg-transparent"
+            @click="handleTogglePlaylist"
+            aria-label="播放列表"
+            title="播放列表"
+          >
+            <IconQueueMusic
+              class="text-2xl"
+              :style="{ color: 'var(--player-color, var(--player-color-default))' }"
+            />
+          </button>
+        </PlayerExtras>
       </div>
 
       <!-- 进度条 -->
@@ -53,42 +88,6 @@ const props = defineProps({
         <PlayerProgressBar />
       </div>
     </div>
-
-    <!-- 播放列表（暂时注释） -->
-    <!-- <div class="right-panel flex flex-col bg-white transition-all duration-300" :class="{ collapsed: !isQueueExpanded }">
-      <div class="queue-controls flex items-center justify-between p-3 border-b border-gray-200">
-        <div class="flex items-center gap-2">
-          <IconQueueMusic class="queue-icon" />
-          <h3 class="text-sm font-semibold text-gray-700">播放列表</h3>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            class="control-btn"
-            :class="{ active: isQueuePinned }"
-            @click="toggleQueuePinned"
-            :title="isQueuePinned ? '取消固定' : '固定列表'"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z" fill="currentColor"/>
-            </svg>
-          </button>
-          <button
-            class="control-btn"
-            @click="toggleQueue"
-            :title="isQueueExpanded ? '收起列表' : '展开列表'"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path v-if="isQueueExpanded" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="currentColor"/>
-              <path v-else d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="currentColor"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div v-show="isQueueExpanded" class="queue-content flex-1 overflow-hidden">
-        <PlayerQueue />
-      </div>
-    </div> -->
   </div>
 </template>
 
@@ -99,11 +98,6 @@ const props = defineProps({
 
 .cover-section {
   min-width: 0;
-}
-
-.content-overlay {
-  width: 100%;
-  height: 100%;
 }
 
 .lyrics-area {
@@ -117,5 +111,19 @@ const props = defineProps({
   .song-artist {
     color: white !important;
   }
+}
+
+/* 播放列表滑入滑出动画 */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(100%);
+}
+
+.slide-left-leave-to {
+  transform: translateX(100%);
 }
 </style>

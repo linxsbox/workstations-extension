@@ -12,7 +12,7 @@ const props = defineProps({
 <template>
   <div class="player-mini flex items-center gap-4 p-4 bg-white rounded-lg">
     <!-- 封面 -->
-    <PlayerCover size="small" />
+    <PlayerCover :size="48" />
 
     <!-- 歌曲信息和播放控制 -->
     <div class="flex-1 flex flex-col gap-2 min-w-0">

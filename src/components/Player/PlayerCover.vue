@@ -1,25 +1,29 @@
 <script setup>
-import { computed } from 'vue';
-import { storeToRefs } from 'pinia';
-import { isObject } from '@linxs/toolkit';
-import { storePlayer } from '@/stores/modules/player';
+import { computed, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { isObject } from "@linxs/toolkit";
+import { storePlayer } from "@/stores/modules/player";
+import IconMusicNote from "@/components/common/Icons/IconMusicNote.vue";
 
 const props = defineProps({
-  // 封面尺寸模式：'small' | 'medium' | 'large'
+  // 封面尺寸：支持 48, 64, 80, 200 等数字
   size: {
-    type: String,
-    default: 'medium'
+    type: Number,
+    default: 64,
   },
   // 是否显示为背景（标准模式使用）
   asBackground: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
 // Store
 const player = storePlayer();
 const { getPlayStatus } = storeToRefs(player);
+
+// 图片加载失败状态
+const imageLoadError = ref(false);
 
 /** 获取封面图片 URL */
 const coverImage = computed(() => {
@@ -28,91 +32,106 @@ const coverImage = computed(() => {
     return album.image;
   }
   // 默认封面
-  return '';
+  return "";
 });
 
-/** 获取封面尺寸类名 */
-const sizeClass = computed(() => {
-  return `cover-${props.size}`;
+// 监听封面图片变化，重置加载失败状态并预加载（背景模式）
+watch(coverImage, (newUrl) => {
+  imageLoadError.value = false;
+
+  // 背景模式下使用 Image 对象预加载检测
+  if (props.asBackground && newUrl) {
+    const img = new Image();
+    img.onload = () => {
+      // 图片加载成功，imageLoadError 保持 false
+    };
+    img.onerror = () => {
+      // 图片加载失败
+      imageLoadError.value = true;
+    };
+    img.src = newUrl;
+  }
+});
+
+/** 封面尺寸样式 */
+const sizeStyle = computed(() => {
+  return {
+    width: `${props.size}px`,
+    height: `${props.size}px`,
+  };
 });
 
 /** 是否有封面 */
 const hasCover = computed(() => {
   return !!coverImage.value;
 });
+
+/** 是否显示封面图片（有URL且未加载失败） */
+const shouldShowImage = computed(() => {
+  return hasCover.value && !imageLoadError.value;
+});
+
+/** 图片加载失败处理（非背景模式） */
+const handleImageError = () => {
+  imageLoadError.value = true;
+};
 </script>
 
 <template>
   <div
     v-if="asBackground"
-    class="player-cover-background"
-    :style="{ backgroundImage: hasCover ? `url(${coverImage})` : 'none' }"
+    class="player-cover-background relative size-full bg-cover bg-center bg-no-repeat"
+    :style="{ backgroundImage: shouldShowImage ? `url(${coverImage})` : 'none' }"
+    :class="{ 'no-cover': !shouldShowImage }"
   >
-    <slot></slot>
+    <!-- 无封面时显示默认背景和图标 -->
+    <div v-if="!shouldShowImage" class="absolute inset-0 flex items-center justify-center z-[1]">
+      <IconMusicNote class="text-black/75 text-opacity-30" :style="{ fontSize: `${props.size * 0.5}px` }" />
+    </div>
+    <div class="relative size-full z-[2]">
+      <slot></slot>
+    </div>
   </div>
   <div
     v-else
-    class="player-cover flex-none rounded-md overflow-hidden bg-gray-100"
-    :class="sizeClass"
+    class="player-cover flex-none flex items-center justify-center rounded-lg overflow-hidden bg-white"
+    :style="sizeStyle"
   >
     <img
-      v-if="hasCover"
+      v-if="shouldShowImage"
       :src="coverImage"
       :alt="getPlayStatus.title || '封面'"
-      class="w-full h-full object-cover"
+      class="size-full object-cover"
+      @error="handleImageError"
     />
-    <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="currentColor"/>
-      </svg>
-    </div>
+    <IconMusicNote
+      v-else
+      class="text-gray-400"
+      :style="{ fontSize: `${props.size * 0.5}px` }"
+    />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.player-cover {
-  &.cover-small {
-    width: 48px;
-    height: 48px;
-  }
-
-  &.cover-medium {
-    width: 80px;
-    height: 80px;
-  }
-
-  &.cover-large {
-    width: 200px;
-    height: 200px;
-  }
-}
-
 .player-cover-background {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-
   &::before {
-    content: '';
+    content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
+    z-index: 1;
     background: linear-gradient(
       180deg,
       rgba(0, 0, 0, 0.3) 0%,
       rgba(0, 0, 0, 0.6) 100%
     );
-    z-index: 1;
   }
 
-  > * {
-    position: relative;
-    z-index: 2;
+  &.no-cover::before {
+    background: radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.15) 0%,
+      transparent 70%
+    );
   }
 }
 </style>

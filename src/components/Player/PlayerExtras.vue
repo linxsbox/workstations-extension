@@ -19,6 +19,8 @@ const props = defineProps({
   showVolume: { type: Boolean, default: true },
   showBackRate: { type: Boolean, default: true },
   showPlayMode: { type: Boolean, default: true },
+  // 图标尺寸（像素）
+  iconSize: { type: Number, default: 24 },
 });
 
 // Store
@@ -168,31 +170,28 @@ const handleSwitchPlayMode = () => {
       aria-label="停止"
       title="停止"
     >
-      <IconSquare class="text-2xl" />
+      <IconSquare :style="{ fontSize: `${iconSize}px` }" />
     </button>
 
     <!-- 音量控制 -->
     <div v-if="showVolume">
       <NPopover
-        class="p-2"
         placement="bottom"
         trigger="click"
         :show-arrow="false"
       >
         <template #trigger>
           <button
-            class="extra-btn volume-btn"
+            class="extra-btn"
             :aria-label="volumeIconTitle"
             :title="volumeIconTitle"
           >
-            <component :is="currentVolumeIcon" class="volume-icon text-2xl" />
+            <component :is="currentVolumeIcon" :style="{ fontSize: `${iconSize}px` }" />
           </button>
         </template>
-        <div class="flex flex-col items-center gap-2 w-6">
+        <div class="flex flex-col items-center gap-2 w-6 p-2">
           <!-- 音量百分比 -->
-          <div
-            class="volume-value w-6 text-xs text-[var(--text-color-3)] text-center cursor-pointer"
-          >
+          <div class="w-6 text-xs text-[var(--text-color-3)] text-center cursor-pointer">
             {{ volumePercent }}
           </div>
 
@@ -209,7 +208,7 @@ const handleSwitchPlayMode = () => {
 
           <!-- 静音切换按钮 -->
           <div
-            class="mute-toggle-btn transition-colors cursor-pointer"
+            class="transition-colors cursor-pointer"
             @click="toggleMute"
             :aria-label="isMuted ? '取消静音' : '静音'"
             :title="isMuted ? '取消静音' : '静音'"
@@ -230,7 +229,8 @@ const handleSwitchPlayMode = () => {
         trigger="click"
       >
         <div
-          class="palyer-back-rate size-7 flex items-center justify-center rounded"
+          class="palyer-back-rate inline-flex items-center justify-center size-7 rounded cursor-pointer transition-all duration-200 select-none"
+          :style="{ color: 'var(--player-color, var(--player-color-default))' }"
           :title="`播放速率: ${playbackRateText}`"
         >
           {{ playbackRateText }}
@@ -246,8 +246,11 @@ const handleSwitchPlayMode = () => {
       :aria-label="currentPlayModeConfig.label"
       :title="currentPlayModeConfig.label"
     >
-      <component :is="currentPlayModeIcon" class="text-2xl" />
+      <component :is="currentPlayModeIcon" :style="{ fontSize: `${iconSize}px` }" />
     </button>
+
+    <!-- 自定义插槽 -->
+    <slot></slot>
   </div>
 </template>
 
@@ -279,23 +282,13 @@ const handleSwitchPlayMode = () => {
       opacity: 0.3;
       cursor: not-allowed;
     }
-
-    svg {
-      width: 100%;
-      height: 100%;
-    }
   }
 
   .palyer-back-rate {
-    color: var(--player-color, var(--player-color-default));
     background-color: rgba(
       var(--play-button-bg-color, var(--play-button-bg-color-default)),
       0.1
     );
-
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
 
     &:hover {
       background-color: rgba(

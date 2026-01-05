@@ -37,9 +37,9 @@ const player = storePlayer();
 /** 获取按钮尺寸类名 */
 const sizeClass = computed(() => {
   const sizeMap = {
-    small: 'w-6 h-6',
-    medium: 'w-8 h-8',
-    large: 'w-10 h-10'
+    small: 'size-6',
+    medium: 'size-8',
+    large: 'size-10'
   };
   return sizeMap[props.size] || sizeMap.medium;
 });

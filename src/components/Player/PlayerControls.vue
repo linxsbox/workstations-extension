@@ -21,7 +21,7 @@ const props = defineProps({
 
 // Store
 const player = storePlayer();
-const { getPlayStatus } = storeToRefs(player);
+const { getPlayStatus, getPlayQueue } = storeToRefs(player);
 
 /** 获取是否播放状态 */
 const getIsPlaying = computed(() => {
@@ -31,6 +31,11 @@ const getIsPlaying = computed(() => {
 /** 是否可启用播放器 */
 const getIsPlayerEnable = computed(() => {
   return getPlayStatus.value.src && !getPlayStatus.value.isError;
+});
+
+/** 是否可以上一曲/下一曲（队列必须有多于1个音源） */
+const getCanSkip = computed(() => {
+  return getPlayQueue.value.getTrackCount() > 1;
 });
 
 // 播放/暂停
@@ -68,7 +73,7 @@ const handleNext = () => {
   <div class="player-controls flex justify-center items-center gap-2">
     <button
       class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
-      :disabled="!getIsPlayerEnable"
+      :disabled="!getIsPlayerEnable || !getCanSkip"
       :style="{ color: 'var(--player-color, var(--player-color-default))' }"
       @click="handlePrevious"
       aria-label="上一曲"
@@ -87,7 +92,7 @@ const handleNext = () => {
 
     <button
       class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
-      :disabled="!getIsPlayerEnable"
+      :disabled="!getIsPlayerEnable || !getCanSkip"
       :style="{ color: 'var(--player-color, var(--player-color-default))' }"
       @click="handleNext"
       aria-label="下一曲"

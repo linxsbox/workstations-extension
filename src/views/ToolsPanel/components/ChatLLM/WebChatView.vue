@@ -265,12 +265,12 @@ const getRederMarkdown = (content) => {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
 }
 
 .input-container {
   background-color: var(--ui-common-bg);
-  box-shadow: 0px 0px 6px 3px rgb(137, 137, 137, 0.35);
+  box-shadow: 0px 0px 6px 3px rgba(var(--color-black-rgb), 0.12);
 
   .chat-input {
     --n-color: transparent !important;

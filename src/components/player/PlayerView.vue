@@ -120,7 +120,7 @@ const handleClose = () => {
     >
       <!-- Header 头部 -->
       <header
-        class="player-header absolute top-0 left-0 right-0 z-10 w-full h-10 flex items-center"
+        class="player-header absolute top-0 left-0 right-0 z-10 w-full h-10 flex items-center backdrop-blur-md"
       >
         <!-- 左侧：模式切换 -->
         <div class="header-left h-full flex-none flex items-center gap-1">
@@ -175,59 +175,45 @@ const handleClose = () => {
 </template>
 
 <style lang="scss" scoped>
+@import "@/assets/player-theme.scss";
+
 .player-view-container {
-  --player-color-default: #409eff;
-  --play-button-bg-color-default: 64, 158, 255;
-  --player-bg-default: #fff;
-  --player-border-defult: none;
-  --player-border-radius-defult: none;
-  --player-progress-slider-default: rgba(0, 145, 255, 0.6);
-  --player-progress-slider-bg-default: #fff;
-  --player-progress-slider-bar-default: rgba(216, 216, 216, 0.7);
+  background-color: var(--player-bg-default);
+}
+
+.player-header {
+  background: var(--player-header-bg);
 }
 
 .mode-option {
-  background: none;
-  border: none;
-  color: var(--text-secondary, #666);
-  border-radius: 4px;
+  color: var(--player-header-text-color);
 
   &:hover {
-    color: var(--player-color, #409eff);
-    background: rgba(64, 158, 255, 0.1);
+    color: var(--player-header-hover-color);
+    // background: var(--player-header-bg-hover);
   }
 
   &.active {
     color: var(--player-color, #409eff);
-    background: rgba(64, 158, 255, 0.15);
-    font-weight: 500;
-  }
-}
-
-.minimize-btn,
-.close-btn {
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(255, 77, 79, 0.1);
+    background: rgba(var(--play-button-bg-color, 64, 158, 255), 0.15);
   }
 }
 
 .minimize-btn {
-  color: #52c41a;
+  color: var(--player-header-icon-color);
 
   &:hover {
-    color: #52c41a;
-    background: rgba(82, 196, 26, 0.1);
+    color: var(--player-minimize-hover-color);
+    background: var(--player-minimize-hover-bg);
   }
 }
 
 .close-btn {
-  color: var(--text-secondary, #666);
+  color: var(--player-header-icon-color);
 
   &:hover {
-    color: #ff4d4f;
-    background: rgba(255, 77, 79, 0.1);
+    color: var(--player-close-hover-color);
+    background: var(--player-close-hover-bg);
   }
 }
 </style>

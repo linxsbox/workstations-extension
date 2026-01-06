@@ -10,7 +10,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="player-mini flex items-center gap-4 p-4 bg-white rounded-lg">
+  <div class="player-mini flex items-center gap-4 p-4">
     <!-- 封面 -->
     <PlayerCover :size="48" />
 
@@ -27,6 +27,13 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 .player-mini {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--player-bg-default);
+  border-radius: 8px;
+  box-shadow: var(--player-card-shadow);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    box-shadow: var(--player-card-shadow-hover);
+  }
 }
 </style>

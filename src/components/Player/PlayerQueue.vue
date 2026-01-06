@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from 'vue';
-import { storeToRefs } from 'pinia';
-import { NPopconfirm, NScrollbar } from 'naive-ui';
-import { sec2time } from '@/utils/time';
-import { storePlayer } from '@/stores/modules/player';
-import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
-import IconPlaylistRemove from '@/components/common/Icons/IconPlaylistRemove.vue';
+import { computed } from "vue";
+import { storeToRefs } from "pinia";
+import { NPopconfirm, NScrollbar } from "naive-ui";
+import { sec2time } from "@/utils/time";
+import { storePlayer } from "@/stores/modules/player";
+import IconQueueMusic from "@/components/common/Icons/IconQueueMusic.vue";
+import IconPlaylistRemove from "@/components/common/Icons/IconPlaylistRemove.vue";
+import IconDelete from "@/components/common/Icons/IconDelete.vue";
 
 const player = storePlayer();
 const { playQueue, currentTime, duration } = storeToRefs(player);
@@ -20,7 +21,7 @@ const getTrackDuration = (track, index) => {
 
 // 播放指定轨道
 const handlePlayTrack = (trackId, index) => {
-  console.log('[PlayerQueue] 双击播放 hash:', trackId, index);
+  console.log("[PlayerQueue] 双击播放 hash:", trackId, index);
 
   // 如果是当前播放的轨道
   if (isCurrentTrack(index)) {
@@ -51,11 +52,21 @@ const isCurrentTrack = (index) => {
 </script>
 
 <template>
-  <div class="player-queue flex flex-col h-full bg-white/50 rounded-lg overflow-hidden backdrop-blur-sm">
-    <div class="queue-header flex justify-between items-center px-4 py-3 bg-white/50 border-b border-gray-200">
+  <div class="player-queue flex flex-col h-full rounded-xl backdrop-blur-sm">
+    <div
+      class="queue-header flex justify-between items-center px-4 py-3 border-b"
+    >
       <div class="flex items-center gap-2">
-        <IconQueueMusic class="text-xl text-gray-600 flex-shrink-0" />
-        <h3 class="m-0 text-sm font-semibold text-gray-800">播放列表 ({{ playQueue.getTrackCount() }})</h3>
+        <IconQueueMusic
+          class="text-xl flex-shrink-0"
+          :style="{ color: 'var(--text-secondary)' }"
+        />
+        <h3
+          class="m-0 text-sm font-semibold"
+          :style="{ color: 'var(--text-primary)' }"
+        >
+          播放列表 ({{ playQueue.getTrackCount() }})
+        </h3>
       </div>
       <NPopconfirm
         v-if="playQueue.tracks.length > 0"
@@ -65,51 +76,66 @@ const isCurrentTrack = (index) => {
       >
         <template #trigger>
           <button
-            class="clear-btn flex items-center justify-center size-7 text-gray-600 bg-transparent rounded cursor-pointer transition-all hover:text-red-500"
+            class="clear-btn flex items-center justify-center size-7 bg-transparent rounded-md cursor-pointer text-[var(--color-red)] hover:bg-[var(--player-close-hover-bg)]"
             title="清空列表"
           >
-            <IconPlaylistRemove class="text-lg" />
+            <IconPlaylistRemove class="text-xl" />
           </button>
         </template>
         确定要清空播放列表吗？
       </NPopconfirm>
     </div>
 
-    <div v-if="playQueue.tracks.length === 0" class="flex-1 flex items-center justify-center text-black/75 text-sm py-10 px-5">
+    <div
+      v-if="playQueue.tracks.length === 0"
+      class="flex-1 flex items-center justify-center text-sm py-10 px-5"
+      :style="{ color: 'var(--text-secondary)' }"
+    >
       播放列表为空
     </div>
 
-    <NScrollbar v-else class="flex-1" content-class="p-1">
+    <NScrollbar v-else class="flex-1" content-class="p-2">
       <div
         v-for="(track, index) in playQueue.tracks"
         :key="track.id"
-        class="queue-item flex items-center gap-3 px-3 py-2 mb-0.5 bg-white/75 rounded-md cursor-pointer transition-all duration-200 select-none"
+        class="queue-item flex items-center gap-3 px-4 py-2.5 mb-1 rounded-lg cursor-pointer transition-all duration-200 select-none"
         :class="{ current: isCurrentTrack(index) }"
+        :style="{
+          '--queue-item-theme-color':
+            track.album?.theme?.color || 'transparent',
+        }"
         @dblclick="handlePlayTrack(track.id, index)"
       >
         <!-- 歌曲信息 -->
         <div class="flex-1 min-w-0 overflow-hidden">
-          <div class="text-[13px] font-medium text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis mb-0.5">
-            {{ track.title || '未知歌曲' }}
+          <div
+            class="text-[13px] font-medium whitespace-nowrap overflow-hidden text-ellipsis mb-1"
+            :style="{ color: 'var(--text-primary)' }"
+          >
+            {{ track.title || "未知歌曲" }}
           </div>
-          <div class="text-[11px] text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis">
-            {{ track.artist || '未知艺术家' }}
+          <div
+            class="text-[11px] whitespace-nowrap overflow-hidden text-ellipsis"
+            :style="{ color: 'var(--text-secondary)' }"
+          >
+            {{ track.artist || "未知艺术家" }}
           </div>
         </div>
 
         <!-- 右侧：时长和删除按钮 -->
         <div class="flex-none flex items-center gap-2">
-          <span class="text-xs text-gray-400 tabular-nums min-w-[40px] text-right">
+          <span
+            class="text-xs tabular-nums min-w-[40px] text-right"
+            :style="{ color: 'var(--text-secondary)' }"
+          >
             {{ sec2time(getTrackDuration(track, index)) }}
           </span>
           <button
-            class="delete-btn flex items-center justify-center w-6 h-6 p-0 bg-transparent border-none text-gray-400 cursor-pointer opacity-0 transition-all rounded hover:text-red-500 hover:bg-red-50"
+            class="delete-btn flex items-center justify-center size-6 p-0 bg-transparent border-none cursor-pointer opacity-0"
             @click="handleRemoveTrack(track.id, $event)"
             title="从列表中删除"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
-            </svg>
+            <IconDelete />
           </button>
         </div>
       </div>
@@ -118,36 +144,35 @@ const isCurrentTrack = (index) => {
 </template>
 
 <style lang="scss" scoped>
-@keyframes currentTrackGradient {
-  0%, 100% {
-    background: rgba(240, 244, 255, 0.6);
-  }
-  50% {
-    background: rgba(224, 235, 255, 0.9);
+.player-queue {
+  background-color: var(--player-queue-bg);
+  border: 1px solid var(--player-queue-panel-border);
+
+  .queue-header {
+    border-color: var(--player-queue-header-border);
   }
 }
 
 .queue-item {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: var(--queue-item-theme-color, transparent);
+    border-radius: 4px 0 0 4px;
+  }
+
   &:hover {
-    background: #f5f5f5;
+    background-color: var(--state-hover);
 
     .delete-btn {
       opacity: 1;
-      color: #ef4444;
-    }
-  }
-
-  &.current {
-    animation: currentTrackGradient 3s ease-in-out infinite;
-
-    .text-gray-800 {
-      color: var(--player-color, #409eff) !important;
-      font-weight: 600;
-    }
-
-    .text-gray-400 {
-      color: var(--player-color, #409eff) !important;
-      font-weight: 600;
+      color: var(--color-error);
     }
   }
 }

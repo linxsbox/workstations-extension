@@ -57,7 +57,7 @@ const handleAddToQueue = () => {
 
 <template>
   <button
-    class="add-to-queue-btn flex items-center justify-center rounded transition-all"
+    class="add-to-queue-btn flex items-center justify-center rounded"
     :class="{
       'opacity-50 cursor-not-allowed': disabled,
       'gap-2 px-3 py-1.5': !iconOnly
@@ -75,18 +75,14 @@ const handleAddToQueue = () => {
 
 <style lang="scss" scoped>
 .add-to-queue-btn {
-  background: none;
+  background-color: none;
   border: none;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   cursor: pointer;
 
   &:hover:not(:disabled) {
     color: var(--player-color, #409eff);
-    background: rgba(64, 158, 255, 0.1);
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.95);
+    background-color: rgba(var(--play-button-bg-color, 64, 158, 255), 0.1);
   }
 }
 </style>

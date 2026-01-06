@@ -1,4 +1,4 @@
-import { rmSecAndZone, timeBefore, sec2min } from "@/utils/time";
+import { rmSecAndZone, timeBefore } from "@/utils/time";
 import {
   hex2rgb,
   image2Base64,
@@ -78,7 +78,7 @@ export default [
             description: item.description,
             mediaUrl: item.enclosure.url,
             link: `${data.apis.details}${item.eid}`,
-            duration: sec2min(item.duration),
+            duration: item.duration, // 存储原始秒数
             timeAgo: timeBefore(+serverTime, item.pubDate),
           }));
 

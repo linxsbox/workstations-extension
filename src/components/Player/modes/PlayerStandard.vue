@@ -48,8 +48,8 @@ const handleTogglePlaylist = () => {
       <!-- 从右侧滑出的播放列表 -->
       <Transition name="slide-left">
         <div
-          v-if="isPlaylistVisible"
-          class="playlist-panel absolute top-0 right-0 h-full w-80 flex flex-col pt-10 z-10"
+          v-show="isPlaylistVisible"
+          class="playlist-panel absolute top-0 right-0 h-full w-[420px] flex flex-col pt-10 z-10 will-change-transform"
         >
           <!-- 播放列表内容 -->
           <PlayerQueue />

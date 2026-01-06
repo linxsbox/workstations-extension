@@ -175,7 +175,7 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
           description: item.description,
           mediaUrl: item.enclosure.url,
           link: `${this.sourceConfig.baseUrl}${this.sourceConfig.apis.episode}${item.eid}`,
-          duration: sec2min(item.duration),
+          duration: item.duration, // 只存原始秒数
           timeAgo: getPubDate(item.pubDate, +serverTime),
           timestamp: +new Date(item.pubDate),
         };
@@ -330,11 +330,6 @@ const getPubDate = (startTime, endTime) => {
   } else if (days) {
     return days > 365 ? "1年前" : `${days} 天前`;
   }
-};
-
-// 秒转换为分钟
-const sec2min = (sec) => {
-  return `${`${sec / 60}`.split(".")[0]} 分钟`;
 };
 
 // 移除秒和时区

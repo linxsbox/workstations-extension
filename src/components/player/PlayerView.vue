@@ -1,8 +1,7 @@
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { computed, onMounted, onBeforeUnmount } from "vue";
 import { storeToRefs } from "pinia";
 import { NModal, useDialog } from "naive-ui";
-import { isObject } from "@linxs/toolkit";
 import { storePlayer } from "@/stores/modules/player";
 import { ViewMode } from "@/stores/modules/player/types";
 import { updateMediaCover } from "./config";
@@ -27,6 +26,9 @@ const dialog = useDialog();
 // Store
 const store = storePlayer();
 const { getPlayStatus, getViewMode, getIsPlayerVisible } = storeToRefs(store);
+
+/** 主题样式（从 store computed 获取） */
+const themeStyle = computed(() => store.getThemeStyle);
 
 /** 播放器显示状态（支持双向绑定） */
 const isPlayerVisible = computed({
@@ -80,43 +82,6 @@ const currentModeInfo = computed(() => {
     modeOptions.find((opt) => opt.value === getViewMode.value) || modeOptions[1]
   );
 });
-
-/** 切换到下一个模式 */
-const switchToNextMode = () => {
-  const currentIndex = modeOptions.findIndex(
-    (opt) => opt.value === getViewMode.value
-  );
-  const nextIndex = (currentIndex + 1) % modeOptions.length;
-  store.setViewMode(modeOptions[nextIndex].value);
-};
-
-/** 监听播放源变化，更新封面等 */
-watch(
-  () => getPlayStatus.value.src,
-  (newSrc) => {
-    if (newSrc) {
-      const album = getPlayStatus.value.album;
-      const isAlbumInfo = album && isObject(album);
-      if (isAlbumInfo) {
-        if (album.image) {
-          updateMediaCover(album, getPlayStatus.value.title);
-        }
-        if (isObject(album.theme) && album.theme.color) {
-          setThemeStyle(album.theme);
-        }
-      }
-    }
-  }
-);
-
-const themeStyle = ref({});
-const setThemeStyle = (theme) => {
-  themeStyle.value = {
-    "--player-color": theme.color,
-    "--play-button-bg-color": theme.rgb,
-    "--player-progress-slider": `rgba(${theme.rgb}, 0.6)`,
-  };
-};
 
 /** 最小化播放器 */
 const handleMinimize = () => {
@@ -241,7 +206,6 @@ const handleClose = () => {
 
 .minimize-btn,
 .close-btn {
-  color: var(--text-secondary, #666);
   transition: all 0.2s;
 
   &:hover {
@@ -249,13 +213,21 @@ const handleClose = () => {
   }
 }
 
-.minimize-btn:hover {
-  color: var(--player-color, #409eff);
-  background: rgba(64, 158, 255, 0.1);
+.minimize-btn {
+  color: #52c41a;
+
+  &:hover {
+    color: #52c41a;
+    background: rgba(82, 196, 26, 0.1);
+  }
 }
 
-.close-btn:hover {
-  color: #ff4d4f;
-  background: rgba(255, 77, 79, 0.1);
+.close-btn {
+  color: var(--text-secondary, #666);
+
+  &:hover {
+    color: #ff4d4f;
+    background: rgba(255, 77, 79, 0.1);
+  }
 }
 </style>

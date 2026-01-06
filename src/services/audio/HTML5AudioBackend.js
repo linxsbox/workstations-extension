@@ -9,6 +9,7 @@ export class HTML5AudioBackend extends AudioBackend {
   constructor(options = {}) {
     super();
     this.audio = new Audio();
+    this.audio.preload = 'metadata'; // 只加载元数据，避免预加载整个文件
     this.volume = options.volume || 1;
     this.playbackRate = options.playbackRate || 1;
 
@@ -33,7 +34,7 @@ export class HTML5AudioBackend extends AudioBackend {
       'pause': 'pause',
       'ended': 'ended',
       'error': 'error',
-      'timeupdate': 'timeupdate',
+      // 注意：timeupdate 单独处理（带节流），不在此列表中
       'durationchange': 'durationchange',
       'seeked': 'seeked',
       'seeking': 'seeking',
@@ -52,11 +53,11 @@ export class HTML5AudioBackend extends AudioBackend {
       });
     });
 
-    // 处理时间更新事件，定期触发
+    // 处理时间更新事件，定期触发（每100ms最多触发一次）
     let lastEmitTime = 0;
     this.audio.addEventListener('timeupdate', () => {
       const now = Date.now();
-      if (now - lastEmitTime > 100) {  // 每100ms最多触发一次
+      if (now - lastEmitTime > 100) {
         lastEmitTime = now;
         this._emit('timeupdate', this.getCurrentTime());
       }

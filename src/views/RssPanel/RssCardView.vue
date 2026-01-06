@@ -2,6 +2,7 @@
 import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { isObject, isEmptyObject } from "@linxs/toolkit";
+import { sec2min } from "@/utils/time";
 import PlayButton from "@/components/player/PlayButton.vue";
 import AddToQueueButton from "@/components/player/AddToQueueButton.vue";
 import { storePlayer } from "@/stores/modules/player";
@@ -41,7 +42,7 @@ const buildTrackData = () => {
     src: props.data.mediaUrl,
     album: getAlbumInfo(),
     pid: props.pid || "",
-    duration: props.data.duration || 0,
+    duration: props.data.duration || 0, // 原始秒数
     artist: props.data.author || "",
   };
 };
@@ -119,7 +120,7 @@ const clickPause = () => {
         </div>
         <footer class="card-footer text-xs">
           <div v-if="props.data.duration || props.data.timeAgo">
-            <span v-if="props.data.duration">{{ props.data.duration }} ·</span>
+            <span v-if="props.data.duration">{{ sec2min(props.data.duration) }} 分钟 ·</span>
             {{ props.data.timeAgo || "" }}
           </div>
           <div

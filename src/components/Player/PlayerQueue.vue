@@ -2,20 +2,13 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import { NPopconfirm, NScrollbar } from 'naive-ui';
+import { sec2time } from '@/utils/time';
 import { storePlayer } from '@/stores/modules/player';
 import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
 import IconPlaylistRemove from '@/components/common/Icons/IconPlaylistRemove.vue';
 
 const player = storePlayer();
 const { playQueue, currentTime, duration } = storeToRefs(player);
-
-// 格式化时间
-const formatTime = (seconds) => {
-  if (!seconds || seconds === 0) return '--:--';
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-};
 
 // 获取轨道时长（当前播放的使用实时时长）
 const getTrackDuration = (track, index) => {
@@ -27,11 +20,22 @@ const getTrackDuration = (track, index) => {
 
 // 播放指定轨道
 const handlePlayTrack = (trackId, index) => {
-  // 如果是当前播放的轨道，直接返回
+  console.log('[PlayerQueue] 双击播放 hash:', trackId, index);
+
+  // 如果是当前播放的轨道
   if (isCurrentTrack(index)) {
+    // 检查是否已加载音频
+    if (player.getPlayStatus.src) {
+      // 已加载，切换播放状态
+      player.togglePlay();
+    } else {
+      // 未加载，重新播放
+      player.playByHash(trackId);
+    }
     return;
   }
-  player.playTrackFromQueue(trackId);
+
+  player.playByHash(trackId);
 };
 
 // 删除轨道
@@ -47,7 +51,7 @@ const isCurrentTrack = (index) => {
 </script>
 
 <template>
-  <div class="player-queue flex flex-col h-full bg-white/50 rounded-lg overflow-hidden">
+  <div class="player-queue flex flex-col h-full bg-white/50 rounded-lg overflow-hidden backdrop-blur-sm">
     <div class="queue-header flex justify-between items-center px-4 py-3 bg-white/50 border-b border-gray-200">
       <div class="flex items-center gap-2">
         <IconQueueMusic class="text-xl text-gray-600 flex-shrink-0" />
@@ -79,16 +83,11 @@ const isCurrentTrack = (index) => {
       <div
         v-for="(track, index) in playQueue.tracks"
         :key="track.id"
-        class="queue-item"
+        class="queue-item flex items-center gap-3 px-3 py-2 mb-0.5 bg-white/75 rounded-md cursor-pointer transition-all duration-200 select-none"
         :class="{ current: isCurrentTrack(index) }"
         @dblclick="handlePlayTrack(track.id, index)"
       >
-        <!-- 左侧：编号 -->
-        <div class="flex-none w-6 h-6 flex items-center justify-center">
-          <span class="text-xs text-gray-400 font-medium">{{ index + 1 }}</span>
-        </div>
-
-        <!-- 中间：歌曲信息 -->
+        <!-- 歌曲信息 -->
         <div class="flex-1 min-w-0 overflow-hidden">
           <div class="text-[13px] font-medium text-gray-800 whitespace-nowrap overflow-hidden text-ellipsis mb-0.5">
             {{ track.title || '未知歌曲' }}
@@ -101,7 +100,7 @@ const isCurrentTrack = (index) => {
         <!-- 右侧：时长和删除按钮 -->
         <div class="flex-none flex items-center gap-2">
           <span class="text-xs text-gray-400 tabular-nums min-w-[40px] text-right">
-            {{ formatTime(getTrackDuration(track, index)) }}
+            {{ sec2time(getTrackDuration(track, index)) }}
           </span>
           <button
             class="delete-btn flex items-center justify-center w-6 h-6 p-0 bg-transparent border-none text-gray-400 cursor-pointer opacity-0 transition-all rounded hover:text-red-500 hover:bg-red-50"
@@ -119,29 +118,27 @@ const isCurrentTrack = (index) => {
 </template>
 
 <style lang="scss" scoped>
-.queue-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  margin-bottom: 2px;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  user-select: none;
+@keyframes currentTrackGradient {
+  0%, 100% {
+    background: rgba(240, 244, 255, 0.6);
+  }
+  50% {
+    background: rgba(224, 235, 255, 0.9);
+  }
+}
 
+.queue-item {
   &:hover {
     background: #f5f5f5;
 
     .delete-btn {
       opacity: 1;
+      color: #ef4444;
     }
   }
 
   &.current {
-    background: #f0f4ff;
-    border-left: 3px solid var(--player-color, #409eff);
+    animation: currentTrackGradient 3s ease-in-out infinite;
 
     .text-gray-800 {
       color: var(--player-color, #409eff) !important;

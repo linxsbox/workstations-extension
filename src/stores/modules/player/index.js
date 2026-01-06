@@ -1,9 +1,18 @@
 import { defineStore } from "pinia";
 import { storageManager, STORAGE_KEYS } from "../../storage";
-import { audioManager } from "@/services/audio/manager";
+import { createAudioManager } from "@/services/audio/manager";
 import { PlayMode, PlayModeConfig, Playlist, PlayQueue, ViewMode } from "./types";
 
 const MAX_HISTORY_LENGTH = 50;
+
+// 🔧 临时配置：切换音频后端
+// 可选值: 'HTML5Audio' | 'WebAudio' | 'HybridAudio' | null (自动选择)
+const PREFERRED_BACKEND = 'HTML5Audio'; // 👈 改这里来切换后端
+
+// 创建音频管理器实例
+const audioManager = createAudioManager({
+  preferredBackend: PREFERRED_BACKEND
+});
 
 export const storePlayer = defineStore("player", {
   state: () => ({
@@ -22,16 +31,12 @@ export const storePlayer = defineStore("player", {
     currentTime: 0,
     duration: 0,
 
+    // 当前主题色
+    currentTheme: null, // { color: "#xxx", rgb: "r, g, b" }
+
     // 控制选项
     volume: storageManager.get(STORAGE_KEYS.VOLUME, 0.8),
     playbackRate: storageManager.getSession(STORAGE_KEYS.PLAYBACK_RATE, 1), // 从 sessionStorage 读取，默认 1
-
-    // 播放历史
-    playHistory: storageManager.get(STORAGE_KEYS.PLAY_HISTORY) || [],
-
-    // 播放列表
-    playlists: storageManager.get(STORAGE_KEYS.PLAYLISTS) || [],
-    currentPlaylistId: null,
 
     // 播放队列和循环模式
     playQueue: new PlayQueue(),
@@ -45,19 +50,25 @@ export const storePlayer = defineStore("player", {
 
     // 后端信息
     backendName: "Unknown",
+
+    // 音频管理器初始化状态
+    isAudioManagerInitialized: false,
   }),
 
   getters: {
     getPlayStatus: (state) => state.playStatus,
-    getPlaylists: (state) => state.playlists,
-    getCurrentPlaylist: (state) => {
-      if (!state.currentPlaylistId) return null;
-      return state.playlists.find(p => p.id === state.currentPlaylistId);
+    getCurrentTheme: (state) => state.currentTheme,
+    getThemeStyle: (state) => {
+      if (!state.currentTheme) return {};
+      return {
+        "--player-color": state.currentTheme.color,
+        "--play-button-bg-color": state.currentTheme.rgb,
+        "--player-progress-slider": `rgba(${state.currentTheme.rgb}, 0.6)`,
+      };
     },
     getPlayQueue: (state) => state.playQueue,
     getPlayMode: (state) => state.playMode,
     getPlayModeConfig: (state) => PlayModeConfig[state.playMode],
-    getPlayHistory: (state) => state.playHistory,
     getViewMode: (state) => state.viewMode,
     getIsPlayerVisible: (state) => state.isPlayerVisible,
     isPlayable: (state) => state.playStatus.src && !state.playStatus.isError,
@@ -73,11 +84,35 @@ export const storePlayer = defineStore("player", {
 
   actions: {
     /**
+     * 生成轨道的稳定 hash ID
+     */
+    generateTrackHash(track) {
+      const key = `${track.src || ''}_${track.title || ''}_${track.artist || ''}`;
+      // 简单 hash 算法
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        const char = key.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      return `track_${Math.abs(hash).toString(36)}`;
+    },
+
+    /**
      * 初始化音频管理器事件监听
      */
     async initAudioManager() {
+      // 防止重复初始化
+      if (this.isAudioManagerInitialized) {
+        console.warn('[Player] Audio manager already initialized, skipping...');
+        return;
+      }
+
       try {
         await audioManager.waitForInit();
+
+        // 加载保存的队列
+        this.loadPlayQueue();
 
         // 时间更新
         audioManager.on("timeupdate", (time) => {
@@ -118,7 +153,10 @@ export const storePlayer = defineStore("player", {
         });
 
         this.backendName = audioManager.getBackendName();
-        console.log(`Player initialized with backend: ${this.backendName}`);
+
+        // 标记已初始化
+        this.isAudioManagerInitialized = true;
+        console.log(`[Player] Audio manager initialized with backend: ${this.backendName}`);
       } catch (error) {
         console.error("Failed to initialize audio manager:", error);
       }
@@ -136,6 +174,20 @@ export const storePlayer = defineStore("player", {
       this.playStatus.album = metadata.album || null;
       this.playStatus.isError = false;
       this.playStatus.isLoading = true;
+
+      // 提取主题色（如果存在）
+      if (metadata.album?.theme) {
+        const theme = metadata.album.theme;
+        // 如果已经有 color 和 rgb，直接使用
+        if (theme.color && theme.rgb) {
+          this.currentTheme = theme;
+          console.log('[Player] 应用主题色:', theme);
+        }
+      } else {
+        // 没有主题色，清空（使用默认色）
+        this.currentTheme = null;
+        console.log('[Player] 使用默认主题色');
+      }
 
       try {
         const success = await audioManager.load(src, metadata);
@@ -197,7 +249,11 @@ export const storePlayer = defineStore("player", {
      * 停止
      */
     stop() {
-      return audioManager.stop();
+      const success = audioManager.stop();
+      if (success) {
+        this.playStatus.isPlaying = false;
+      }
+      return success;
     },
 
     /**
@@ -241,13 +297,6 @@ export const storePlayer = defineStore("player", {
     },
 
     /**
-     * 设置当前播放信息并添加到历史记录
-     */
-    setCurrentAudio(audio) {
-      this.addToHistory(audio);
-    },
-
-    /**
      * 重置播放信息
      */
     resetPlayer() {
@@ -265,45 +314,17 @@ export const storePlayer = defineStore("player", {
     },
 
     /**
-     * 添加到播放历史
-     */
-    addToHistory(audio) {
-      this.playHistory = this.playHistory.filter(
-        (item) => item.src !== audio.src
-      );
-      this.playHistory.unshift({
-        ...audio,
-        playedAt: new Date().toISOString(),
-      });
-      if (this.playHistory.length > MAX_HISTORY_LENGTH) {
-        this.playHistory = this.playHistory.slice(0, MAX_HISTORY_LENGTH);
-      }
-      storageManager.set(STORAGE_KEYS.PLAY_HISTORY, this.playHistory);
-    },
-
-    /**
-     * 清空播放历史
-     */
-    clearHistory() {
-      this.playHistory = [];
-      storageManager.set(STORAGE_KEYS.PLAY_HISTORY, []);
-    },
-
-    /**
-     * 添加到播放列表（队列末尾）
-     */
-    addToPlaylist(audio) {
-      if (!this.playQueue.tracks.some((item) => item.src === audio.src)) {
-        this.playQueue.addTrack(audio);
-      }
-    },
-
-    /**
      * 加入队列 - 添加到队列末尾
      */
     addToQueue(track) {
-      if (!this.playQueue.tracks.some((item) => item.src === track.src)) {
-        this.playQueue.addTrack(track);
+      const hash = this.generateTrackHash(track);
+      if (!this.playQueue.tracks.some((item) => item.id === hash)) {
+        const trackWithHash = {
+          ...track,
+          id: hash,
+        };
+        this.playQueue.addTrack(trackWithHash);
+        this.savePlayQueue();
         return true;
       }
       return false;
@@ -313,41 +334,49 @@ export const storePlayer = defineStore("player", {
      * 加入播放 - 添加为下一首播放
      */
     addToPlayNext(track) {
+      const hash = this.generateTrackHash(track);
+
       // 如果队列中已存在，先移除
-      const existingIndex = this.playQueue.tracks.findIndex((item) => item.src === track.src);
+      const existingIndex = this.playQueue.tracks.findIndex((item) => item.id === hash);
       if (existingIndex > -1) {
-        this.playQueue.removeTrack(this.playQueue.tracks[existingIndex].id);
+        this.playQueue.removeTrack(hash);
       }
 
       // 插入到当前播放索引的下一位
       const nextIndex = this.playQueue.currentIndex + 1;
       this.playQueue.tracks.splice(nextIndex, 0, {
         ...track,
-        id: track.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: hash,
       });
 
+      this.savePlayQueue();
       return true;
     },
 
     /**
      * 添加到队列并立即播放
      */
-    addAndPlay(track) {
+    async addAndPlay(track) {
+      const hash = this.generateTrackHash(track);
+
       // 如果队列中已存在该轨道，先移除
-      const existingIndex = this.playQueue.tracks.findIndex((item) => item.src === track.src);
+      const existingIndex = this.playQueue.tracks.findIndex((item) => item.id === hash);
       if (existingIndex > -1) {
-        this.playQueue.removeTrack(this.playQueue.tracks[existingIndex].id);
+        this.playQueue.removeTrack(hash);
       }
 
       // 添加轨道到队列
-      const trackWithId = {
+      const trackWithHash = {
         ...track,
-        id: track.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: hash,
       };
-      this.playQueue.addTrack(trackWithId);
+      this.playQueue.addTrack(trackWithHash);
+
+      // 保存队列
+      this.savePlayQueue();
 
       // 立即跳转到该轨道并播放
-      this.playTrackFromQueue(trackWithId.id);
+      await this.playTrackFromQueue(hash);
 
       return true;
     },
@@ -357,6 +386,7 @@ export const storePlayer = defineStore("player", {
      */
     clearPlaylist() {
       this.playQueue.clear();
+      this.savePlayQueue();
     },
 
     /**
@@ -369,104 +399,43 @@ export const storePlayer = defineStore("player", {
     // ==================== 播放队列相关方法 ====================
 
     /**
-     * 创建播放列表
-     */
-    createPlaylist(name, description = "") {
-      const playlist = new Playlist({
-        name,
-        description,
-      });
-      this.playlists.push(playlist);
-      this.savePlaylists();
-      return playlist;
-    },
-
-    /**
-     * 删除播放列表
-     */
-    deletePlaylist(playlistId) {
-      const index = this.playlists.findIndex(p => p.id === playlistId);
-      if (index > -1) {
-        this.playlists.splice(index, 1);
-        if (this.currentPlaylistId === playlistId) {
-          this.currentPlaylistId = null;
-        }
-        this.savePlaylists();
-        return true;
-      }
-      return false;
-    },
-
-    /**
-     * 获取播放列表
-     */
-    getPlaylistById(playlistId) {
-      return this.playlists.find(p => p.id === playlistId);
-    },
-
-    /**
-     * 添加轨道到播放列表
-     */
-    addTrackToPlaylist(playlistId, track) {
-      const playlist = this.getPlaylistById(playlistId);
-      if (playlist && playlist.addTrack(track)) {
-        this.savePlaylists();
-        return true;
-      }
-      return false;
-    },
-
-    /**
-     * 从播放列表移除轨道
-     */
-    removeTrackFromPlaylist(playlistId, trackId) {
-      const playlist = this.getPlaylistById(playlistId);
-      if (playlist && playlist.removeTrack(trackId)) {
-        this.savePlaylists();
-        return true;
-      }
-      return false;
-    },
-
-    /**
-     * 从播放列表初始化队列
-     */
-    initQueueFromPlaylist(playlistId) {
-      const playlist = this.getPlaylistById(playlistId);
-      if (!playlist) return false;
-
-      this.playQueue = PlayQueue.fromPlaylist(playlist, this.playMode);
-      this.currentPlaylistId = playlistId;
-
-      // 加载第一首
-      const firstTrack = this.playQueue.getCurrentTrack();
-      if (firstTrack) {
-        this.loadAudio(firstTrack.src, firstTrack);
-      }
-
-      return true;
-    },
-
-    /**
      * 播放列表中的指定轨道
      */
-    playTrackFromQueue(trackId) {
+    async playTrackFromQueue(trackId) {
+      console.log('[Player] playTrackFromQueue 调用, trackId:', trackId);
       const track = this.playQueue.jumpToTrack(trackId);
+      console.log('[Player] jumpToTrack 返回:', track);
       if (track) {
-        this.loadAudio(track.src, track);
+        await this.loadAudio(track.src, track);
         this.play();
         return true;
       }
+      console.warn('[Player] playTrackFromQueue 未找到轨道');
+      return false;
+    },
+
+    /**
+     * 根据 hash 播放队列中的轨道
+     */
+    playByHash(hashCode) {
+      console.log('[Player] 根据 hash 播放:', hashCode);
+      console.log('[Player] 当前队列:', this.playQueue.tracks);
+      const track = this.playQueue.tracks.find(t => t.id === hashCode);
+      if (track) {
+        console.log('[Player] 找到轨道:', track);
+        return this.playTrackFromQueue(hashCode);
+      }
+      console.warn('[Player] 未找到 hash 对应的轨道:', hashCode);
       return false;
     },
 
     /**
      * 下一首
      */
-    playNext() {
+    async playNext() {
       const nextTrack = this.playQueue.next();
       if (nextTrack) {
-        this.loadAudio(nextTrack.src, nextTrack);
+        await this.loadAudio(nextTrack.src, nextTrack);
         this.play();
         return true;
       }
@@ -476,10 +445,10 @@ export const storePlayer = defineStore("player", {
     /**
      * 上一首
      */
-    playPrevious() {
+    async playPrevious() {
       const prevTrack = this.playQueue.previous();
       if (prevTrack) {
-        this.loadAudio(prevTrack.src, prevTrack);
+        await this.loadAudio(prevTrack.src, prevTrack);
         this.play();
         return true;
       }
@@ -552,21 +521,67 @@ export const storePlayer = defineStore("player", {
      * 从队列移除轨道
      */
     removeFromQueue(trackId) {
-      return this.playQueue.removeTrack(trackId);
+      const result = this.playQueue.removeTrack(trackId);
+      if (result) {
+        this.savePlayQueue();
+      }
+      return result;
     },
 
     /**
      * 重新排序队列
      */
     reorderQueue(fromIndex, toIndex) {
-      return this.playQueue.reorder(fromIndex, toIndex);
+      const result = this.playQueue.reorder(fromIndex, toIndex);
+      if (result) {
+        this.savePlayQueue();
+      }
+      return result;
     },
 
     /**
-     * 保存播放列表到存储
+     * 保存播放队列到本地存储
      */
-    savePlaylists() {
-      storageManager.set(STORAGE_KEYS.PLAYLISTS, this.playlists);
+    savePlayQueue() {
+      // 确保所有 track 都有 id
+      const tracksWithId = this.playQueue.tracks.map(track => ({
+        ...track,
+        id: track.id || this.generateTrackHash(track)
+      }));
+
+      const currentTrack = this.playQueue.getCurrentTrack();
+      const currentHash = currentTrack ? currentTrack.id : null;
+
+      storageManager.set(STORAGE_KEYS.PLAY_QUEUE, {
+        tracks: tracksWithId,
+        currentHash: currentHash,
+      });
+      console.log('[Player] 队列已保存到本地存储, currentHash:', currentHash);
+    },
+
+    /**
+     * 从本地存储加载播放队列
+     */
+    loadPlayQueue() {
+      const saved = storageManager.get(STORAGE_KEYS.PLAY_QUEUE);
+      console.log('[Player] 从本地存储读取队列:', saved);
+      if (saved && saved.tracks) {
+        this.playQueue.tracks = saved.tracks || [];
+
+        // 通过 currentHash 找到对应的 index
+        if (saved.currentHash) {
+          const index = this.playQueue.tracks.findIndex(t => t.id === saved.currentHash);
+          this.playQueue.currentIndex = index >= 0 ? index : 0;
+          console.log('[Player] 恢复播放位置, currentHash:', saved.currentHash, 'index:', this.playQueue.currentIndex);
+        } else {
+          this.playQueue.currentIndex = 0;
+        }
+
+        console.log('[Player] 已加载队列:', this.playQueue.tracks.length, '首');
+        console.log('[Player] 队列详情:', this.playQueue.tracks);
+      } else {
+        console.log('[Player] 本地存储无队列数据');
+      }
     },
 
     /**

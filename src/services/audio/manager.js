@@ -354,5 +354,19 @@ export class AudioManager {
   }
 }
 
-// 导出单例
+// 导出单例（默认自动选择后端）
 export const audioManager = new AudioManager();
+
+/**
+ * 创建新的 AudioManager 实例（用于自定义配置）
+ * @param {Object} options - 配置选项
+ * @param {string} options.preferredBackend - 优先使用的后端 ('HTML5Audio' | 'WebAudio' | 'HybridAudio')
+ * @returns {AudioManager}
+ *
+ * @example
+ * // 使用 HTML5 Audio 后端
+ * const manager = createAudioManager({ preferredBackend: 'HTML5Audio' });
+ */
+export function createAudioManager(options = {}) {
+  return new AudioManager(options);
+}

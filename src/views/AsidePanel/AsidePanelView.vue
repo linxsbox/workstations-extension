@@ -1,4 +1,5 @@
 <script setup>
+import { version } from "../../../package.json";
 import HeaderView from "./HeaderView.vue";
 import MenuView from "./MenuView.vue";
 import ExtendView from "./ExtendView.vue";
@@ -16,7 +17,9 @@ import ExtendView from "./ExtendView.vue";
         <ExtendView />
       </div>
     </section>
-    <section class="panel-footer"> </section>
+    <section class="panel-footer">
+      <div class="version-info">v{{ version }}</div>
+    </section>
   </aside>
 </template>
 
@@ -26,6 +29,19 @@ import ExtendView from "./ExtendView.vue";
 
   .dividing-line {
     background-color: var(--border-color);
+  }
+
+  .panel-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+
+    .version-info {
+      font-size: 12px;
+      color: var(--text-color-3);
+    }
   }
 }
 </style>

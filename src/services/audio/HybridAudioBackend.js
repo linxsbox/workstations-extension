@@ -45,6 +45,7 @@ export class HybridAudioBackend extends AudioBackend {
     // 2. 创建 Audio 元素
     this.audio = new Audio();
     this.audio.crossOrigin = 'anonymous'; // 支持跨域资源
+    this.audio.preload = 'metadata'; // ⚠️ 只加载元数据，避免预加载整个文件
 
     // 3. 创建 MediaElementSource - ⚠️ 检查支持性！
     // 某些浏览器或某些情况下此方法不可用
@@ -329,7 +330,7 @@ export class HybridAudioBackend extends AudioBackend {
       'pause': 'pause',
       'ended': 'ended',
       'error': 'error',
-      'timeupdate': 'timeupdate',
+      // 注意：timeupdate 单独处理（带节流），不在此列表中
       'durationchange': 'durationchange',
       'seeked': 'seeked',
       'seeking': 'seeking',

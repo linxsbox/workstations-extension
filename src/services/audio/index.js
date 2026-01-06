@@ -40,9 +40,31 @@ export const BACKEND_PRIORITY = [
 
 /**
  * 自动选择合适的后端
+ * @param {Object} options - 配置选项
+ * @param {string} options.preferredBackend - 优先使用的后端 ('HTML5Audio' | 'WebAudio' | 'HybridAudio')
  * @returns {AudioBackend} 音频后端实例
  */
 export async function selectBackend(options = {}) {
+  const { preferredBackend } = options;
+
+  // 如果指定了首选后端，先尝试使用它
+  if (preferredBackend) {
+    const preferred = BACKEND_PRIORITY.find(b => b.name === preferredBackend);
+    if (preferred && preferred.supported()) {
+      try {
+        const BackendClass = await preferred.backend();
+        console.log(`Selected preferred audio backend: ${preferredBackend}`);
+        return new BackendClass(options);
+      } catch (error) {
+        console.warn(`Failed to initialize preferred ${preferredBackend} backend:`, error);
+        console.log('Falling back to automatic selection...');
+      }
+    } else {
+      console.warn(`Preferred backend ${preferredBackend} not supported, falling back...`);
+    }
+  }
+
+  // 自动选择（原有逻辑）
   for (const { name, backend: getBackend, supported } of BACKEND_PRIORITY) {
     if (supported()) {
       try {

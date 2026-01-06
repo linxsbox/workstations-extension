@@ -54,7 +54,7 @@ const setCurrentStateProgressWidth = (width = 0, remainingTime, event = '') => {
     if (getIsPlaying.value) {
       const time =
         remainingTime === null
-          ? currentTime.value || duration.value
+          ? duration.value - currentTime.value  // 使用剩余时间
           : remainingTime;
       style.push(`transition: width ${time / playbackRate.value}s linear`);
     }

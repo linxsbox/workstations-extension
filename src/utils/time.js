@@ -69,17 +69,37 @@ export function timeBefore(currentTime, targetTime) {
 }
 
 /**
- * 将秒转换为分钟（格式化为 mm:ss）
+ * 将秒转换为时间格式（hh:mm:ss 或 mm:ss）
  * @param {number} seconds - 秒数
- * @returns {string} 格式化后的时间字符串，如 "03:45"
+ * @returns {string} 格式化后的时间字符串，如 "03:45" 或 "01:23:45"
  */
-export function sec2min(seconds) {
+export function sec2time(seconds) {
   if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) {
     return '00:00'
   }
 
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
 
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  // 小于 1 小时，只显示 mm:ss
+  if (h === 0) {
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+
+  // 大于等于 1 小时，显示 hh:mm:ss
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+/**
+ * 将秒转换为分钟数
+ * @param {number} seconds - 秒数
+ * @returns {number} 分钟数
+ */
+export function sec2min(seconds) {
+  if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) {
+    return 0
+  }
+
+  return Math.floor(seconds / 60)
 }

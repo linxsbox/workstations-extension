@@ -20,8 +20,7 @@ export const STORAGE_KEYS = {
   // 播放器相关
   VOLUME: "USER_VOLUME",
   PLAYBACK_RATE: "USER_PLAYBACK_RATE", // 使用 sessionStorage
-  PLAY_HISTORY: "PLAY_HISTORY",
-  PLAYLISTS: "USER_PLAYLISTS",
+  PLAY_QUEUE: "PLAYER_PLAY_QUEUE", // 播放队列
   VIEW_MODE: "PLAYER_VIEW_MODE", // 播放器视图模式
 
   // 业务数据

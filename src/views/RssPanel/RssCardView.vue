@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
+import { useMessage } from "naive-ui";
 import { isObject, isEmptyObject } from "@linxs/toolkit";
 import { sec2min } from "@/utils/time";
 import PlayButton from "@/components/player/PlayButton.vue";
@@ -25,6 +26,7 @@ const props = defineProps({
 
 const store = storePlayer();
 const { getPlayStatus } = storeToRefs(store);
+const message = useMessage();
 
 onMounted(() => {});
 
@@ -78,12 +80,27 @@ const clickPause = () => {
     store.pause();
   }
 };
+
+// 添加到队列成功
+const handleAddToQueueSuccess = (track) => {
+  message.success(`已添加到播放列表: ${track.title}`);
+};
+
+// 添加到队列重复
+const handleAddToQueueDuplicate = (track) => {
+  message.warning(`${track.title} 已在播放列表中`);
+};
+
+// 添加到队列失败
+const handleAddToQueueError = (error) => {
+  message.error(`添加失败: ${error?.message || "未知错误"}`);
+};
 </script>
 
 <template>
   <section class="rss-card flex rounded-md">
     <div class="card-panel flex w-full h-full gap-3 p-2 rounded-md">
-      <div class="left flex-none flex flex-col gap-4 pl-1">
+      <div class="left flex-none flex flex-col items-center gap-4 pl-1">
         <PlayButton
           class="text-4xl text-[var(--origin-theme)]"
           v-if="props.data.mediaUrl"
@@ -96,7 +113,9 @@ const clickPause = () => {
           v-if="props.data.mediaUrl"
           class="text-[var(--origin-theme)]"
           :track="buildTrackData()"
-          :iconSize="36"
+          @success="handleAddToQueueSuccess"
+          @duplicate="handleAddToQueueDuplicate"
+          @error="handleAddToQueueError"
         />
       </div>
       <div class="right flex-1 flex flex-col gap-1">

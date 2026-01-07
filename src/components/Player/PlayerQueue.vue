@@ -19,12 +19,16 @@ const getTrackDuration = (track, index) => {
   return track.duration || 0;
 };
 
-// 播放指定轨道
-const handlePlayTrack = (trackId, index) => {
-  console.log("[PlayerQueue] 双击播放 hash:", trackId, index);
+// 判断是否是当前播放的轨道
+const isCurrentTrack = (trackId) => {
+  const currentTrack = playQueue.value.getCurrentTrack();
+  return currentTrack?.id === trackId;
+};
 
+// 播放指定轨道
+const handlePlayTrack = (trackId) => {
   // 如果是当前播放的轨道
-  if (isCurrentTrack(index)) {
+  if (isCurrentTrack(trackId)) {
     // 检查是否已加载音频
     if (player.getPlayStatus.src) {
       // 已加载，切换播放状态
@@ -45,16 +49,20 @@ const handleRemoveTrack = (trackId, event) => {
   player.removeFromQueue(trackId);
 };
 
-// 判断是否是当前播放的轨道
-const isCurrentTrack = (index) => {
-  return index === playQueue.value.currentIndex;
+// 获取轨道的主题样式
+const getTrackStyle = (track) => {
+  const { color, rgb } = track.album?.theme || {};
+  return {
+    ...(color && { "--album-theme-color": color }),
+    ...(rgb && { "--album-theme-rgb": rgb }),
+  };
 };
 </script>
 
 <template>
-  <div class="player-queue flex flex-col h-full rounded-xl backdrop-blur-sm">
+  <div class="player-queue flex flex-col h-full rounded-xl backdrop-blur-md">
     <div
-      class="queue-header flex justify-between items-center px-4 py-3 border-b"
+      class="queue-header flex justify-between items-center px-4 py-3 border-b rounded-t-xl"
     >
       <div class="flex items-center gap-2">
         <IconQueueMusic
@@ -76,7 +84,7 @@ const isCurrentTrack = (index) => {
       >
         <template #trigger>
           <button
-            class="clear-btn flex items-center justify-center size-7 bg-transparent rounded-md cursor-pointer text-[var(--color-red)] hover:bg-[var(--player-close-hover-bg)]"
+            class="clear-btn flex items-center justify-center size-7 bg-transparent rounded-md cursor-pointer"
             title="清空列表"
           >
             <IconPlaylistRemove class="text-xl" />
@@ -88,35 +96,30 @@ const isCurrentTrack = (index) => {
 
     <div
       v-if="playQueue.tracks.length === 0"
-      class="flex-1 flex items-center justify-center text-sm py-10 px-5"
+      class="flex-1 flex items-center justify-center text-sm py-10 px-5 rounded-b-xl"
       :style="{ color: 'var(--text-secondary)' }"
     >
       播放列表为空
     </div>
 
-    <NScrollbar v-else class="flex-1" content-class="p-2">
+    <NScrollbar v-else class="queue-list flex-1 rounded-b-xl" content-class="p-2">
       <div
         v-for="(track, index) in playQueue.tracks"
         :key="track.id"
-        class="queue-item flex items-center gap-3 px-4 py-2.5 mb-1 rounded-lg cursor-pointer transition-all duration-200 select-none"
-        :class="{ current: isCurrentTrack(index) }"
-        :style="{
-          '--queue-item-theme-color':
-            track.album?.theme?.color || 'transparent',
-        }"
-        @dblclick="handlePlayTrack(track.id, index)"
+        class="queue-item flex items-center gap-3 px-4 py-2.5 mb-1 rounded-lg cursor-pointer select-none"
+        :class="{ current: isCurrentTrack(track.id) }"
+        :style="getTrackStyle(track)"
+        @dblclick="handlePlayTrack(track.id)"
       >
         <!-- 歌曲信息 -->
         <div class="flex-1 min-w-0 overflow-hidden">
           <div
-            class="text-[13px] font-medium whitespace-nowrap overflow-hidden text-ellipsis mb-1"
-            :style="{ color: 'var(--text-primary)' }"
+            class="album-title text-[13px] font-medium whitespace-nowrap overflow-hidden text-ellipsis mb-1"
           >
             {{ track.title || "未知歌曲" }}
           </div>
           <div
-            class="text-[11px] whitespace-nowrap overflow-hidden text-ellipsis"
-            :style="{ color: 'var(--text-secondary)' }"
+            class="album-artist text-[11px] whitespace-nowrap overflow-hidden text-ellipsis"
           >
             {{ track.artist || "未知艺术家" }}
           </div>
@@ -145,35 +148,52 @@ const isCurrentTrack = (index) => {
 
 <style lang="scss" scoped>
 .player-queue {
-  background-color: var(--player-queue-bg);
   border: 1px solid var(--player-queue-panel-border);
 
   .queue-header {
+    background-color: var(--player-queue-header-bg);
     border-color: var(--player-queue-header-border);
+
+    .clear-btn {
+      color: var(--color-red);
+
+      &:hover {
+        background-color: rgba(var(--color-red-rgb), 0.12);
+      }
+    }
+  }
+
+  :deep(.queue-list) {
+    background-color: var(--player-queue-list-bg);
   }
 }
 
 .queue-item {
   position: relative;
+  background-color: rgba(var(--album-theme-rgb, --color-white-rgb), 0.15);
+  border-left: 3px solid;
+  border-color: transparent;
+  transition: background-color 0.2s;
 
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background-color: var(--queue-item-theme-color, transparent);
-    border-radius: 4px 0 0 4px;
+  &.current {
+    border-color: var(--album-theme-color, var(--player-color-default));
   }
 
   &:hover {
-    background-color: var(--state-hover);
+    background-color: rgba(var(--album-theme-rgb, --color-white-rgb), 0.3);
 
     .delete-btn {
       opacity: 1;
-      color: var(--color-error);
+      color: var(--color-red);
     }
+  }
+
+  .album-title {
+    color: var(--album-theme-color, --player-color-default);
+  }
+
+  .album-artist {
+    color: rgba(var(--album-theme-rgb, --play-button-bg-color-default), 0.7);
   }
 }
 </style>

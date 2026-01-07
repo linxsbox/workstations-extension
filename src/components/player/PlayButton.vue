@@ -7,16 +7,12 @@ const props = defineProps({
 const emits = defineEmits(["play", "pause"]);
 
 const handleClick = () => {
-  console.log('[PlayButton] 点击, isDisabled:', props.isDisabled, 'isPlay:', props.isPlay);
-
   if (props.isDisabled) {
-    console.warn('[PlayButton] 按钮已禁用，忽略点击');
     return;
   }
 
   // 根据当前状态发出相应事件
   const eventName = props.isPlay ? "pause" : "play";
-  console.log('[PlayButton] 发出事件:', eventName);
   emits(eventName);
 };
 </script>

@@ -41,8 +41,6 @@ onMounted(() => {
         <RssManagementDialog />
 
         <PlayerView />
-
-        <div class="fixed bottom-5 right-5 cursor-pointer" @click="storePlayerInstance.showPlayer()">打开播放器</div>
       </NDialogProvider>
     </NMessageProvider>
   </NConfigProvider>

@@ -55,7 +55,7 @@ export class WebAudioBackend extends AudioBackend {
   /**
    * 加载音频文件
    */
-  async load(src, options = {}) {
+  async load(src, metadata = {}) {
     try {
       if (!this.audioContext) {
         if (!this.init()) {
@@ -68,8 +68,8 @@ export class WebAudioBackend extends AudioBackend {
 
       // 获取音频数据
       let arrayBuffer;
-      if (options.arrayBuffer) {
-        arrayBuffer = options.arrayBuffer;
+      if (metadata.arrayBuffer) {
+        arrayBuffer = metadata.arrayBuffer;
       } else {
         try {
           const response = await fetch(src, {
@@ -96,12 +96,52 @@ export class WebAudioBackend extends AudioBackend {
         throw new Error(`Failed to decode audio: ${decodeError.message}`);
       }
 
+      // 更新 MediaSession API（如果支持）
+      this._updateMediaSession(metadata);
+
       this._emit('canplay');
       return true;
     } catch (error) {
       console.error('Error loading audio in WebAudioBackend:', error);
       this._emit('error', error);
       return false;
+    }
+  }
+
+  /**
+   * 更新 MediaSession API 元数据
+   */
+  _updateMediaSession(metadata = {}) {
+    if ('mediaSession' in navigator) {
+      try {
+        const { title, artist, album, duration } = metadata;
+
+        // 构建 artwork 数组
+        let artwork = [];
+        if (album?.image) {
+          artwork.push({
+            src: album.image,
+            sizes: '512x512',
+            type: 'image/png'
+          });
+        }
+
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title || '未知标题',
+          artist: artist || album?.author || '未知艺术家',
+          album: album?.title || '未知专辑',
+          artwork: artwork.length > 0 ? artwork : undefined
+        });
+
+        console.log('MediaSession metadata updated (WebAudio):', {
+          title,
+          artist: artist || album?.author,
+          album: album?.title,
+          duration
+        });
+      } catch (error) {
+        console.warn('Failed to update MediaSession:', error);
+      }
     }
   }
 

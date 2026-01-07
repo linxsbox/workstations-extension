@@ -91,7 +91,7 @@ export class AudioManager {
     }
 
     try {
-      const success = await this.backend.load(src, {});
+      const success = await this.backend.load(src, metadata);
       if (success) {
         return true;
       }
@@ -100,18 +100,18 @@ export class AudioManager {
       console.warn(
         `Loading with ${this.backend.constructor.name} failed, attempting fallback...`
       );
-      return await this._tryFallbackBackend(src);
+      return await this._tryFallbackBackend(src, metadata);
     } catch (error) {
       console.error('Error loading audio:', error);
       // 尝试使用备用后端
-      return await this._tryFallbackBackend(src);
+      return await this._tryFallbackBackend(src, metadata);
     }
   }
 
   /**
    * 尝试使用备用后端加载
    */
-  async _tryFallbackBackend(src) {
+  async _tryFallbackBackend(src, metadata = {}) {
     // 获取当前后端的名称
     const currentBackendName = this.backend?.constructor.name;
 
@@ -127,7 +127,7 @@ export class AudioManager {
           const fallbackBackend = new BackendClass(this.options);
 
           // 尝试用新后端加载
-          const success = await fallbackBackend.load(src, {});
+          const success = await fallbackBackend.load(src, metadata);
           if (success) {
             // 销毁旧后端并切换到新后端
             if (this.backend) {

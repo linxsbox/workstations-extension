@@ -1,5 +1,6 @@
 export const RssSourceTypeEnum = {
   XIAOYUZHOU: "xiaoyuzhou",
+  XIMALAYA: "ximalaya",
   KR36: "36Kr",
   // WECHAT: "wechat",
   RSS: "rss",
@@ -9,6 +10,12 @@ export const RSS_SOURCE_TYPES = [
   {
     label: "小宇宙",
     value: RssSourceTypeEnum.XIAOYUZHOU,
+    description: "播客订阅",
+    needsUrl: true,
+  },
+  {
+    label: "喜马拉雅",
+    value: RssSourceTypeEnum.XIMALAYA,
     description: "播客订阅",
     needsUrl: true,
   },

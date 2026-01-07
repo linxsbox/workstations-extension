@@ -35,6 +35,14 @@ export const SourceProcessorConfig = {
       },
     },
   },
+  [RssSourceTypeEnum.XIMALAYA]: {
+    type: FetchTypeEnum.RSS,
+    processor: "ximalayaProcessor",
+    config: {
+      type: "rss",
+      baseUrl: "https://www.ximalaya.com",
+    },
+  },
   [RssSourceTypeEnum.KR36]: {
     type: FetchTypeEnum.RSS,
     processor: "rssProcessor",
@@ -210,6 +218,92 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
   }
 }
 
+// 喜马拉雅播客处理器
+class XimalayaProcessor extends BaseRssProcessor {
+  async fetchSourceInfo() {
+    try {
+      const response = await fetch(this.source.sourceUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const text = await response.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(text, "text/xml");
+
+      // 检查是否是有效的 RSS
+      const channel = xmlDoc.querySelector("channel");
+      if (!channel) {
+        throw new Error("无效的 RSS 格式");
+      }
+
+      const title = getNodeTextContent(channel, "title");
+      const description = getNodeTextContent(channel, "description");
+      const imageUrl = xmlDoc.querySelector("channel > image > url")?.textContent || "";
+
+      const albumId = this.extractAlbumId();
+      const imgBase64 = await getRssLogo(albumId, imageUrl);
+
+      const list = Array.from(xmlDoc.querySelectorAll("item")).map((item) => {
+        const durationText = getNodeTextContent(item, "duration");
+        const duration = this.parseDuration(durationText);
+
+        return {
+          title: getNodeTextContent(item, "title"),
+          description: getNodeTextContent(item, "description"),
+          mediaUrl: item.querySelector("enclosure")?.getAttribute("url") || "",
+          link: getNodeTextContent(item, "link"),
+          duration,
+          pubDate: rmSecAndZone(getNodeTextContent(item, "pubDate")),
+          timestamp: +new Date(getNodeTextContent(item, "pubDate")),
+        };
+      });
+
+      return {
+        id: albumId,
+        title,
+        description,
+        author: getNodeTextContent(channel, "author") || "",
+        image: imgBase64,
+        theme: null, // 喜马拉雅不提供主题色
+        list,
+        lastUpdateTime: genISOWithZoneToDate().getTime(),
+      };
+    } catch (error) {
+      console.error("喜马拉雅播客信息获取失败:", error);
+      throw error;
+    }
+  }
+
+  // 从 URL 中提取专辑 ID
+  extractAlbumId() {
+    const match = this.source.sourceUrl.match(/\/album\/(\d+)/);
+    return match ? match[1] : `ximalaya_${Date.now()}`;
+  }
+
+  // 解析时长（支持 HH:MM:SS 和秒数格式）
+  parseDuration(durationText) {
+    if (!durationText) return 0;
+
+    // 如果是纯数字，直接返回（秒）
+    if (/^\d+$/.test(durationText)) {
+      return parseInt(durationText, 10);
+    }
+
+    // 解析 HH:MM:SS 或 MM:SS 格式
+    const parts = durationText.split(":").map(Number);
+    if (parts.length === 3) {
+      // HH:MM:SS
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+      // MM:SS
+      return parts[0] * 60 + parts[1];
+    }
+
+    return 0;
+  }
+}
+
 // 36Kr 处理器
 class Kr36Processor extends BaseRssProcessor {
   async fetchSourceInfo() {
@@ -277,6 +371,8 @@ export class RssProcessorFactory {
         return new RssProcessor(source);
       case RssSourceTypeEnum.XIAOYUZHOU:
         return new XiaoyuzhouProcessor(source);
+      case RssSourceTypeEnum.XIMALAYA:
+        return new XimalayaProcessor(source);
       case RssSourceTypeEnum.KR36:
         return new Kr36Processor(source);
       case RssSourceTypeEnum.WECHAT:

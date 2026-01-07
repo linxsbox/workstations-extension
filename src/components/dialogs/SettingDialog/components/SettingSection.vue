@@ -30,16 +30,11 @@ const props = defineProps({
 
 .setting-section-item {
   padding-bottom: 24px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .setting-section-item:last-child {
   border-bottom: none;
   padding-bottom: 0;
-}
-
-/* 深色模式边框颜色 */
-:root[theme-mode="dark"] .setting-section-item {
-  border-bottom-color: #374151;
 }
 </style>

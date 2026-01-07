@@ -252,6 +252,14 @@ export const storePlayer = defineStore("player", {
       const success = audioManager.stop();
       if (success) {
         this.playStatus.isPlaying = false;
+        // 清理播放进度
+        this.currentTime = 0;
+        this.duration = 0;
+        // 清理当前音频信息
+        this.playStatus.src = "";
+        this.playStatus.title = "";
+        this.playStatus.pid = "";
+        this.playStatus.album = null;
       }
       return success;
     },

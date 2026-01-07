@@ -190,6 +190,8 @@ watch(
     flex: none;
     min-width: 60px;
     font-size: 12px;
+    color: var(--text-secondary);
+    transition: color 0.2s ease;
   }
 
   .text-left {
@@ -206,12 +208,10 @@ watch(
   flex: 1 1 0%;
   width: 100%;
   height: 8px;
-  background-color: var(
-    --player-progress-slider-bar,
-    var(--player-progress-slider-bar-default)
-  );
+  background-color: var(--player-progress-slider-bar-default);
   border-radius: 999px;
-  will-change: auto;
+  will-change: width;
+  cursor: pointer;
 
   .progress-bar {
     width: 0px;
@@ -234,12 +234,9 @@ watch(
     align-items: center;
     width: 16px;
     height: 16px;
-    background-color: var(
-      --player-progress-slider-bg,
-      var(--player-progress-slider-bg-default)
-    );
+    background-color: var(--player-progress-slider-bg-default);
     border-radius: inherit;
-    box-shadow: 0 0 3px 0 rgb(0, 0, 0, 0.35);
+    box-shadow: 0 0 3px 0 rgba(var(--color-black-rgb), 0.35);
     pointer-events: auto;
 
     &:after {
@@ -249,10 +246,10 @@ watch(
       height: 8px;
       background-color: var(
         --player-progress-slider,
-        var(--player-progress-slider-default)
+        var(--player-color-default)
       );
       border-radius: inherit;
-      box-shadow: 0 1px 1px 0 rgb(0, 0, 0, 0.35);
+      box-shadow: 0 1px 1px 0 rgba(var(--color-black-rgb), 0.35);
     }
   }
 }

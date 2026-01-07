@@ -16,7 +16,6 @@
   --color-black-rgb: 0, 0, 0;
   --color-black-1: #0a0a0a;
   --color-black-2: #1f1f22;
-  --color-black-3: #707070;
   --color-black-alpha-1: rgba(0, 0, 0, 0.8);
   --color-black-alpha-2: rgba(0, 0, 0, 0.75);
   --color-black-alpha-3: rgba(0, 0, 0, 0.5);
@@ -35,9 +34,13 @@
 
   // 功能色
   // --color-info: #1a73e8; // 信息
+  --color-info-rgb: 26, 115, 232; // 信息 RGB
   --color-success: #34a853; // 成功
-  // --color-warning: #fbbc04; // 警告
+  --color-success-rgb: 52, 168, 83; // 成功 RGB
+  --color-warning: #fbbc04; // 警告
+  --color-warning-rgb: 251, 188, 4; // 警告 RGB
   --color-error: #ea4335; // 错误
+  --color-error-rgb: 234, 67, 53; // 错误 RGB
   --color-bg-error: rgba(234, 68, 53, 0.25); // 错误
   --color-bg-error-hover: rgba(234, 68, 53, 0.5); // 错误
   --color-bg-error-focus: rgba(234, 68, 53, 0.1); // 错误
@@ -81,7 +84,6 @@
   --ui-common-bg: var(--bg-base); // 输入框背景
   --ui-drawer-bg: var(--color-white); // 抽屉组件背景
   --ui-modal-bg: #f8fafc; // 模态框背景
-  --ui-modal-border: rgba(102, 102, 102, 0.35); // 模态框边框
   --ui-border-box-shadow: var(--color-black-alpha-5); // 边框
   --ui-placeholder-color: var(--color-black-alpha-4); // 占位符颜色
   --ui-popconfirm-color: var(--bg-white);
@@ -97,9 +99,10 @@
   --interactive-bg-hover: var(--color-black-alpha-8); // 悬浮状态
   --interactive-bg-active: var(--color-black-alpha-7); // 激活状态
 
-  --interactive-bg-default-1: #27272a; // 默认状态
-  --interactive-bg-hover-1: var(--color-black-alpha-7); // 悬浮状态
-  --interactive-bg-active-1: var(--color-black-alpha-6); // 激活状态
+  // 8. 链接颜色
+  --link-color: #1a73e8;
+  --link-hover-color: #185abc;
+  --link-visited-color: #681da8;
 
   --scrollbar-thumb: rgba(193, 193, 193, 0.6);
   --scrollbar-thumb-hover: rgba(168, 168, 168, 0.75);
@@ -143,7 +146,6 @@
   --ui-common-bg: #141415; // 输入框背景
   --ui-drawer-bg: #17191c; // 抽屉组件背景
   --ui-modal-bg: #1f1f22; // 模态框背景
-  --ui-modal-border: rgba(102, 102, 102, 0.35); // 模态框边框
   --ui-border-box-shadow: var(--color-white-alpha-5); // 边框
   --ui-placeholder-color: var(--color-white-alpha-4); // 占位符颜色
   --ui-popconfirm-color: var(--color-black-2); // 弹出确认背景
@@ -159,9 +161,10 @@
   --interactive-bg-hover: var(--color-white-alpha-7); // 悬浮状态
   --interactive-bg-active: var(--color-black-alpha-3); // 激活状态
 
-  --interactive-bg-default-1: #27272a; // 默认状态
-  --interactive-bg-hover-1: #262626; // 悬浮状态
-  --interactive-bg-active-1: #3f3f46; // 激活状态
+  // 8. 链接颜色
+  --link-color: #8ab4f8;
+  --link-hover-color: #aecbfa;
+  --link-visited-color: #c5a3ff;
 
   // --scrollbar-thumb: rgba(104, 104, 104, 0.5);
   // --scrollbar-thumb-hover: rgba(123, 123, 123, 0.65);

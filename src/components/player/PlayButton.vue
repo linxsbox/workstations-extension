@@ -31,7 +31,7 @@ const handleClick = () => {
     </svg>
 
     <svg width="1em" height="1em" viewBox="0 0 32 32" fill="none" style="overflow: visible; position: relative" v-else>
-      <circle cx="16" cy="16" r="15" stroke="#747480" stroke-opacity="0.08" stroke-width="2.5"></circle>
+      <circle cx="16" cy="16" r="15" :stroke="`rgba(var(--color-black-rgb), 0.08)`" stroke-opacity="1" stroke-width="2.5"></circle>
       <circle cx="16" cy="16" r="15" stroke-width="2.5" origin="50%, 50%" stroke="currentColor"
         :stroke-dashoffset="offset" stroke-dasharray="100" stroke-linecap="round" stroke-linejoin="round"
         style="transform: rotate(-90deg); transform-origin: center center"></circle>

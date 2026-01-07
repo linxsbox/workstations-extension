@@ -164,7 +164,7 @@ const handleSwitchPlayMode = () => {
     <!-- 停止按钮 -->
     <button
       v-if="showStop"
-      class="extra-btn"
+      class="extra-btn size-7 rounded"
       :disabled="!getIsPlayerEnable"
       @click="handleStop"
       aria-label="停止"
@@ -182,7 +182,7 @@ const handleSwitchPlayMode = () => {
       >
         <template #trigger>
           <button
-            class="extra-btn"
+            class="extra-btn size-7 rounded"
             :aria-label="volumeIconTitle"
             :title="volumeIconTitle"
           >
@@ -229,7 +229,7 @@ const handleSwitchPlayMode = () => {
         trigger="click"
       >
         <div
-          class="palyer-back-rate inline-flex items-center justify-center size-7 rounded cursor-pointer transition-all duration-200 select-none"
+          class="palyer-back-rate inline-flex items-center justify-center size-7 rounded cursor-pointer select-none"
           :style="{ color: 'var(--player-color, var(--player-color-default))' }"
           :title="`播放速率: ${playbackRateText}`"
         >
@@ -241,7 +241,7 @@ const handleSwitchPlayMode = () => {
     <!-- 播放模式切换 -->
     <button
       v-if="showPlayMode"
-      class="extra-btn"
+      class="extra-btn size-7 rounded"
       @click="handleSwitchPlayMode"
       :aria-label="currentPlayModeConfig.label"
       :title="currentPlayModeConfig.label"
@@ -260,26 +260,23 @@ const handleSwitchPlayMode = () => {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 28px;
-    height: 28px;
-    background: none;
+    background-color: rgba(
+      var(--play-button-bg-color, var(--play-button-bg-color-default)),
+      0.1
+    );
     border: none;
     color: var(--player-color, var(--player-color-default));
     cursor: pointer;
-    transition: all 0.2s ease;
-    opacity: 0.7;
-    border-radius: 4px;
 
     &:hover:not(:disabled) {
-      opacity: 1;
       background-color: rgba(
         var(--play-button-bg-color, var(--play-button-bg-color-default)),
-        0.1
+        0.2
       );
     }
 
     &:disabled {
-      opacity: 0.3;
+      opacity: 0.5;
       cursor: not-allowed;
     }
   }

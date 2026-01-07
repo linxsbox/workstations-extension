@@ -81,12 +81,20 @@ const handleImageError = () => {
   <div
     v-if="asBackground"
     class="player-cover-background relative size-full bg-cover bg-center bg-no-repeat"
-    :style="{ backgroundImage: shouldShowImage ? `url(${coverImage})` : 'none' }"
+    :style="{
+      backgroundImage: shouldShowImage ? `url(${coverImage})` : 'none',
+    }"
     :class="{ 'no-cover': !shouldShowImage }"
   >
     <!-- 无封面时显示默认背景和图标 -->
-    <div v-if="!shouldShowImage" class="absolute inset-0 flex items-center justify-center z-[1]">
-      <IconMusicNote class="text-black/75 text-opacity-30" :style="{ fontSize: `${props.size * 0.5}px` }" />
+    <div
+      v-if="!shouldShowImage"
+      class="absolute inset-0 flex items-center justify-center z-[1]"
+    >
+      <IconMusicNote
+        class="cover-placeholder"
+        :style="{ fontSize: `${props.size * 0.5}px` }"
+      />
     </div>
     <div class="relative size-full z-[2]">
       <slot></slot>
@@ -94,7 +102,7 @@ const handleImageError = () => {
   </div>
   <div
     v-else
-    class="player-cover flex-none flex items-center justify-center rounded-lg overflow-hidden bg-white"
+    class="player-cover flex-none flex items-center justify-center rounded-lg overflow-hidden"
     :style="sizeStyle"
   >
     <img
@@ -106,32 +114,32 @@ const handleImageError = () => {
     />
     <IconMusicNote
       v-else
-      class="text-gray-400"
+      class="cover-placeholder"
       :style="{ fontSize: `${props.size * 0.5}px` }"
     />
   </div>
 </template>
 
 <style lang="scss" scoped>
+.player-cover {
+  background-color: var(--player-cover-bg);
+}
+
 .player-cover-background {
   &::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.3) 0%,
-      rgba(0, 0, 0, 0.6) 100%
-    );
+    background: var(--player-cover-overlay-gradient);
   }
 
   &.no-cover::before {
-    background: radial-gradient(
-      circle at center,
-      rgba(255, 255, 255, 0.15) 0%,
-      transparent 70%
-    );
+    background: var(--player-cover-no-overlay-gradient);
   }
+}
+
+.cover-placeholder {
+  color: var(--player-cover-placeholder-color);
 }
 </style>

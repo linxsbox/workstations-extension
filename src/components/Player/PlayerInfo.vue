@@ -59,12 +59,12 @@ const alignClass = computed(() => {
 
     <!-- 歌曲信息 -->
     <div class="info flex-1 min-w-0 overflow-hidden" :class="alignClass">
-      <div class="song-title text-base font-medium text-gray-900 truncate">
+      <div class="song-title text-base font-medium truncate">
         {{ title }}
       </div>
       <div
         v-if="showArtist"
-        class="song-artist text-sm text-gray-500 truncate mt-1"
+        class="song-artist text-sm truncate mt-1"
       >
         {{ artist }}
       </div>
@@ -72,4 +72,12 @@ const alignClass = computed(() => {
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.song-title {
+  color: var(--text-primary);
+}
+
+.song-artist {
+  color: var(--text-secondary);
+}
+</style>

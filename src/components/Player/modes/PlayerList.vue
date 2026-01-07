@@ -15,7 +15,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="player-list flex flex-col gap-4 p-4 bg-white rounded-lg">
+  <div class="player-list flex flex-col gap-4 p-4">
     <!-- 上部：封面、歌曲信息、播放控制 -->
     <div class="flex flex-col items-center gap-3">
       <!-- 封面 -->
@@ -51,13 +51,18 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 .player-list {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--player-bg-default);
+  border-radius: 8px;
+  box-shadow: var(--player-card-shadow);
   min-height: 400px;
+  transition: all 0.2s ease;
 }
 
 .queue-container {
   flex: 1;
   min-height: 200px;
   overflow: hidden;
+  border-top: 1px solid var(--player-queue-header-border);
+  border-radius: 0 0 6px 6px;
 }
 </style>

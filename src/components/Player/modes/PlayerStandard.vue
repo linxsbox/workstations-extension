@@ -36,8 +36,8 @@ const handleTogglePlaylist = () => {
       <PlayerCover asBackground :size="200">
         <div class="content-overlay size-full flex flex-col  items-center justify-center p-8">
           <!-- 歌词区域（预留） -->
-          <div class="lyrics-area flex-1 flex items-center justify-center text-white text-center">
-            <div class="text-gray-300 text-sm">暂无歌词</div>
+          <div class="lyrics-area flex-1 flex items-center justify-center text-center">
+            <div class="lyrics-placeholder mt-48 text-xl">暂无歌词</div>
           </div>
 
           <!-- 播放控制组件 -->
@@ -94,29 +94,32 @@ const handleTogglePlaylist = () => {
 <style lang="scss" scoped>
 .player-standard {
   min-height: 500px;
+  background: var(--player-standard-bg-gradient);
 }
 
 .cover-section {
   min-width: 0;
+  position: relative;
 }
 
 .lyrics-area {
   overflow-y: auto;
   padding: 20px;
+  color: var(--player-lyrics-color);
 }
 
-/* 自定义主题色时文字保持白色 */
-:deep(.player-info) {
-  .song-title,
-  .song-artist {
-    color: white !important;
-  }
+.lyrics-placeholder {
+  color: var(--player-lyrics-placeholder-color);
+}
+
+.player-bar {
+  border-top: 1px solid var(--player-bar-border);
 }
 
 /* 播放列表滑入滑出动画 */
 .slide-left-enter-active,
 .slide-left-leave-active {
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slide-left-enter-from {

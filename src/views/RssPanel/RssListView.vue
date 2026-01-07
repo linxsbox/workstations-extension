@@ -15,8 +15,8 @@ const props = defineProps({
 // 构建播客信息
 const getAlbum = () => {
   return {
+    title: props.data.title || "", // 播客名称 - 专辑标题
     author: props.data.author || "", // 播客作者
-    albumTitle: props.data.title || "", // 播客名称 - 专辑标题
     image: props.data.image || "", // 播客Logo - 专辑封面
     theme: props.data.theme || null, // 主题颜色
   };

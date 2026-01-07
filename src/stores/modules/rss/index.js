@@ -91,6 +91,35 @@ export const storeRss = defineStore({
       }
     },
 
+    // 强制刷新指定 RSS 源（重新获取所有数据）
+    async refreshSource(sourceId) {
+      const source = this.sources.find((s) => s.id === sourceId);
+      if (!source) {
+        throw new Error('RSS 源不存在');
+      }
+
+      try {
+        const freshData = await fetchSourceInfo(source);
+
+        // 完全替换数据（包括 list）
+        const index = this.sources.findIndex((s) => s.id === sourceId);
+        if (index > -1) {
+          this.sources[index] = { ...source, ...freshData };
+          this.saveSources();
+
+          // 如果当前正在查看这个源，更新显示
+          if (this.currentSourceData?.id === sourceId) {
+            this.currentSourceData = this.sources[index];
+          }
+        }
+
+        return this.sources[index];
+      } catch (error) {
+        console.error('刷新 RSS 源失败:', error);
+        throw new Error(`刷新 RSS 源失败: ${error.message}`);
+      }
+    },
+
     // 保存到存储
     saveSources() {
       storageManager.set(STORAGE_KEYS.RSS_SOURCES, this.sources);
@@ -234,9 +263,13 @@ const differenceLatestItems = (originList = [], newList = []) => {
 
   newList.forEach((item, index) => {
     if (item.link) {
-      const originItem = originList.find((i) => i.link === item.link);
-      if (!originItem) {
+      const originIndex = originList.findIndex((i) => i.link === item.link);
+      if (originIndex === -1) {
+        // 不存在，插入新项
         originList.splice(index, 0, item);
+      } else {
+        // 已存在，更新数据（保留新数据，包括 duration 等字段）
+        originList[originIndex] = { ...originList[originIndex], ...item };
       }
     }
   });

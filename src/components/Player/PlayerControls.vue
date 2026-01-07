@@ -40,18 +40,13 @@ const getCanSkip = computed(() => {
 
 // 播放/暂停
 const handleChangePlayState = (isPlayState) => {
-  console.log('[PlayerControls] handleChangePlayState 被调用, isPlayState:', isPlayState, 'isPlayerEnable:', getIsPlayerEnable.value);
-
   if (!getIsPlayerEnable.value) {
-    console.warn('[PlayerControls] 播放器未启用，无法操作');
     return;
   }
 
   if (isPlayState) {
-    console.log('[PlayerControls] 调用 player.play()');
     player.play();
   } else {
-    console.log('[PlayerControls] 调用 player.pause()');
     player.pause();
   }
 };

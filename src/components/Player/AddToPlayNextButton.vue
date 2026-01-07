@@ -1,6 +1,6 @@
 <script setup>
-import { storePlayer } from '@/stores/modules/player';
-import IconPlaylistPlay from '@/components/common/Icons/IconPlaylistPlay.vue';
+import { storePlayer } from "@/stores/modules/player";
+import IconPlaylistPlay from "@/components/common/Icons/IconPlaylistPlay.vue";
 
 const props = defineProps({
   // 音频轨道信息
@@ -9,27 +9,27 @@ const props = defineProps({
     required: true,
     validator: (value) => {
       // 至少需要包含 src
-      return value && typeof value.src === 'string';
-    }
+      return value && typeof value.src === "string";
+    },
   },
   // 图标尺寸（像素）
   iconSize: {
     type: Number,
-    default: 24
+    default: 24,
   },
   // 是否显示为图标按钮（否则显示为带文字的按钮）
   iconOnly: {
     type: Boolean,
-    default: true
+    default: true,
   },
   // 是否禁用
   disabled: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 
-const emit = defineEmits(['success', 'error']);
+const emit = defineEmits(["success", "error"]);
 
 const player = storePlayer();
 
@@ -41,15 +41,12 @@ const handleAddToPlayNext = () => {
     const success = player.addToPlayNext(props.track);
 
     if (success) {
-      emit('success', props.track);
-      console.log('[AddToPlayNextButton] 已添加为下一首:', props.track.title || props.track.src);
+      emit("success", props.track);
     } else {
-      emit('error', new Error('添加失败'));
-      console.error('[AddToPlayNextButton] 添加失败');
+      emit("error", new Error("添加失败"));
     }
   } catch (error) {
-    emit('error', error);
-    console.error('[AddToPlayNextButton] 添加异常:', error);
+    emit("error", error);
   }
 };
 </script>
@@ -59,12 +56,12 @@ const handleAddToPlayNext = () => {
     class="add-to-play-next-btn flex items-center justify-center rounded"
     :class="{
       'opacity-50 cursor-not-allowed': disabled,
-      'gap-2 px-3 py-1.5': !iconOnly
+      'gap-2 px-3 py-1.5': !iconOnly,
     }"
     :disabled="disabled"
     @click.stop="handleAddToPlayNext"
-    :title="`下一首播放${track.title ? ': ' + track.title : ''}`"
-    :aria-label="'下一首播放'"
+    aria-label="下一首播放"
+    title="下一首播放"
     :style="{ fontSize: `${iconSize}px` }"
   >
     <IconPlaylistPlay />
@@ -74,14 +71,18 @@ const handleAddToPlayNext = () => {
 
 <style lang="scss" scoped>
 .add-to-play-next-btn {
-  background-color: none;
+  width: 1em;
+  height: 1em;
+  background: none;
   border: none;
-  color: var(--text-secondary);
+  color: var(--origin-theme, --player-color-default);
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    color: var(--player-color, #409eff);
-    background-color: rgba(var(--play-button-bg-color, 64, 158, 255), 0.1);
+    background-color: rgba(
+      var(--play-button-bg-color, --play-button-bg-color-default),
+      0.1
+    );
   }
 }
 </style>

@@ -179,6 +179,14 @@ const handleClose = () => {
 
 .player-view-container {
   background-color: var(--player-bg-default);
+
+  // 最小化按钮（仅该组件使用）
+  --player-minimize-hover-color: var(--color-green);
+  --player-minimize-hover-bg: rgba(var(--color-green-rgb), 0.12);
+
+  // 关闭按钮（仅该组件使用）
+  --player-close-hover-color: var(--color-red);
+  --player-close-hover-bg: rgba(var(--color-red-rgb), 0.12);
 }
 
 .player-header {
@@ -195,7 +203,7 @@ const handleClose = () => {
 
   &.active {
     color: var(--player-color, #409eff);
-    background: rgba(var(--play-button-bg-color, 64, 158, 255), 0.15);
+    background: rgba(var(--play-button-bg-color, --play-button-bg-color-default), 0.15);
   }
 }
 

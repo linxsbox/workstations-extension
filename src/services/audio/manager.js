@@ -26,7 +26,6 @@ export class AudioManager {
       this.backend = await selectBackend(this.options);
       this._setupBackendListeners();
       this.initialized = true;
-      console.log('AudioManager initialized successfully');
     } catch (error) {
       console.error('Failed to initialize AudioManager:', error);
       throw error;

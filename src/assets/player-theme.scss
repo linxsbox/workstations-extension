@@ -3,13 +3,12 @@
 
 @mixin playerTheme() {
   // RGB 颜色定义（通用）
+  --color-black-rgb: 0, 0, 0; // 黑色 RGB
+  --color-white-rgb: 255, 255, 255; // 白色 RGB
   --color-green: #34a853; // 成功（亮绿）
   --color-green-rgb: 149, 222, 100; // 成功 RGB
   --color-red: #ea4335; // 错误（淡红）
   --color-red-rgb: 255, 120, 117; // 错误 RGB
-  --color-black-rgb: 0, 0, 0; // 黑色 RGB
-  --color-white-rgb: 255, 255, 255; // 白色 RGB
-  --color-error: #ea4335; // 错误色
 
   // 播放器主色（通用）
   --player-color-default: #409eff; // 播放器主色
@@ -18,81 +17,98 @@
   // 进度条样式（固定）
   --player-progress-slider-default: var(--player-color-default); // 进度条滑块色
   --player-progress-slider-bg-default: #fff; // 进度条背景色
-  --player-progress-slider-bar-default: rgba(216, 216, 216, 0.7); // 进度条轨道色
+  --player-progress-slider-bar-default: rgba(
+    216,
+    216,
+    216,
+    0.7
+  ); // 进度条轨道色
 
   // 按钮颜色（固定）
   --player-header-icon-color: #5f6973; // 头部按钮icon颜色
-  --player-minimize-hover-color: var(--color-green); // 最小化按钮悬停颜色（绿色）
-  --player-minimize-hover-bg: rgba(var(--color-green-rgb), 0.12); // 最小化按钮悬停背景
-  --player-close-hover-color: var(--color-red); // 关闭按钮悬停颜色（红色）
-  --player-close-hover-bg: rgba(var(--color-red-rgb), 0.12); // 关闭按钮悬停背景
 
   // 渐变样式（固定）
-  --player-cover-overlay-gradient: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.6) 100%); // 封面叠加渐变
-  --player-cover-no-overlay-gradient: radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 0%, transparent 70%); // 无封面时渐变
-  --player-standard-bg-gradient: linear-gradient(135deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.05)); // 标准模式背景渐变
+  --player-cover-overlay-gradient: linear-gradient(
+    180deg,
+    rgba(var(--color-black-rgb), 0.3) 0%,
+    rgba(var(--color-black-rgb), 0.6) 100%
+  ); // 封面叠加渐变
+  --player-cover-no-overlay-gradient: radial-gradient(
+    circle at center,
+    rgba(var(--color-white-rgb), 0.15) 0%,
+    transparent 70%
+  ); // 无封面时渐变
+  --player-standard-bg-gradient: linear-gradient(
+    135deg,
+    rgba(var(--color-black-rgb), 0.1),
+    rgba(var(--color-black-rgb), 0.05)
+  ); // 标准模式背景渐变
 }
 
 // Light 模式特定变量
 @mixin playerThemeLight() {
-  --player-bg-default: rgba(255, 255, 255, 0.85);
+  --player-bg-default: rgba(var(--color-white-rgb), 0.85);
 
-  --player-header-bg: linear-gradient(to bottom, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.35));
+  --player-header-bg: linear-gradient(
+    to bottom,
+    rgba(var(--color-white-rgb), 0.85),
+    rgba(var(--color-white-rgb), 0.35)
+  );
   --player-header-text-color: #5f6973;
   --player-header-hover-color: #000;
 
-  --player-bar-bg: rgba(255, 255, 255, 0.15);
-  --player-bar-border: rgba(0, 0, 0, 0.06);
+  --player-bar-bg: rgba(var(--color-white-rgb), 0.15);
+  --player-bar-border: rgba(var(--color-black-rgb), 0.06);
 
-  --player-panel-border: rgba(0, 0, 0, 0.06);
-  --player-panel-shadow: rgba(0, 0, 0, 0.08);
+  --player-panel-border: rgba(var(--color-black-rgb), 0.06);
+  --player-panel-shadow: rgba(var(--color-black-rgb), 0.08);
 
-  --player-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --player-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --player-card-shadow: 0 4px 12px rgba(var(--color-black-rgb), 0.08);
+  --player-card-shadow-hover: 0 6px 16px rgba(var(--color-black-rgb), 0.12);
 
-  --player-queue-bg: rgba(255, 255, 255, 0.75);
-  --player-queue-header-border: rgba(0, 0, 0, 0.06);
-  --player-queue-panel-border: rgba(0, 0, 0, 0.06);
+  --player-queue-header-bg: rgba(var(--color-white-rgb), 0.9);
+  --player-queue-list-bg: rgba(var(--color-white-rgb), 0.85);
+  --player-queue-header-border: rgba(var(--color-black-rgb), 0.06);
+  --player-queue-panel-border: rgba(var(--color-white-rgb), 0.96);
+
+  --player-lyrics-color: rgba(var(--color-white-rgb), 0.7);
+  --player-lyrics-placeholder-color: rgba(var(--color-black-rgb), 0.85);
 
   --player-cover-bg: #fff;
-
-  --player-lyrics-color: rgba(255, 255, 255, 0.7);
-  --player-lyrics-placeholder-color: rgba(0, 0, 0, 0.85);
-
-  --player-cover-placeholder-color: rgba(0, 0, 0, 0.36);
-
-  --state-hover: rgba(0, 0, 0, 0.05);
+  --player-cover-placeholder-color: rgba(var(--color-black-rgb), 0.36);
 }
 
 // Dark 模式特定变量
 @mixin playerThemeDark() {
   --player-bg-default: rgba(15, 20, 25, 0.92);
 
-  --player-header-bg: linear-gradient(to bottom, rgba(15, 20, 25, 0.85), rgba(15, 20, 25, 0.45));
+  --player-header-bg: linear-gradient(
+    to bottom,
+    rgba(15, 20, 25, 0.85),
+    rgba(15, 20, 25, 0.45)
+  );
   --player-header-text-color: #a1a1aa;
   --player-header-hover-color: #fff;
 
-  --player-bar-bg: rgba(0, 0, 0, 0.35);
-  --player-bar-border: rgba(255, 255, 255, 0.04);
+  --player-bar-bg: rgba(var(--color-black-rgb), 0.35);
+  --player-bar-border: rgba(var(--color-white-rgb), 0.04);
 
-  --player-panel-border: rgba(255, 255, 255, 0.04);
-  --player-panel-shadow: rgba(0, 0, 0, 0.4);
+  --player-panel-border: rgba(var(--color-white-rgb), 0.04);
+  --player-panel-shadow: rgba(var(--color-black-rgb), 0.4);
 
-  --player-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --player-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.4);
+  --player-card-shadow: 0 4px 12px rgba(var(--color-black-rgb), 0.3);
+  --player-card-shadow-hover: 0 6px 16px rgba(var(--color-black-rgb), 0.4);
 
-  --player-queue-bg: rgba(0, 0, 0, 0.5);
-  --player-queue-header-border: rgba(255, 255, 255, 0.08);
-  --player-queue-panel-border: rgba(255, 255, 255, 0.08);
+  --player-queue-header-bg: rgba(var(--color-white-rgb), 0.75);
+  --player-queue-list-bg: rgba(var(--color-black-rgb), 0.5);
+  --player-queue-header-border: rgba(var(--color-white-rgb), 0.08);
+  --player-queue-panel-border: rgba(var(--color-white-rgb), 0.08);
+
+  --player-lyrics-color: rgba(var(--color-white-rgb), 0.7);
+  --player-lyrics-placeholder-color: rgba(var(--color-white-rgb), 0.85);
 
   --player-cover-bg: rgba(15, 20, 25, 1);
-
-  --player-lyrics-color: rgba(255, 255, 255, 0.7);
-  --player-lyrics-placeholder-color: rgba(255, 255, 255, 0.85);
-
-  --player-cover-placeholder-color: rgba(255, 255, 255, 0.36);
-
-  --state-hover: rgba(255, 255, 255, 0.05);
+  --player-cover-placeholder-color: rgba(var(--color-white-rgb), 0.36);
 }
 
 // 应用播放器主题

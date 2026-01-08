@@ -21,44 +21,37 @@ const handleChange = (value) => {
 
 <template>
   <NRadioGroup :value="value" @update:value="handleChange">
-    <NSpace vertical>
+    <div class="inline-flex flex-wrap gap-4">
       <NRadio
         v-for="option in options"
         :key="option.value"
         :value="option.value"
-        class="setting-radio-option"
+        class="setting-radio-option items-center"
       >
-        <div class="flex items-start gap-3">
+        <div class="inline-flex items-center gap-2">
           <!-- 图标（可选） -->
           <component
             v-if="option.icon"
             :is="option.icon"
-            class="size-5 mt-0.5 text-gray-600 dark:text-gray-400"
+            class="text-xl"
           />
 
-          <div class="flex-1">
+          <!-- 选项内容 -->
+          <div class="flex flex-col">
             <!-- 选项标签 -->
-            <div class="text-sm font-medium">
+            <span class="text-sm font-medium">
               {{ option.label }}
-            </div>
+            </span>
 
             <!-- 选项描述（可选） -->
-            <div v-if="option.description" class="text-xs text-gray-500 mt-0.5">
+            <span v-if="option.description" class="text-xs text-[var(--text-secondary)]">
               {{ option.description }}
-            </div>
+            </span>
           </div>
         </div>
       </NRadio>
-    </NSpace>
+    </div>
   </NRadioGroup>
 </template>
 
-<style scoped>
-.setting-radio-option {
-  padding: 8px 0;
-}
-
-.setting-radio-option :deep(.n-radio__label) {
-  padding-left: 12px;
-}
-</style>
+<style scoped></style>

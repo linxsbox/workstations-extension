@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch, nextTick } from "vue";
 import { NModal, NScrollbar, NDivider } from "naive-ui";
 import { storeRss } from "@/stores/modules/rss";
+import { delay } from "@linxs/toolkit";
 import { useScrollNavigation } from "@linxs/toolkit-vue";
 import SearchPodcastView from "./components/SearchPodcastView.vue";
 import AddFormView from "./components/AddFormView.vue";
@@ -10,19 +11,48 @@ import ManagentFormView from "./components/ManagentFormView.vue";
 const store = storeRss();
 
 const contentRef = ref(null);
-const activeMenus = ref("addrss");
+const activeMenus = ref("podcast");
 const menus = [
   { id: "podcast", label: "添加播客订阅" },
   { id: "rss", label: "添加订阅源" },
   { id: "management", label: "管理订阅源" },
 ];
 
-const {
-  scrollToSection, // 滚动到指定部分
-  handleScroll, // 计算各个部分的位置
-} = useScrollNavigation(contentRef, menus, (menuId) => {
-  activeMenus.value = menuId;
-});
+let navigationInstance = null;
+
+const scrollToSection = (menuId) => {
+  navigationInstance?.scrollToSection(menuId);
+};
+
+const handleScroll = (e) => {
+  navigationInstance?.handleScroll(e);
+};
+
+// 监听弹窗打开，初始化滚动导航
+watch(
+  () => store.showAddDialog,
+  async (isOpen) => {
+    if (isOpen && !navigationInstance) {
+      // 等待 DOM 渲染完成
+      await nextTick();
+      const nScrollbarWrapper = document.querySelector(
+        ".rss-management-scroll"
+      );
+
+      if (nScrollbarWrapper) {
+        contentRef.value = nScrollbarWrapper;
+      }
+
+      navigationInstance = useScrollNavigation(contentRef, {
+        menus,
+        scrollContainerRef: ".n-scrollbar-container",
+        onScroll: (menuId) => {
+          activeMenus.value = menuId;
+        },
+      });
+    }
+  }
+);
 </script>
 
 <template>
@@ -48,7 +78,7 @@ const {
         </nav>
       </aside>
       <div class="flex-1">
-        <NScrollbar ref="contentRef" @scroll="handleScroll">
+        <NScrollbar class="rss-management-scroll" @scroll="handleScroll">
           <div id="section-podcast">
             <SearchPodcastView />
           </div>

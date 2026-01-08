@@ -22,6 +22,22 @@ const searchLoading = ref(false);
 const podcastList = ref([]);
 const podcastXyzCache = ref([]); // 使用 ref 管理缓存
 
+// 请求取消控制器
+let searchAbortController = null;
+
+// 监听模态框关闭，取消所有正在进行的请求
+watch(showSearchModal, (newValue) => {
+  if (!newValue) {
+    // 模态框关闭时，取消所有正在进行的请求
+    if (searchAbortController) {
+      searchAbortController.abort();
+      searchAbortController = null;
+    }
+    // 重置加载状态
+    searchLoading.value = false;
+  }
+});
+
 // 打开搜索弹窗并执行搜索
 const openSearchModal = async () => {
   const trimmedWord = formSearchWord.value?.trim();
@@ -77,15 +93,30 @@ const handleSearchEnter = () => {
 
 // 统一的搜索逻辑
 const performSearch = async (query) => {
+  // 取消之前的搜索请求
+  if (searchAbortController) {
+    searchAbortController.abort();
+    searchAbortController = null;
+  }
+
+  // 创建新的 AbortController
+  searchAbortController = new AbortController();
+  const currentController = searchAbortController;
+
   try {
     searchLoading.value = true;
     podcastList.value = [];
 
     // 并行搜索小宇宙和 GetPodcast.xyz
     const [xiaoyuzhouResults] = await Promise.allSettled([
-      searchXiaoyuzhouPodcasts(query),
-      ensureGetPodcastXyzCache(),
+      searchXiaoyuzhouPodcasts(query, currentController.signal),
+      ensureGetPodcastXyzCache(currentController.signal),
     ]);
+
+    // 检查请求是否被取消
+    if (currentController.signal.aborted) {
+      return;
+    }
 
     // 合并结果
     const allResults = [];
@@ -104,15 +135,23 @@ const performSearch = async (query) => {
 
     podcastList.value = allResults;
   } catch (error) {
+    // 忽略取消请求的错误
+    if (error.name === "AbortError") {
+      console.log("搜索已取消");
+      return;
+    }
     console.error("搜索失败:", error);
     message.error("搜索失败，请重试");
   } finally {
-    searchLoading.value = false;
+    // 只有当前控制器仍然是活动控制器时才重置 loading 状态
+    if (currentController === searchAbortController) {
+      searchLoading.value = false;
+    }
   }
 };
 
 // 搜索小宇宙播客
-const searchXiaoyuzhouPodcasts = async (query) => {
+const searchXiaoyuzhouPodcasts = async (query, signal) => {
   if (!query) return [];
 
   try {
@@ -124,6 +163,7 @@ const searchXiaoyuzhouPodcasts = async (query) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ query }),
+        signal, // 传入 AbortSignal
       }
     );
 
@@ -169,19 +209,23 @@ const searchXiaoyuzhouPodcasts = async (query) => {
       };
     });
   } catch (error) {
+    // 忽略取消请求的错误
+    if (error.name === "AbortError") {
+      throw error; // 继续传播 AbortError
+    }
     console.error("小宇宙搜索失败:", error);
     return [];
   }
 };
 
 // 确保 GetPodcast.xyz 缓存已加载
-const ensureGetPodcastXyzCache = async () => {
+const ensureGetPodcastXyzCache = async (signal) => {
   if (podcastXyzCache.value.length > 0) {
     return;
   }
 
   try {
-    const res = await fetch(`https://getpodcast.xyz/`);
+    const res = await fetch(`https://getpodcast.xyz/`, { signal });
     const parser = new DOMParser();
     const htmlDoc = parser.parseFromString(await res.text(), "text/html");
 
@@ -210,6 +254,10 @@ const ensureGetPodcastXyzCache = async () => {
 
     podcastXyzCache.value = cache;
   } catch (error) {
+    // 忽略取消请求的错误
+    if (error.name === "AbortError") {
+      throw error; // 继续传播 AbortError
+    }
     console.error("GetPodcast.xyz 缓存加载失败:", error);
   }
 };

@@ -11,6 +11,11 @@ const props = defineProps({
 
 <template>
   <div class="setting-section">
+    <!-- Section 标题 -->
+    <h2 class="mb-4 text-lg font-bold text-[var(--text-primary)]">
+      {{ section.label }}
+    </h2>
+
     <!-- 渲染该 section 下的所有设置项 -->
     <SettingItem
       v-for="item in section.sections"

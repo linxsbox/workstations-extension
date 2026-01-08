@@ -1,4 +1,7 @@
 import { SETTING_TYPES } from './types.js'
+import IconBrightnessAuto from '@/components/common/Icons/IconBrightnessAuto.vue'
+import IconBrightnessDark from '@/components/common/Icons/IconBrightnessDark.vue'
+import IconBrightnessLight from '@/components/common/Icons/IconBrightnessLight.vue'
 
 // 设置项分类枚举
 export const SettingSectionEnum = {
@@ -44,34 +47,21 @@ export const settingSchema = [
           {
             label: '跟随系统',
             value: 'system',
-            icon: 'IconBrightnessAuto',
+            icon: IconBrightnessAuto,
             description: '自动跟随系统主题设置'
           },
           {
             label: '明亮',
             value: 'light',
-            icon: 'IconBrightnessLight',
+            icon: IconBrightnessLight,
             description: '使用明亮主题'
           },
           {
             label: '深色',
             value: 'dark',
-            icon: 'IconBrightnessDark',
+            icon: IconBrightnessDark,
             description: '使用深色主题'
           },
-        ],
-      },
-      {
-        id: 'language',
-        title: '语言',
-        type: SETTING_TYPES.SELECT,
-        storeKey: 'language',
-        action: 'setLanguage',
-        enabled: false,
-        placeholder: '多语言功能开发中，敬请期待...',
-        options: [
-          { label: '简体中文', value: 'zh-CN' },
-          { label: 'English', value: 'en-US' },
         ],
       },
       {
@@ -86,6 +76,19 @@ export const settingSchema = [
           { label: '默认', value: 16, description: '16px' },
           { label: '大', value: 18, description: '18px' },
           { label: '超大', value: 22, description: '22px' },
+        ],
+      },
+      {
+        id: 'language',
+        title: '语言',
+        type: SETTING_TYPES.SELECT,
+        storeKey: 'language',
+        action: 'setLanguage',
+        enabled: false,
+        placeholder: '多语言功能开发中，敬请期待...',
+        options: [
+          { label: '简体中文', value: 'zh-CN' },
+          { label: 'English', value: 'en-US' },
         ],
       },
     ],

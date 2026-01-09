@@ -53,7 +53,7 @@ const alignClass = computed(() => {
 </script>
 
 <template>
-  <div class="player-info min-w-0 flex gap-4 items-center">
+  <div class="player-info min-w-0 w-full flex gap-4 items-center">
     <!-- 封面 -->
     <PlayerCover v-if="showCover" :size="coverSize" />
 

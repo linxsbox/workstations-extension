@@ -40,7 +40,9 @@ export const storeRss = defineStore({
     },
 
     // 添加 RSS 源
-    async addSource(source, cover = false) {
+    async addSource(source, options = {}) {
+      const { closeDialog = true } = options;
+
       // 检查是否已存在相同的源
       const exists = this.sources.some((s) => s.sourceUrl === source.sourceUrl);
       if (exists) {
@@ -52,7 +54,10 @@ export const storeRss = defineStore({
 
         this.sources.push(newSource);
         this.saveSources();
-        this.closeAddDialog();
+
+        if (closeDialog) {
+          this.closeAddDialog();
+        }
 
         const rssInfo = getRssTypeInfo(source.type);
         const tab = storeTab();

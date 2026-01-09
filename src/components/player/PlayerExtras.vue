@@ -191,7 +191,7 @@ const handleSwitchPlayMode = () => {
         </template>
         <div class="flex flex-col items-center gap-2 w-6 p-2">
           <!-- 音量百分比 -->
-          <div class="w-6 text-xs text-[var(--text-color-3)] text-center cursor-pointer">
+          <div class="w-6 text-xs text-[var(--text-muted)] text-center cursor-pointer">
             {{ volumePercent }}
           </div>
 
@@ -213,7 +213,7 @@ const handleSwitchPlayMode = () => {
             :aria-label="isMuted ? '取消静音' : '静音'"
             :title="isMuted ? '取消静音' : '静音'"
           >
-            <IconVolumeOff class="text-lg text-[var(--text-color-3)]" />
+            <IconVolumeOff class="text-lg text-[var(--text-muted)]" />
           </div>
         </div>
       </NPopover>

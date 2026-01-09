@@ -12,8 +12,11 @@ import {
 } from "naive-ui";
 import { isString, isObject, debounce, hex2rgb } from "@linxs/toolkit";
 import PodcastCardView from "./PodcastCardView.vue";
+import { storeRss } from "@/stores/modules/rss";
+import { RssSourceTypeEnum } from "@/stores/modules/rss/config";
 
 const message = useMessage();
+const rssStore = storeRss();
 
 const formSearchWord = ref("");
 const showSearchModal = ref(false);
@@ -263,10 +266,35 @@ const ensureGetPodcastXyzCache = async (signal) => {
 };
 
 // 处理订阅播客
-const handleClickPodcst = (item) => {
-  console.log("订阅播客:", item);
-  message.success(`已订阅: ${item.title}`);
-  // TODO: 实际的订阅逻辑
+const handleClickPodcst = async (item) => {
+  try {
+    // 根据链接判断播客类型
+    const getSourceType = (link) => {
+      if (link.includes('xiaoyuzhoufm.com')) {
+        return RssSourceTypeEnum.XIAOYUZHOU;
+      }
+      // 其他平台默认为标准 RSS
+      return RssSourceTypeEnum.RSS;
+    };
+
+    // 构造 RSS 源对象
+    const source = {
+      type: getSourceType(item.link),
+      name: item.title,
+      sourceUrl: item.link,
+    };
+
+    // 添加到订阅列表（不关闭 RSS 管理对话框）
+    await rssStore.addSource(source, { closeDialog: false });
+
+    message.success(`已订阅: ${item.title}`);
+
+    // 关闭搜索弹窗
+    showSearchModal.value = false;
+  } catch (error) {
+    console.error("订阅播客失败:", error);
+    message.error(error.message || "订阅失败，请重试");
+  }
 };
 </script>
 

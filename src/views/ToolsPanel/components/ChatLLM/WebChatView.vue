@@ -182,7 +182,7 @@ const getRederMarkdown = (content) => {
         v-for="(msg, index) in messages"
       >
         <div
-          class="user-message max-w-3/4 p-2 text-[var(--text-color-3)] rounded-md bg-[var(--interactive-bg-active-1)] whitespace-pre-line"
+          class="user-message max-w-3/4 p-2 text-[var(--text-muted)] rounded-md bg-[var(--interactive-bg-active-1)] whitespace-pre-line"
           v-if="msg.role === 'user'"
         >
           {{ msg.content }}

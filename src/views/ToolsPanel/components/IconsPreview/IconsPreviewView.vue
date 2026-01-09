@@ -67,7 +67,7 @@ const handleCopyUsageCode = (iconName) => {
       />
 
       <!-- 统计 -->
-      <div class="text-sm text-[var(--text-color-3)]">
+      <div class="text-sm text-[var(--text-muted)]">
         {{ filteredIcons.length }} / {{ iconList.length }}
       </div>
     </div>
@@ -92,7 +92,7 @@ const handleCopyUsageCode = (iconName) => {
           </div>
 
           <!-- 图标名称 -->
-          <div class="icon-name text-xs text-center text-[var(--text-color-2)] break-all leading-tight">
+          <div class="icon-name text-xs text-center text-[var(--text-tertiary)] break-all leading-tight">
             {{ icon.name }}
           </div>
         </div>
@@ -101,7 +101,7 @@ const handleCopyUsageCode = (iconName) => {
       <!-- 空状态 -->
       <div
         v-if="filteredIcons.length === 0"
-        class="flex flex-col items-center justify-center h-[400px] text-[var(--text-color-3)]"
+        class="flex flex-col items-center justify-center h-[400px] text-[var(--text-muted)]"
       >
         <p class="text-lg">未找到匹配的图标</p>
       </div>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted, nextTick } from "vue";
+import { ref, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
 import { NModal, NScrollbar, NDivider } from "naive-ui";
 import { storeSettings } from "@/stores/modules/settings";
@@ -12,29 +12,43 @@ const { showSettingDialog, activeSettingSection } = storeToRefs(store);
 
 const contentRef = ref(null);
 
-const {
-  scrollToSection, // 滚动到指定部分
-  calculateSectionPositions, // 计算各个部分的位置
-  handleScroll, // 处理滚动事件
-  sectionPositions, // 部分位置信息
-} = useScrollNavigation(contentRef, settingSchema, (menuId) => {
-  store.switchSettingSection(menuId);
-});
+let navigationInstance = null;
 
-onMounted(() => {
-  calculateSectionPositions();
-  window.addEventListener("resize", calculateSectionPositions);
-});
+const scrollToSection = (menuId) => {
+  navigationInstance?.scrollToSection(menuId);
+};
 
-// 监听对话框打开
-watch(showSettingDialog, (isShow) => {
-  if (isShow && contentRef.value) {
-    nextTick(() => {
-      calculateSectionPositions();
-      const position =
-        sectionPositions.value[activeSettingSection.value]?.top || 0;
-      contentRef.value.scrollTo({ top: position });
+const handleScroll = (e) => {
+  navigationInstance?.handleScroll(e);
+};
+
+// 监听弹窗打开，初始化滚动导航
+watch(showSettingDialog, async (isOpen) => {
+  if (isOpen && !navigationInstance) {
+    // 等待 DOM 渲染完成
+    await nextTick();
+
+    const nScrollbarWrapper = document.querySelector(".setting-content-scroll");
+
+    if (nScrollbarWrapper) {
+      contentRef.value = nScrollbarWrapper;
+    }
+
+    navigationInstance = useScrollNavigation(contentRef, {
+      menus: settingSchema,
+      scrollContainerRef: ".n-scrollbar-container",
+      onScroll: (menuId) => {
+        store.switchSettingSection(menuId);
+      },
     });
+  }
+
+  // 弹窗打开时，滚动到当前激活的 section
+  if (isOpen && navigationInstance && contentRef.value) {
+    await nextTick();
+    navigationInstance.calculateSectionPositions();
+    const position = navigationInstance.sectionPositions.value[activeSettingSection.value]?.top || 0;
+    contentRef.value.scrollTo({ top: position });
   }
 });
 </script>
@@ -69,7 +83,7 @@ watch(showSettingDialog, (isShow) => {
 
       <!-- 右侧内容 -->
       <div class="flex-1">
-        <NScrollbar ref="contentRef" @scroll="handleScroll">
+        <NScrollbar class="setting-content-scroll" @scroll="handleScroll">
           <div class="setting-content pr-4">
             <template v-for="(section, index) in settingSchema" :key="section.id">
               <div :id="`section-${section.id}`" class="setting-section mb-8">

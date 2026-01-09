@@ -12,13 +12,16 @@ const { currentTime, duration, playbackRate, getPlayStatus } = storeToRefs(playe
 const playerBox = ref(null);
 const playerProgress = ref(null);
 const progressBarTransition = ref('');
-const isJumpProgress = ref(false);
 let apDnd = null;
 
 /**
  * 计算播放时长状态
  */
 const calcPlayTime = (width = 0) => {
+  if (!playerProgress.value?.offsetWidth || !duration.value) {
+    return { currentTime: 0, remainingTime: 0 };
+  }
+
   const percent =
     parseInt(`${(width / playerProgress.value.offsetWidth) * 100}`) / 100;
   const currentTime = parseInt(`${duration.value * percent}`);
@@ -27,7 +30,7 @@ const calcPlayTime = (width = 0) => {
 };
 
 /** 获取当前进度条元素 */
-const getCurrentProgressBar = () => {
+const currentProgressBarEl = () => {
   return playerProgress.value.querySelector('.progress-bar');
 };
 
@@ -46,7 +49,7 @@ const setCurrentStateProgressWidth = (width = 0, remainingTime, event = '') => {
         ? width
         : getIsPlaying.value
         ? (playerProgress.value || {}).offsetWidth || 0
-        : getCurrentProgressBar().offsetWidth
+        : currentProgressBarEl().offsetWidth
     }px`,
   ];
 
@@ -67,7 +70,7 @@ onMounted(() => {
   apDnd = new PlayerProgressDnD(
     playerBox.value,
     playerProgress.value,
-    getCurrentProgressBar()
+    currentProgressBarEl()
   );
   apDnd.disabled = true;
 
@@ -93,18 +96,28 @@ onMounted(() => {
     );
     player.seek(calcPlayTime(width).currentTime);
   });
+
+  nextTick(() => {
+    const currentWidth = currentProgressBarEl().offsetWidth
+    if (getIsPlaying.value && currentProgressBarEl() && currentWidth === 0) {
+      const updateCurrentWidth = (currentTime.value / duration.value) * playerProgress.value.offsetWidth
+      setProgressBarTransitionWidth(updateCurrentWidth)
+      nextTick(() => {
+        setCurrentStateProgressWidth(null, null, 'player progress bar rerender');
+      })
+    }
+  }, 300)
 });
 
 // 进度条拖动
-const handleProgressDnD = (e) => {
-  apDnd.handleDnD(e);
+const handleProgressDnD = (event) => {
+  apDnd.handleDnD(event);
 };
 
 // 点击进度条跳转
 const handleJumpProgress = (event) => {
   if (apDnd.isDnD || !getIsPlayerEnable.value) return;
   event.stopPropagation();
-  isJumpProgress.value = true;
 
   const { currentTime: ct, remainingTime } = calcPlayTime(event.offsetX);
 
@@ -114,7 +127,6 @@ const handleJumpProgress = (event) => {
     getIsPlaying.value &&
       setCurrentStateProgressWidth(null, remainingTime, 'jump trigger');
     player.seek(ct);
-    isJumpProgress.value = false;
   });
 };
 

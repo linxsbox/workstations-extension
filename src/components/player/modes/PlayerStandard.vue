@@ -60,7 +60,7 @@ const handleTogglePlaylist = () => {
     <!-- 下部：播放条 -->
     <div class="player-bar flex-none p-4 bg-white/15">
       <!-- 歌曲信息和控制按钮 -->
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between items-center gap-4 mb-4">
         <PlayerInfo :showArtist="true" />
         <PlayerExtras
           :showBackRate="showBackRate"

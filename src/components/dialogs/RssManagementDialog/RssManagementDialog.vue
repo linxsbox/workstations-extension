@@ -32,7 +32,7 @@ const handleScroll = (e) => {
 watch(
   () => store.showAddDialog,
   async (isOpen) => {
-    if (isOpen && !navigationInstance) {
+    if (isOpen) {
       // 等待 DOM 渲染完成
       await nextTick();
       const nScrollbarWrapper = document.querySelector(
@@ -50,6 +50,9 @@ watch(
           activeMenus.value = menuId;
         },
       });
+    } else {
+      // 对话框关闭时清理导航实例
+      navigationInstance = null;
     }
   }
 );

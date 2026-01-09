@@ -39,13 +39,16 @@ const getAlbumInfo = () => {
 
 // 构建轨道数据
 const buildTrackData = () => {
+  const albumInfo = getAlbumInfo();
+
   return {
     title: props.data.title,
     src: props.data.mediaUrl,
-    album: getAlbumInfo(),
+    album: albumInfo,
     pid: props.pid || "",
-    duration: props.data.duration || 0, // 原始秒数
-    artist: props.data.author || "",
+    duration: props.data.duration || 0,
+    // 从 album 中获取作者信息（播客作者）
+    artist: albumInfo?.author || "",
   };
 };
 
@@ -131,7 +134,7 @@ const handleAddToQueueError = (error) => {
           </div>
           <!-- <div class="author flex justify-between text-xs">
             <span>{{ props.data.author }}</span>
-            <span class="text-[var(--text-color-2)]" v-if="props.data.pubDate"> {{ props.data.pubDate || "" }} </span>
+            <span class="text-[var(--text-tertiary)]" v-if="props.data.pubDate"> {{ props.data.pubDate || "" }} </span>
           </div> -->
         </header>
         <div class="description text-sm break-words line-clamp-2">
@@ -181,7 +184,7 @@ const handleAddToQueueError = (error) => {
   }
 
   .card-footer {
-    color: var(--text-color-2);
+    color: var(--text-tertiary);
   }
 }
 </style>

@@ -40,7 +40,7 @@ import ExtendView from "./ExtendView.vue";
 
     .version-info {
       font-size: 12px;
-      color: var(--text-color-3);
+      color: var(--text-muted);
     }
   }
 }

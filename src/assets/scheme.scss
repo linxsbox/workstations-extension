@@ -25,15 +25,8 @@
   --color-black-alpha-7: rgba(0, 0, 0, 0.1);
   --color-black-alpha-8: rgba(0, 0, 0, 0.05);
 
-  --border-radius: 6px;
-  --border-radius-0: 16px;
-  --border-radius-1: 14px;
-  --border-radius-2: 12px;
-  --border-radius-3: 10px;
-  --border-radius-4: 8px;
-
   // 功能色
-  // --color-info: #1a73e8; // 信息
+  --color-info: #1a73e8; // 信息
   --color-info-rgb: 26, 115, 232; // 信息 RGB
   --color-success: #34a853; // 成功
   --color-success-rgb: 52, 168, 83; // 成功 RGB
@@ -56,22 +49,22 @@
   // 2. 文本颜色
   --text-primary: var(--color-black); // 主要文本
   --text-secondary: #5f6973; // 次要文本
+  --text-tertiary: #4c5258; // 第三级文本
+  --text-muted: #353637; // 减弱/辅助文本
   --text-disabled: var(--color-black-alpha-4); // 禁用文本
   --text-inverse: var(--color-white); // 反色文本
-  --text-color-2: #4c5258;
-  --text-color-3: #353637;
 
   // 3. 背景颜色
   --bg-base: #f4f4f5; // 基础背景
   --bg-primary: var(--color-white); // 主色背景
   --bg-primary-inverse: var(--color-black); // 反色主色背景
   --bg-secondary: var(--color-white-alpha-3); // 提升层级背景
-  --bg-overlay: var(--theme-color-2); // 遮罩层背景
+  --bg-overlay: var(--color-black-alpha-3); // 遮罩层背景
   --bg-disabled: var(--color-black-alpha-8); // 禁用背景
 
   // 4. 边框颜色
   --border-color: #ced2d6; // 默认边框
-  --border-primary: var(--border-color-2); // 主色边框
+  --border-primary: var(--border-color); // 主色边框
   --border-secondary: #52525b; // 次要边框
   --border-disabled-color: #ced2d6; // 默认边框
 
@@ -104,6 +97,10 @@
   --link-hover-color: #185abc;
   --link-visited-color: #681da8;
 
+  // 9. 滑块颜色
+  --slider-rail-bg: #d1d5db; // 滑块轨道背景
+  --slider-thumb-bg: var(--color-white); // 滑块按钮背景
+
   --scrollbar-thumb: rgba(193, 193, 193, 0.6);
   --scrollbar-thumb-hover: rgba(168, 168, 168, 0.75);
 }
@@ -118,22 +115,22 @@
   // 2. 文本颜色
   --text-primary: var(--color-white); // 主要文本
   --text-secondary: #a1a1aa; // 次要文本
+  --text-tertiary: #80909e; // 第三级文本
+  --text-muted: #ced7e0; // 减弱/辅助文本
   --text-disabled: var(--color-white-alpha-4); // 禁用文本
   --text-inverse: var(--color-black); // 反色文本
-  --text-color-2: #80909e;
-  --text-color-3: #ced7e0;
 
   // 3. 背景颜色
   --bg-base: #101011; // 基础背景
   --bg-primary: var(--color-black); // 主色背景
   --bg-primary-inverse: var(--color-white); // 主色背景
   --bg-secondary: var(--color-black-alpha-3); // 提升层级背景
-  --bg-overlay: var(--theme-color-2); // 遮罩层背景
+  --bg-overlay: var(--color-white-alpha-3); // 遮罩层背景
   --bg-disabled: var(--color-white-alpha-8); // 禁用背景
 
   // 4. 边框颜色
   --border-color: #454d56; // 默认边框
-  --border-primary: var(--border-color-2); // 主色边框
+  --border-primary: var(--border-color); // 主色边框
   --border-secondary: #52525b; // 次要边框
   --border-disabled-color: #454d56; // 默认边框
 
@@ -165,6 +162,10 @@
   --link-color: #8ab4f8;
   --link-hover-color: #aecbfa;
   --link-visited-color: #c5a3ff;
+
+  // 9. 滑块颜色
+  --slider-rail-bg: #4b5563; // 滑块轨道背景
+  --slider-thumb-bg: var(--color-white); // 滑块按钮背景
 
   // --scrollbar-thumb: rgba(104, 104, 104, 0.5);
   // --scrollbar-thumb-hover: rgba(123, 123, 123, 0.65);

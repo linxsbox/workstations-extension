@@ -1,10 +1,9 @@
 <script setup>
-import PlayerCover from '../PlayerCover.vue';
-import PlayerInfo from '../PlayerInfo.vue';
-import PlayerControls from '../PlayerControls.vue';
-import PlayerExtras from '../PlayerExtras.vue';
-import PlayerProgressBar from '../PlayerProgressBar.vue';
-import PlayerQueue from '../PlayerQueue.vue';
+import PlayerInfo from "../PlayerInfo.vue";
+import PlayerControls from "../PlayerControls.vue";
+import PlayerExtras from "../PlayerExtras.vue";
+import PlayerProgressBar from "../PlayerProgressBar.vue";
+import PlayerQueue from "../PlayerQueue.vue";
 
 const props = defineProps({
   showBackRate: { type: Boolean, default: true },
@@ -15,16 +14,13 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="player-list flex flex-col gap-4 p-4">
+  <div class="player-list w-[360px] min-h-[400px] max-h-[80vh] flex flex-col gap-4">
     <!-- 上部：封面、歌曲信息、播放控制 -->
-    <div class="flex flex-col items-center gap-3">
-      <!-- 封面 -->
-      <PlayerCover :size="64" />
-
+    <div class="flex flex-col items-center gap-3 px-4 pt-10">
       <!-- 歌曲信息 + 播放控制 -->
       <div class="w-full flex flex-col items-center gap-3">
         <!-- 歌曲信息 -->
-        <PlayerInfo align="center" :showArtist="true" />
+        <PlayerInfo />
 
         <!-- 播放控制器 -->
         <div class="flex items-center gap-4">
@@ -40,11 +36,11 @@ const props = defineProps({
     </div>
 
     <!-- 播放进度条 -->
-    <PlayerProgressBar />
+    <PlayerProgressBar class="px-3" />
 
     <!-- 播放列表 -->
-    <div class="queue-container">
-      <PlayerQueue />
+    <div class="queue-container flex flex-col flex-1 px-2.5 pb-3">
+      <PlayerQueue class="h-full flex-1" />
     </div>
   </div>
 </template>
@@ -52,17 +48,9 @@ const props = defineProps({
 <style lang="scss" scoped>
 .player-list {
   background-color: var(--player-bg-default);
-  border-radius: 8px;
   box-shadow: var(--player-card-shadow);
-  min-height: 400px;
-  transition: all 0.2s ease;
 }
 
 .queue-container {
-  flex: 1;
-  min-height: 200px;
-  overflow: hidden;
-  border-top: 1px solid var(--player-queue-header-border);
-  border-radius: 0 0 6px 6px;
 }
 </style>

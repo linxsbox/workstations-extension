@@ -22,6 +22,7 @@ export const STORAGE_KEYS = {
   PLAYBACK_RATE: "USER_PLAYBACK_RATE", // 使用 sessionStorage
   PLAY_QUEUE: "PLAYER_PLAY_QUEUE", // 播放队列
   VIEW_MODE: "PLAYER_VIEW_MODE", // 播放器视图模式
+  PLAYER_POSITION: "PLAYER_POSITION", // 播放器位置
 
   // 业务数据
   RSS_SOURCES: "USER_RSS_SOURCES",

@@ -62,7 +62,14 @@ export const storeSettings = defineStore({
     setThemeMode(mode) {
       this.themeMode = mode;
       storageManager.set(STORAGE_KEYS.THEME_MODE, mode);
-      updateThemeMode(this.isDarkMode);
+
+      if (mode === "system") {
+        // 自动模式：根据当前系统主题设置
+        updateThemeMode(getPrefersTheme());
+      } else {
+        // 手动模式：设置具体的主题
+        updateThemeMode(mode === "dark");
+      }
     },
 
     // 设置字体大小
@@ -81,7 +88,6 @@ export const storeSettings = defineStore({
       if (window.matchMedia) {
         const darkModeMediaQuery = getMediaPrefersScheme();
 
-        // 移除可能存在的旧监听器
         const mediaQueryHandler = (e) => {
           // 只有在用户选择"跟随系统"时才响应系统主题变化
           if (this.themeMode === "system") {
@@ -138,5 +144,5 @@ const getMediaPrefersScheme = () => {
 };
 
 const getPrefersTheme = () => {
-  return getMediaPrefersScheme().matches ? "dark" : "light";
+  return getMediaPrefersScheme().matches;  // 返回 boolean：true=深色, false=浅色
 };

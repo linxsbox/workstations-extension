@@ -106,7 +106,7 @@ const getTrackStyle = (track) => {
       <div
         v-for="(track, index) in playQueue.tracks"
         :key="track.id"
-        class="queue-item flex items-center gap-3 px-4 py-2.5 mb-1 rounded-lg cursor-pointer select-none"
+        class="queue-item flex items-center gap-3 px-3 py-2.5 mb-1 rounded-lg cursor-pointer select-none"
         :class="{ current: isCurrentTrack(track.id) }"
         :style="getTrackStyle(track)"
         @dblclick="handlePlayTrack(track.id)"

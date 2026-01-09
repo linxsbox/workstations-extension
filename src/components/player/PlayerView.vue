@@ -1,10 +1,11 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { storeToRefs } from "pinia";
 import { NModal, useDialog } from "naive-ui";
+import { delay } from "@linxs/toolkit";
 import { storePlayer } from "@/stores/modules/player";
 import { ViewMode } from "@/stores/modules/player/types";
-import { updateMediaCover } from "./config";
+import { PlayerDragManager } from "./config";
 import PlayerMini from "./modes/PlayerMini.vue";
 import PlayerList from "./modes/PlayerList.vue";
 import PlayerStandard from "./modes/PlayerStandard.vue";
@@ -42,14 +43,8 @@ const isPlayerVisible = computed({
   },
 });
 
-onMounted(() => {
-  // 初始化音频管理器
-  store.initAudioManager();
-});
-
-onBeforeUnmount(() => {
-  // 清理会在这里处理
-});
+/** 列表模式不显示遮罩，标准模式显示遮罩 */
+const showMask = computed(() => getViewMode.value === ViewMode.STANDARD);
 
 /** 当前播放标题 */
 const currentPlayTitle = computed(() => {
@@ -104,6 +99,73 @@ const handleClose = () => {
     },
   });
 };
+
+// ==================== 拖动功能 ====================
+const playerContainerRef = ref(null);
+let dragManager = null;
+
+/** 是否允许拖动（标准模式不允许拖动） */
+const isDraggable = computed(() => getViewMode.value !== ViewMode.STANDARD);
+
+/** 处理 mousedown 事件 */
+const handleMouseDown = (event) => {
+  if (isDraggable.value && dragManager) {
+    dragManager.handleDragStart(event);
+  }
+};
+
+/** 初始化拖动管理器 */
+const initDragManager = async () => {
+  // 如果播放器不可见，不需要初始化
+  if (!isPlayerVisible.value) return;
+
+  // 等待 DOM 更新
+  await nextTick();
+  // 延迟等待 NModal 完全渲染
+  await delay(0);
+
+  if (playerContainerRef.value) {
+    // 如果已经存在，先销毁旧的
+    if (dragManager) {
+      dragManager.destroy();
+    }
+
+    // 创建新的拖动管理器
+    dragManager = new PlayerDragManager(playerContainerRef.value);
+
+    // 恢复位置（如果可拖动）
+    if (isDraggable.value) {
+      dragManager.restorePosition();
+    }
+  }
+};
+
+// 监听播放器显示状态，在显示时初始化拖动管理器
+watch(isPlayerVisible, (newVal) => {
+  if (newVal) {
+    initDragManager();
+  }
+});
+
+// 监听视图模式变化，容器重新渲染时重新初始化拖动管理器
+watch(getViewMode, () => {
+  if (isPlayerVisible.value) {
+    initDragManager();
+  }
+});
+
+onMounted(() => {
+  // 初始化音频管理器
+  store.initAudioManager();
+});
+
+onBeforeUnmount(() => {
+  // 清理拖动管理器
+  if (dragManager) {
+    dragManager.destroy();
+    dragManager = null;
+  }
+});
 </script>
 
 <template>
@@ -112,18 +174,23 @@ const handleClose = () => {
     :mask-closable="false"
     :close-on-esc="false"
     :auto-focus="false"
+    :show-mask="showMask"
     transform-origin="center"
+    display-directive="show"
   >
     <div
+      ref="playerContainerRef"
       class="player-view-container relative inline-flex max-w-[95vw] max-h-[95vh]"
+      :class="isDraggable && { 'is-dragging': dragManager?.isDragging }"
       :style="themeStyle"
     >
       <!-- Header 头部 -->
       <header
         class="player-header absolute top-0 left-0 right-0 z-10 w-full h-10 flex items-center backdrop-blur-md"
+        @mousedown="handleMouseDown"
       >
         <!-- 左侧：模式切换 -->
-        <div class="header-left h-full flex-none flex items-center gap-1">
+        <div class="header-left h-full flex-none flex items-center gap-1" :class="{ 'cursor-move': isDraggable }">
           <div
             v-for="mode in modeOptions"
             :key="mode.value"
@@ -136,8 +203,9 @@ const handleClose = () => {
           </div>
         </div>
 
-        <!-- 中间：占位 -->
-        <div class="header-center h-full flex-1"></div>
+        <!-- 中间：占位 / 拖动区域 -->
+        <div class="header-center h-full flex-1" :class="{ 'cursor-move': isDraggable }">
+        </div>
 
         <!-- 右侧：最小化和关闭按钮 -->
         <div class="header-right h-full flex-none flex items-center">
@@ -179,6 +247,14 @@ const handleClose = () => {
 
 .player-view-container {
   background-color: var(--player-bg-default);
+  transition: box-shadow 0.2s ease;
+
+  // 拖动时的样式
+  &.is-dragging {
+    cursor: move;
+    user-select: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
 
   // 最小化按钮（仅该组件使用）
   --player-minimize-hover-color: var(--color-green);
@@ -203,7 +279,10 @@ const handleClose = () => {
 
   &.active {
     color: var(--player-color, #409eff);
-    background: rgba(var(--play-button-bg-color, --play-button-bg-color-default), 0.15);
+    background: rgba(
+      var(--play-button-bg-color, --play-button-bg-color-default),
+      0.15
+    );
   }
 }
 

@@ -69,7 +69,7 @@ const getThemeColor = (theme) => {
             </a>
             <span class="author">{{ props.data.author }}</span>
           </div>
-          <div class="description text-[var(--text-color-2)]">
+          <div class="description text-[var(--text-tertiary)]">
             {{ props.data.description }}
           </div>
         </div>
@@ -100,7 +100,7 @@ const getThemeColor = (theme) => {
 
       .title {
         color: rgb(var(--origin-theme-rgb));
-        text-shadow: 1px 1px 1px var(--text-color-2);
+        text-shadow: 1px 1px 1px var(--text-tertiary);
       }
     }
   }

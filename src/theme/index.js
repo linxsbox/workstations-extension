@@ -17,7 +17,7 @@ export const themeOverrides = {
     color: "var(--text-primary)", // 公共背景色 ？
     // baseColor: "transparent", // 组件内部分底色？
     // borderColor: "var(--border-color)",
-    borderRadius: "var(--border-radius)", // 公共圆角
+    borderRadius: "6px", // 公共圆角
     cardColor: "var(--ui-modal-bg)", // Card 组件背景色
     modalColor: "var(--ui-modal-bg)", // Modal 组件背景色
   },
@@ -116,7 +116,7 @@ export const themeOverrides = {
     colorBordered: "var(--ui-common-bg)", // 背景色
     textColor: "var(--text-primary)", // 字体颜色
     border: "1px solid var(--border-color)", // 边框
-    borderRadius: "var(--border-radius)",
+    borderRadius: "6px",
   },
   Divider: {
     color: "var(--border-color)", // 线条颜色

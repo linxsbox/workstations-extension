@@ -1,4 +1,5 @@
 import { eventListener, s2DHMS, PubSub } from "@linxs/toolkit";
+import { storageManager, STORAGE_KEYS } from "@/stores/storage";
 
 // 格式化播放时间
 export const formatPlayTime = (seconds = 0) => {
@@ -10,6 +11,169 @@ export const formatPlayTime = (seconds = 0) => {
     ":"
   );
 };
+
+/**
+ * 播放器拖动管理类
+ */
+export class PlayerDragManager {
+  #isDragging = false;
+  #dragOffset = { x: 0, y: 0 };
+  #containerEl = null;
+  #mousemoveCleanup = null;
+  #mouseupCleanup = null;
+
+  constructor(containerEl) {
+    this.#containerEl = containerEl;
+  }
+
+  /**
+   * 处理拖动开始
+   */
+  handleDragStart = (event) => {
+    // 只允许在 header-left 和 header-center 区域拖动
+    const target = event.target;
+    if (
+      !target.closest('.header-left') &&
+      !target.closest('.header-center')
+    ) {
+      return;
+    }
+
+    // 排除按钮区域
+    if (
+      target.closest('.mode-option') ||
+      target.closest('.minimize-btn') ||
+      target.closest('.close-btn')
+    ) {
+      return;
+    }
+
+    this.#isDragging = true;
+
+    const container = this.#containerEl;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    this.#dragOffset = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+
+    // 使用 eventListener 注册拖动事件
+    this.#mousemoveCleanup = eventListener(
+      document,
+      'mousemove',
+      this.handleDragMove
+    );
+    this.#mouseupCleanup = eventListener(
+      document,
+      'mouseup',
+      this.handleDragEnd
+    );
+
+    event.preventDefault();
+  };
+
+  /**
+   * 处理拖动移动
+   */
+  handleDragMove = (event) => {
+    if (!this.#isDragging) return;
+
+    const container = this.#containerEl;
+    if (!container) return;
+
+    const newX = event.clientX - this.#dragOffset.x;
+    const newY = event.clientY - this.#dragOffset.y;
+
+    // 限制在视口内
+    const maxX = window.innerWidth - container.offsetWidth;
+    const maxY = window.innerHeight - container.offsetHeight;
+
+    const clampedX = Math.max(0, Math.min(newX, maxX));
+    const clampedY = Math.max(0, Math.min(newY, maxY));
+
+    container.style.position = 'fixed';
+    container.style.left = `${clampedX}px`;
+    container.style.top = `${clampedY}px`;
+    container.style.transform = 'none';
+  };
+
+  /**
+   * 处理拖动结束
+   */
+  handleDragEnd = () => {
+    if (!this.#isDragging) return;
+
+    this.#isDragging = false;
+
+    // 保存位置
+    const container = this.#containerEl;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      storageManager.set(STORAGE_KEYS.PLAYER_POSITION, {
+        x: rect.left,
+        y: rect.top,
+      });
+    }
+
+    // 清理事件监听
+    if (this.#mousemoveCleanup) {
+      this.#mousemoveCleanup();
+      this.#mousemoveCleanup = null;
+    }
+    if (this.#mouseupCleanup) {
+      this.#mouseupCleanup();
+      this.#mouseupCleanup = null;
+    }
+  };
+
+  /**
+   * 恢复保存的位置
+   */
+  restorePosition() {
+    const savedPosition = storageManager.get(STORAGE_KEYS.PLAYER_POSITION);
+    if (!savedPosition || !this.#containerEl) return;
+
+    const container = this.#containerEl;
+    const { x, y } = savedPosition;
+
+    // 确保位置在视口内
+    const maxX = window.innerWidth - container.offsetWidth;
+    const maxY = window.innerHeight - container.offsetHeight;
+
+    const clampedX = Math.max(0, Math.min(x, maxX));
+    const clampedY = Math.max(0, Math.min(y, maxY));
+
+    container.style.position = 'fixed';
+    container.style.left = `${clampedX}px`;
+    container.style.top = `${clampedY}px`;
+    container.style.transform = 'none';
+  }
+
+  /**
+   * 获取拖动状态
+   */
+  get isDragging() {
+    return this.#isDragging;
+  }
+
+  /**
+   * 销毁管理器
+   */
+  destroy() {
+    if (this.#mousemoveCleanup) {
+      this.#mousemoveCleanup();
+      this.#mousemoveCleanup = null;
+    }
+    if (this.#mouseupCleanup) {
+      this.#mouseupCleanup();
+      this.#mouseupCleanup = null;
+    }
+    this.#containerEl = null;
+  }
+}
 
 export class PlayerProgressDnD extends PubSub {
   #isDnD = false;
@@ -177,17 +341,3 @@ export class PlayerProgressDnD extends PubSub {
     this.#disabled = value;
   }
 }
-
-// 更新媒体封面
-export const updateMediaCover = (album = {}, title) => {
-  if ("mediaSession" in navigator) {
-    if (!album || !album.image) return;
-
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: title,
-      artist: album.author,
-      album: album.albumTitle,
-      artwork: [{ src: album.image, sizes: "300x300", type: "image/jpeg" }],
-    });
-  }
-};

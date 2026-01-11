@@ -39,10 +39,17 @@ const title = computed(() => {
 
 /** 艺术家名称 */
 const artist = computed(() => {
+  // 优先从顶级 artist 字段获取
+  if (getPlayStatus.value.artist) {
+    return getPlayStatus.value.artist;
+  }
+
+  // 如果没有，从 album 中获取
   const album = getPlayStatus.value.album;
   if (album && isObject(album)) {
-    return album.artist || album.name || "未知艺术家";
+    return album.author || album.artist || album.name || "未知艺术家";
   }
+
   return "未知艺术家";
 });
 

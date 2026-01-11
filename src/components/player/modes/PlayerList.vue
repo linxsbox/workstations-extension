@@ -16,7 +16,7 @@ const props = defineProps({
 <template>
   <div class="player-list w-[360px] min-h-[400px] max-h-[80vh] flex flex-col gap-4">
     <!-- 上部：封面、歌曲信息、播放控制 -->
-    <div class="flex flex-col items-center gap-3 px-4 pt-10">
+    <div class="flex flex-col items-center gap-3 px-4 pt-12">
       <!-- 歌曲信息 + 播放控制 -->
       <div class="w-full flex flex-col items-center gap-3">
         <!-- 歌曲信息 -->
@@ -39,15 +39,15 @@ const props = defineProps({
     <PlayerProgressBar class="px-3" />
 
     <!-- 播放列表 -->
-    <div class="queue-container flex flex-col flex-1 px-2.5 pb-3">
-      <PlayerQueue class="h-full flex-1" />
+    <div class="queue-container flex flex-col flex-1 h-full px-2.5 pb-3 overflow-hidden">
+      <PlayerQueue class="h-full h-[350px] flex-1 overflow-hidden" />
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .player-list {
-  background-color: var(--player-bg-default);
+  // background-color: var(--player-bg-default);
   box-shadow: var(--player-card-shadow);
 }
 

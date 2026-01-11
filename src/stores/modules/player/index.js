@@ -23,6 +23,7 @@ export const storePlayer = defineStore("player", {
       isLoading: false,
       src: "",
       title: "",
+      artist: "",
       pid: "",
       album: null,
     },
@@ -166,6 +167,7 @@ export const storePlayer = defineStore("player", {
     async loadAudio(src, metadata = {}) {
       this.playStatus.src = src;
       this.playStatus.title = metadata.title || "";
+      this.playStatus.artist = metadata.artist || "";
       this.playStatus.pid = metadata.pid || "";
       this.playStatus.album = metadata.album || null;
       this.playStatus.isError = false;
@@ -243,6 +245,7 @@ export const storePlayer = defineStore("player", {
         // 清理当前音频信息
         this.playStatus.src = "";
         this.playStatus.title = "";
+        this.playStatus.artist = "";
         this.playStatus.pid = "";
         this.playStatus.album = null;
       }
@@ -299,6 +302,7 @@ export const storePlayer = defineStore("player", {
         isLoading: false,
         src: "",
         title: "",
+        artist: "",
         pid: "",
         album: null,
       };

@@ -1,5 +1,4 @@
 <script setup>
-import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { NPopconfirm, NScrollbar } from "naive-ui";
 import { sec2time } from "@/utils/time";
@@ -9,7 +8,7 @@ import IconPlaylistRemove from "@/components/common/Icons/IconPlaylistRemove.vue
 import IconDelete from "@/components/common/Icons/IconDelete.vue";
 
 const player = storePlayer();
-const { playQueue, currentTime, duration } = storeToRefs(player);
+const { playQueue, duration } = storeToRefs(player);
 
 // 获取轨道时长（当前播放的使用实时时长）
 const getTrackDuration = (track, index) => {
@@ -65,14 +64,8 @@ const getTrackStyle = (track) => {
       class="queue-header flex justify-between items-center px-4 py-3 border-b rounded-t-xl"
     >
       <div class="flex items-center gap-2">
-        <IconQueueMusic
-          class="text-xl flex-shrink-0"
-          :style="{ color: 'var(--text-secondary)' }"
-        />
-        <h3
-          class="m-0 text-sm font-semibold"
-          :style="{ color: 'var(--text-primary)' }"
-        >
+        <IconQueueMusic class="text-xl flex-shrink-0 text-[var(--text-secondary)]" />
+        <h3 class="m-0 text-sm font-semibold text-[var(--text-primary)]" >
           播放列表 ({{ playQueue.getTrackCount() }})
         </h3>
       </div>
@@ -96,8 +89,7 @@ const getTrackStyle = (track) => {
 
     <div
       v-if="playQueue.tracks.length === 0"
-      class="flex-1 flex items-center justify-center text-sm py-10 px-5 rounded-b-xl"
-      :style="{ color: 'var(--text-secondary)' }"
+      class="flex-1 flex items-center justify-center text-sm py-10 px-5 rounded-b-xl text-[var(--text-secondary)]"
     >
       播放列表为空
     </div>

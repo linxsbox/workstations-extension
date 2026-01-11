@@ -153,6 +153,20 @@ export class PlayerDragManager {
   }
 
   /**
+   * 重置位置（清除所有定位样式）
+   * 用于标准模式下清除拖动产生的定位样式，让容器回归默认布局
+   */
+  resetPosition() {
+    if (!this.#containerEl) return;
+
+    const container = this.#containerEl;
+    container.style.position = '';
+    container.style.left = '';
+    container.style.top = '';
+    container.style.transform = '';
+  }
+
+  /**
    * 获取拖动状态
    */
   get isDragging() {

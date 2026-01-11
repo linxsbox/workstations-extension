@@ -25,3 +25,6 @@ dist.*
 *.sw?
 
 stats.html
+
+# Shell scripts (local tools)
+*.sh

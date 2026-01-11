@@ -133,9 +133,13 @@ const initDragManager = async () => {
     // 创建新的拖动管理器
     dragManager = new PlayerDragManager(playerContainerRef.value);
 
-    // 恢复位置（如果可拖动）
+    // 根据模式处理位置
     if (isDraggable.value) {
+      // 可拖动模式：恢复保存的位置
       dragManager.restorePosition();
+    } else {
+      // 标准模式：清除定位样式，使用默认居中布局
+      dragManager.resetPosition();
     }
   }
 };

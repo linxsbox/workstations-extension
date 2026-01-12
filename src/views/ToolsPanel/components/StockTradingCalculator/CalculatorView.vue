@@ -12,7 +12,7 @@ import { StockGroupManager, defaultStorage } from "@linxs/toolkit";
 import DataImportExport from "@/components/widgets/DataImportExport/DataImportExport.vue";
 import IconRefresh from "@/components/common/Icons/IconRefresh.vue";
 import IconRedo from "@/components/common/Icons/IconRedo.vue";
-import { importDataForGithub } from "@/utils";
+import { importDataForGithub } from "@/utils/github";
 import GroupFormView from "./GroupFormView.vue";
 import GroupItemView from "./GroupItemView.vue";
 import TradeFormView from "./TradeFormView.vue";

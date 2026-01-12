@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, onMounted } from "vue";
 import {
   NForm,
   NFormItem,
@@ -11,6 +11,7 @@ import {
   NCheckboxGroup,
   useMessage,
 } from "naive-ui";
+import { debounce, delay } from "@linxs/toolkit";
 import { storeRss } from "@/stores/modules/rss";
 import {
   RssSourceTypeEnum,
@@ -25,6 +26,7 @@ const store = storeRss();
 const message = useMessage();
 
 const formRef = ref(null);
+const loading = ref(false);
 const formValue = ref({
   type: RssSourceTypeEnum.RSS,
   name: "",
@@ -134,57 +136,68 @@ onMounted(() => {
   kr36List.forEach((item) => formValue.value.kr36Selected.push(item.url));
 });
 
-// 表单确认提交
-const handleConfirm = (e) => {
-  e.preventDefault();
+// 表单提交逻辑
+const submitForm = async () => {
+  try {
+    loading.value = true;
+
+    const sourceData = {
+      type: formValue.value.type,
+    };
+
+    if (formValue.value.type === RssSourceTypeEnum.XIAOYUZHOU) {
+      // 小宇宙表单
+      sourceData.sourceUrl = formValue.value.sourceUrl;
+
+      await store.addSource(sourceData, RssSourceTypeEnum.XIAOYUZHOU);
+      submitSuccessSwitchTab(RssSourceTypeEnum.XIAOYUZHOU);
+    } else if (formValue.value.type === RssSourceTypeEnum.KR36) {
+      // 对于36Kr，为每个选中的源创建一个订阅
+      const promises = formValue.value.kr36Selected.map(async (url) => {
+        const selected = KR36_RSS_OPTIONS.find((opt) => opt.value === url);
+        const sourceData = {
+          type: formValue.value.type,
+          name: `${formValue.value.type}-${selected.label}`,
+          sourceUrl: selected.value,
+        };
+        return await store.addSource(sourceData, true);
+      });
+
+      await Promise.all(promises);
+      submitSuccessSwitchTab(RssSourceTypeEnum.KR36);
+    } else if (formValue.value.type === RssSourceTypeEnum.WECHAT) {
+      // 微信公众号
+
+      // await store.addSource(sourceData);
+      submitSuccessSwitchTab(RssSourceTypeEnum.WECHAT);
+    } else {
+      // RSS 自定义源
+      sourceData.name = formValue.value.name || "未命名";
+      sourceData.sourceUrl = formValue.value.sourceUrl;
+
+      await store.addSource(sourceData);
+      submitSuccessSwitchTab(RssSourceTypeEnum.RSS);
+    }
+
+
+    message.success("添加成功");
+  } catch (error) {
+    message.error(error.message);
+  } finally {
+    await delay(300);
+    loading.value = false;
+    resetForm();
+  }
+};
+
+// 表单确认提交（使用防抖）
+const handleConfirm = debounce((e) => {
+  e?.preventDefault();
   formRef.value?.validate(async (errors) => {
     if (errors) return;
-    try {
-      const sourceData = {
-        type: formValue.value.type,
-      };
-
-      if (formValue.value.type === RssSourceTypeEnum.XIAOYUZHOU) {
-        // 小宇宙表单
-        sourceData.sourceUrl = formValue.value.sourceUrl;
-
-        await store.addSource(sourceData, RssSourceTypeEnum.XIAOYUZHOU);
-        submitSuccessSwitchTab(RssSourceTypeEnum.XIAOYUZHOU);
-      } else if (formValue.value.type === RssSourceTypeEnum.KR36) {
-        // 对于36Kr，为每个选中的源创建一个订阅
-        const promises = formValue.value.kr36Selected.map(async (url) => {
-          const selected = KR36_RSS_OPTIONS.find((opt) => opt.value === url);
-          const sourceData = {
-            type: formValue.value.type,
-            name: `${formValue.value.type}-${selected.label}`,
-            sourceUrl: selected.value,
-          };
-          return await store.addSource(sourceData, true);
-        });
-
-        await Promise.all(promises);
-        submitSuccessSwitchTab(RssSourceTypeEnum.KR36);
-      } else if (formValue.value.type === RssSourceTypeEnum.WECHAT) {
-        // 微信公众号
-
-        // await store.addSource(sourceData);
-        submitSuccessSwitchTab(RssSourceTypeEnum.WECHAT);
-      } else {
-        // RSS 自定义源
-        sourceData.name = formValue.value.name || "未命名";
-        sourceData.sourceUrl = formValue.value.sourceUrl;
-
-        await store.addSource(sourceData);
-        submitSuccessSwitchTab(RssSourceTypeEnum.RSS);
-      }
-
-      message.success("添加成功");
-      resetForm();
-    } catch (error) {
-      message.error(error.message);
-    }
+    await submitForm();
   });
-};
+}, 300);
 
 const resetForm = () => {
   formValue.value = {
@@ -231,6 +244,7 @@ defineExpose({
         ref="formRef"
         :model="formValue"
         :rules="rules"
+        :disabled="loading"
         label-placement="left"
         label-width="80"
         require-mark-placement="right-hanging"
@@ -289,8 +303,10 @@ defineExpose({
         </NFormItem>
 
         <div class="flex justify-end gap-4">
-          <NButton @click="handleCancel">取消</NButton>
-          <NButton @click="handleConfirm" type="primary">添加</NButton>
+          <NButton @click="handleCancel" :disabled="loading">取消</NButton>
+          <NButton @click="handleConfirm" type="primary" :loading="loading">
+            添加
+          </NButton>
         </div>
       </NForm>
     </div>

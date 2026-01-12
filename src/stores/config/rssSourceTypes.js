@@ -142,45 +142,6 @@ export default [
       return { ...res, list: tempList };
     },
   },
-  {
-    isRss: true,
-    id: "itjuzi",
-    label: "IT 桔子",
-    isRss: true,
-    type: dataType[1],
-    group: rssGroupType.ITinfo,
-    interval: { min: 30 },
-    home: "https://www.itjuzi.com/",
-    apis: {
-      list: "https://www.itjuzi.com/api/telegraph.xml",
-    },
-    recommend: [],
-    dataMatch: async (xmlData, data) => {
-      const res = parseXML(xmlData);
-      if (!res) return {};
-
-      const tempList = [];
-
-      (res.list || []).forEach((item) => {
-        const title = getNodeTextContent(item, "title");
-        const txt = getNodeTextContent(item, "description");
-        const end = txt.indexOf("。");
-        const str = txt.substring(0, end + 1);
-        const description =
-          end != -1 && str.length < 32 ? str : txt.substring(0, 32);
-        const author = res.title;
-        const pubDate = rmSecAndZone(getNodeTextContent(item, "pubDate"));
-        const link = getNodeTextContent(item, "link");
-
-        tempList.push({ title, description, author, pubDate, link });
-      });
-
-      const imgBase64 = await setCacheImage(data.id, res.image);
-
-      res.image = imgBase64;
-      return { ...res, list: tempList };
-    },
-  },
 ];
 
 

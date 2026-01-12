@@ -15,6 +15,16 @@ export const toolsList = [
   },
 
   {
+    name: "音乐搜索",
+    icon: markRaw(
+      defineAsyncComponent(() => import("@/components/common/Icons/IconMusicNote.vue"))
+    ),
+    component: markRaw(
+      defineAsyncComponent(() => import("./components/MusicSearch/MusicSearchView.vue"))
+    ),
+  },
+
+  {
     name: "神奇海螺",
     icon: markRaw(
       defineAsyncComponent(() => import("@/components/common/Icons/IconSentimentVerySatisfied.vue"))

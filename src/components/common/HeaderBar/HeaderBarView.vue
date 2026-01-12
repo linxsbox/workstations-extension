@@ -78,13 +78,6 @@ const thumbBackgroundStyle = computed(() => {
       <SearchBox></SearchBox>
     </div>
     <div class="setting-box inline-flex justify-end items-center gap-4 w-1/4">
-      <button
-        class="flex justify-center items-center gap-1 bg-transparent px-2 rounded-md"
-        type="button"
-      >
-        笔记
-      </button>
-
       <!-- 主题模式滑块 -->
       <div class="theme-slider-wrapper flex items-center px-2 w-[80px]">
         <NSlider

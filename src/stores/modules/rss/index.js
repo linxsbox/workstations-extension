@@ -20,6 +20,8 @@ export const storeRss = defineStore({
     showAddDialog: false,
     // 当前显示的数据内容
     currentList: [],
+    // 标记是否已初始化监听器
+    isListenerInitialized: false,
   }),
 
   getters: {
@@ -141,6 +143,23 @@ export const storeRss = defineStore({
 
       // 初始化显示数据
       this.switchSourceData(tab.getActiveTabId("rss"));
+
+      // 初始化 service worker 消息监听器（只初始化一次）
+      if (!this.isListenerInitialized && chrome?.runtime?.onMessage) {
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+          if (message.type === 'RSS_UPDATE_TRIGGER') {
+            console.log(`[StoreRss] 收到 RSS 更新触发消息 - 时间: ${message.hour}:00`);
+
+            // 执行批量更新
+            this.batchUpdateRss();
+
+            sendResponse({ success: true });
+          }
+        });
+
+        this.isListenerInitialized = true;
+        console.log('[StoreRss] RSS 更新监听器已初始化');
+      }
     },
 
     // 切换数据显示
@@ -231,6 +250,33 @@ export const storeRss = defineStore({
         this.saveSources();
       } catch (error) {}
     },
+
+    // 标记 RSS 项为已读
+    markAsRead(itemLink) {
+      let updated = false;
+
+      this.sources.forEach((source) => {
+        const item = source.list?.find((i) => i.link === itemLink);
+        if (item && item.isNew) {
+          item.isNew = false;
+          item.readAt = genISOWithZoneToDate().getTime();
+          updated = true;
+        }
+      });
+
+      if (updated) {
+        this.saveSources();
+
+        // 如果当前显示列表包含该项，更新显示
+        const currentItem = this.currentList.find((i) => i.link === itemLink);
+        if (currentItem) {
+          currentItem.isNew = false;
+          currentItem.readAt = genISOWithZoneToDate().getTime();
+        }
+      }
+
+      return updated;
+    },
   },
 });
 
@@ -270,11 +316,21 @@ const differenceLatestItems = (originList = [], newList = []) => {
     if (item.link) {
       const originIndex = originList.findIndex((i) => i.link === item.link);
       if (originIndex === -1) {
-        // 不存在，插入新项
-        originList.splice(index, 0, item);
+        // 不存在，插入新项并标记为新内容
+        originList.splice(index, 0, {
+          ...item,
+          isNew: true,    // 标记为新内容
+          readAt: null    // 未读状态
+        });
       } else {
-        // 已存在，更新数据（保留新数据，包括 duration 等字段）
-        originList[originIndex] = { ...originList[originIndex], ...item };
+        // 已存在，更新数据（保留新数据的 duration 等字段，但保持原有的 isNew 和 readAt）
+        const existing = originList[originIndex];
+        originList[originIndex] = {
+          ...existing,
+          ...item,
+          isNew: existing.isNew ?? false,      // 保留原有的已读状态
+          readAt: existing.readAt ?? null      // 保留原有的阅读时间
+        };
       }
     }
   });

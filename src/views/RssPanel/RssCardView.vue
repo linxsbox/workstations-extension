@@ -6,7 +6,9 @@ import { isObject, isEmptyObject } from "@linxs/toolkit";
 import { sec2min } from "@/utils/time";
 import PlayButton from "@/components/player/PlayButton.vue";
 import AddToQueueButton from "@/components/player/AddToQueueButton.vue";
+import IconFiberNew from "@/components/common/Icons/IconFiberNew.vue";
 import { storePlayer } from "@/stores/modules/player";
+import { storeRss } from "@/stores/modules/rss";
 
 const props = defineProps({
   data: {
@@ -25,6 +27,7 @@ const props = defineProps({
 });
 
 const store = storePlayer();
+const rssStore = storeRss();
 const { getPlayStatus } = storeToRefs(store);
 const message = useMessage();
 
@@ -62,6 +65,11 @@ const isPlay = computed(() => {
 const clickPlay = () => {
   if (!props.data.mediaUrl) return;
 
+  // 标记为已读
+  if (props.data.link) {
+    rssStore.markAsRead(props.data.link);
+  }
+
   // 如果是当前播放的曲目
   if (getPlayStatus.value.src === props.data.mediaUrl) {
     if (getPlayStatus.value.isError) {
@@ -86,7 +94,19 @@ const clickPause = () => {
 
 // 添加到队列成功
 const handleAddToQueueSuccess = (track) => {
+  // 标记为已读
+  if (props.data.link) {
+    rssStore.markAsRead(props.data.link);
+  }
   message.success(`已添加到播放列表: ${track.title}`);
+};
+
+// 点击标题链接
+const handleTitleClick = () => {
+  // 标记为已读
+  if (props.data.link) {
+    rssStore.markAsRead(props.data.link);
+  }
 };
 
 // 添加到队列重复
@@ -102,7 +122,7 @@ const handleAddToQueueError = (error) => {
 
 <template>
   <section class="rss-card flex rounded-md">
-    <div class="card-panel flex w-full h-full gap-3 p-2 rounded-md">
+    <div class="card-panel relative flex w-full h-full gap-3 p-2 rounded-md">
       <div class="left flex-none flex flex-col items-center gap-4 pl-1">
         <PlayButton
           class="text-4xl text-[var(--origin-theme)]"
@@ -123,37 +143,42 @@ const handleAddToQueueError = (error) => {
       </div>
       <div class="right flex-1 flex flex-col gap-1">
         <header class="card-header">
-          <div class="title text-sm text-[var(--origin-theme)] font-bold">
+          <div class="title text-sm font-bold">
             <a
               :href="props.data.link"
               target="_blank"
               rel="noopener noreferrer"
+              @click="handleTitleClick"
             >
               {{ props.data.title }}
             </a>
           </div>
-          <!-- <div class="author flex justify-between text-xs">
-            <span>{{ props.data.author }}</span>
-            <span class="text-[var(--text-tertiary)]" v-if="props.data.pubDate"> {{ props.data.pubDate || "" }} </span>
-          </div> -->
         </header>
         <div class="description text-sm break-words line-clamp-2">
           {{ props.data.description || props.data.summary }}
         </div>
-        <footer class="card-footer text-xs">
-          <div v-if="props.data.duration || props.data.timeAgo">
-            <span v-if="props.data.duration">{{ sec2min(props.data.duration) }} 分钟 ·</span>
-            {{ props.data.timeAgo || "" }}
+        <footer class="card-footer flex gap-4 justify-between">
+          <div class="left-info">
+            <template v-if="props.data.duration || props.data.timeAgo">
+              <span v-if="props.data.duration">{{ sec2min(props.data.duration) }} 分钟 ·</span>
+              {{ props.data.timeAgo || "" }}
+            </template>
+            <div class="inline-flex gap-3" v-else-if="props.data.author || props.data.pubDate">
+              <div v-if="props.data.pubDate">{{ props.data.pubDate }}</div>
+              <div v-if="props.data.author" class="font-bold">{{ props.data.author }}</div>
+            </div>
           </div>
-          <div
-            class="flex gap-4 justify-between"
-            v-else-if="props.data.author || props.data.pubDate"
-          >
-            <div v-if="props.data.pubDate">{{ props.data.pubDate }}</div>
-            <div v-if="props.data.author">{{ props.data.author }}</div>
+          <div class="right-bar inline-flex gap-2">
+            <!-- 预留操作扩展栏 -->
           </div>
         </footer>
       </div>
+
+      <!-- 新内容标记 -->
+      <IconFiberNew
+        v-if="props.data.isNew"
+        class="new-badge absolute -top-3 right-1 z-[1] text-2xl text-[var(--color-error)]"
+      />
     </div>
   </section>
 </template>
@@ -178,6 +203,12 @@ const handleAddToQueueError = (error) => {
     }
   }
 
+  .card-header {
+    .title {
+      color: var(--origin-theme, var(--link-color))
+    }
+  }
+
   .description {
     color: var(--text-secondary);
     overflow-wrap: anywhere;
@@ -185,6 +216,10 @@ const handleAddToQueueError = (error) => {
 
   .card-footer {
     color: var(--text-tertiary);
+  }
+
+  .new-badge {
+    filter: drop-shadow(0 1px 2px rgba(var(--color-black-rgb), 0.2));
   }
 }
 </style>

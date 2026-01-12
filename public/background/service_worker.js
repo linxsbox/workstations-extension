@@ -1,34 +1,58 @@
-const STORAGE_ALARM_KEY = "";
-const config = {
-  alarm: [STORAGE_ALARM_KEY, { delayInMinutes: 10, periodInMinutes: 10 }],
-  local: { [STORAGE_ALARM_KEY]: true },
+// ==================== RSS 定时刷新配置 ====================
+// RSS 更新的时间点（24小时制）
+const RSS_UPDATE_HOURS = [7, 8, 9, 10, 14, 18, 20, 22];
+const RSS_SCHEDULER_ALARM = 'rss-scheduler';
+
+// 初始化 RSS 定时器
+const initRssScheduler = async () => {
+  const alarm = await chrome.alarms.get(RSS_SCHEDULER_ALARM);
+
+  if (!alarm) {
+    // 每10分钟检查一次是否到了更新时间点
+    chrome.alarms.create(RSS_SCHEDULER_ALARM, {
+      delayInMinutes: 1,
+      periodInMinutes: 10
+    });
+    console.log('[RSS Scheduler] 定时器已创建');
+  }
 };
 
-const useAlarm = async () => {
-  const alarm = await chrome.alarms.get(STORAGE_ALARM_KEY);
+// 监听定时器触发
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === RSS_SCHEDULER_ALARM) {
+    const currentHour = new Date().getHours();
 
-  !alarm && chrome.alarms.create(...config.alarm);
-};
-useAlarm();
+    // 检查当前小时是否在更新时间点内
+    if (RSS_UPDATE_HOURS.includes(currentHour)) {
+      // 获取上次更新的小时，避免同一小时内重复更新
+      chrome.storage.local.get('lastRssUpdateHour', (result) => {
+        const lastUpdateHour = result.lastRssUpdateHour;
 
-// const onInstalled = async () => {
-//   if (!chrome) return;
+        if (lastUpdateHour !== currentHour) {
+          console.log(`[RSS Scheduler] 触发更新 - 当前时间: ${currentHour}:00`);
 
-//   chrome.runtime.onInstalled.addListener(async ({ reason }) => {
-//     // if (reason !== 'install') return
-//     await useAlarm();
-//   });
+          // 记录本次更新的小时
+          chrome.storage.local.set({ lastRssUpdateHour: currentHour });
 
-//   // chrome.action.onClicked.addListener((tab) => {
-//   //   chrome.tabs.create({ url: "" });
-//   // });
-// };
+          // 向所有扩展页面发送更新消息
+          chrome.runtime.sendMessage({
+            type: 'RSS_UPDATE_TRIGGER',
+            timestamp: Date.now(),
+            hour: currentHour
+          }).catch(err => {
+            // 如果没有页面监听，忽略错误
+            console.log('[RSS Scheduler] 没有活动页面监听更新消息');
+          });
+        }
+      });
+    }
+  }
+});
 
-// onInstalled();
+// 初始化定时器
+initRssScheduler();
 
-// use alarm
-
-// utils/storage.js
+// ==================== ChromeStorage 工具类 ====================
 class ChromeStorage {
   static async get(key, defaultValue = null) {
     return new Promise((resolve) => {
@@ -54,7 +78,7 @@ class ChromeStorage {
   }
 }
 
-// background/service_worker.js
+// ==================== 扩展初始化 ====================
 chrome.runtime.onInstalled.addListener(async () => {
   try {
     // 检查是否已经设置过 useCustomNewTab

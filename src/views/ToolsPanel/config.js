@@ -1,5 +1,5 @@
 import { isArray } from "@linxs/toolkit";
-import { importDataForGithub } from "@/utils";
+import { importDataForGithub } from "@/utils/github";
 
 export const toolsList = [
   {

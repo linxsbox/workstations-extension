@@ -1,4 +1,6 @@
 import { isFunction, defaultStorage } from "@linxs/toolkit";
+import http from '@/utils/http';
+
 const { localStorage } = defaultStorage();
 
 // 请求模型
@@ -17,25 +19,24 @@ export const fetchModelApi = (options = {}) => {
     isFunction(before) && before();
 
     try {
-      const res = await fetch("https://api.deepseek.com/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${
-            localStorage.get("APIKEYS")?.DeepSeekAPIKey
-          }`,
-        },
-        body: JSON.stringify({
+      const completion = await http.post(
+        "https://api.deepseek.com/chat/completions",
+        {
           model: "deepseek-chat",
           messages: msgs.map((msg) => ({
             role: msg.role,
             content: msg.content,
           })),
           stream: false,
-        }),
-      });
-
-      const completion = await res.json();
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${
+              localStorage.get("APIKEYS")?.DeepSeekAPIKey
+            }`,
+          },
+        }
+      );
 
       isFunction(beforeDone) && beforeDone(completion);
       isFunction(done) && done(completion);

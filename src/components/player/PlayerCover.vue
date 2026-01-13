@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { isObject } from "@linxs/toolkit";
 import { storePlayer } from "@/stores/modules/player";
+import { getCoverImageFormats, tryLoadCoverImage } from "@/utils/image";
 import IconMusicNote from "@/components/common/Icons/IconMusicNote.vue";
 
 const props = defineProps({
@@ -24,34 +25,72 @@ const { getPlayStatus } = storeToRefs(player);
 
 // 图片加载失败状态
 const imageLoadError = ref(false);
+// 当前尝试的封面 URL（可能是 base64）
+const currentCoverUrl = ref('');
+// 当前格式索引
+const currentFormatIndex = ref(0);
+// 可用的封面格式列表
+const availableFormats = ref([]);
+// 是否正在加载图片
+const isLoadingImage = ref(false);
+// 原始 URL 是否有扩展名
+const hasOriginalExtension = ref(false);
 
-/** 获取封面图片 URL */
-const coverImage = computed(() => {
+/** 获取原始封面图片 URL */
+const originalCoverUrl = computed(() => {
   const album = getPlayStatus.value.album;
   if (album && isObject(album) && album.image) {
     return album.image;
   }
-  // 默认封面
   return "";
 });
 
-// 监听封面图片变化，重置加载失败状态并预加载（背景模式）
-watch(coverImage, (newUrl) => {
-  imageLoadError.value = false;
-
-  // 背景模式下使用 Image 对象预加载检测
-  if (props.asBackground && newUrl) {
-    const img = new Image();
-    img.onload = () => {
-      // 图片加载成功，imageLoadError 保持 false
-    };
-    img.onerror = () => {
-      // 图片加载失败
-      imageLoadError.value = true;
-    };
-    img.src = newUrl;
+/** 尝试加载下一个格式的封面 */
+const tryNextFormat = async () => {
+  if (currentFormatIndex.value >= availableFormats.value.length) {
+    // 所有格式都失败了
+    imageLoadError.value = true;
+    currentCoverUrl.value = '';
+    isLoadingImage.value = false;
+    return;
   }
-});
+
+  const url = availableFormats.value[currentFormatIndex.value];
+  const isLastAttempt = currentFormatIndex.value === availableFormats.value.length - 1;
+
+  isLoadingImage.value = true;
+
+  try {
+    // 尝试加载图片，如果是最后一次尝试且原始 URL 无扩展名则转换为 base64
+    const loadedUrl = await tryLoadCoverImage(url, isLastAttempt, hasOriginalExtension.value);
+    currentCoverUrl.value = loadedUrl;
+    imageLoadError.value = false;
+  } catch (error) {
+    // 加载失败，尝试下一个格式
+    currentFormatIndex.value++;
+    await tryNextFormat();
+  } finally {
+    isLoadingImage.value = false;
+  }
+};
+
+// 监听原始封面 URL 变化，重置状态并获取格式列表
+watch(originalCoverUrl, async (newUrl) => {
+  imageLoadError.value = false;
+  currentFormatIndex.value = 0;
+  availableFormats.value = getCoverImageFormats(newUrl);
+  // 检查原始 URL 是否有扩展名
+  hasOriginalExtension.value = /\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(newUrl);
+
+  if (availableFormats.value.length > 0) {
+    await tryNextFormat();
+  } else {
+    currentCoverUrl.value = '';
+  }
+}, { immediate: true });
+
+/** 封面图片 URL（当前尝试的，可能是 base64） */
+const coverImage = computed(() => currentCoverUrl.value);
 
 /** 封面尺寸样式 */
 const sizeStyle = computed(() => {
@@ -68,12 +107,19 @@ const hasCover = computed(() => {
 
 /** 是否显示封面图片（有URL且未加载失败） */
 const shouldShowImage = computed(() => {
-  return hasCover.value && !imageLoadError.value;
+  return hasCover.value && !imageLoadError.value && !isLoadingImage.value;
 });
 
 /** 图片加载失败处理（非背景模式） */
-const handleImageError = () => {
-  imageLoadError.value = true;
+const handleImageError = async () => {
+  // 尝试下一个格式
+  if (currentFormatIndex.value < availableFormats.value.length - 1) {
+    currentFormatIndex.value++;
+    await tryNextFormat();
+  } else {
+    // 所有格式都失败了
+    imageLoadError.value = true;
+  }
 };
 </script>
 

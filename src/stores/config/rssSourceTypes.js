@@ -6,6 +6,7 @@ import {
   parseXML,
 } from "@linxs/toolkit";
 import { storageManager, STORAGE_KEYS } from "../storage";
+import http from '@/utils/http';
 
 const dataType = ["播客", "IT资讯", "新闻资讯"];
 export const rssGroupType = Object.freeze({
@@ -53,20 +54,18 @@ export default [
 
       const dataList = data.recommend;
 
-      let serverTime = 0;
+      // 使用本地时间
+      const serverTime = new Date();
       const tmpList = [];
 
       try {
         for (let index = 0; index < dataList.length; index++) {
           const item = dataList[index];
 
-          const res = await fetch(`${data.apis.list}${item.id}`);
-          if (res.status !== 200) return;
+          const html = await http.get(`${data.apis.list}${item.id}`);
 
-          if (!serverTime) serverTime = new Date(res.headers.get("Date"));
-
-          const matchTxt = jsonMathc.exec(await res.text());
-          if (matchTxt.length < 2) return;
+          const matchTxt = jsonMathc.exec(html);
+          if (!matchTxt || matchTxt.length < 2) return;
 
           const dataJSON = JSON.parse(matchTxt[1]);
 

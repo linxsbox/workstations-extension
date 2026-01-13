@@ -21,9 +21,10 @@ class MiguMusicService {
    * @param {string} keyword - 搜索关键词
    * @param {number} pageNo - 页码，默认 1
    * @param {number} pageSize - 每页结果数，默认 20
+   * @param {AbortSignal} signal - 用于取消请求的信号
    * @returns {Promise<Object>} 搜索结果
    */
-  async searchSongs(keyword, pageNo = 1, pageSize = 20) {
+  async searchSongs(keyword, pageNo = 1, pageSize = 20, signal = null) {
     try {
       const url = `${this.baseURL}/content/search_all.do`;
       const params = new URLSearchParams({
@@ -33,7 +34,7 @@ class MiguMusicService {
         searchSwitch: JSON.stringify({ song: 1 }), // 搜索歌曲
       });
 
-      const response = await http.get(`${url}?${params.toString()}`);
+      const response = await http.get(`${url}?${params.toString()}`, signal ? { signal } : {});
 
       return {
         success: true,
@@ -207,6 +208,9 @@ class MiguMusicService {
         album = song.album || song.albumName || song.albumTitle || '';
       }
 
+      // 检查是否是 VIP 歌曲
+      const isVip = song.vipType === '1';
+
       // 调试：打印第一首歌的原始数据
       if (songs.indexOf(song) === 0) {
         console.log('Migu API 歌曲数据示例:', song);
@@ -221,6 +225,7 @@ class MiguMusicService {
         album: album,
         cover: cover,
         lyricUrl: song.lyricUrl || '',
+        isVip: isVip,
         // 保留原始数据
         raw: song,
       };

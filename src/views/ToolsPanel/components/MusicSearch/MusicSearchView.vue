@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import {
   NInput,
   NScrollbar,
@@ -19,7 +19,10 @@ const isSearching = ref(false);
 const searchResults = ref([]);
 const currentPage = ref(1);
 const pageSize = ref(20);
-const isInputLocked = ref(false); // 输入框锁定状态
+
+// 防抖和请求控制
+let debounceTimer = null; // 防抖计时器
+let searchAbortController = null; // 请求取消控制器
 
 // 执行搜索
 const performSearch = async (keyword) => {
@@ -29,53 +32,118 @@ const performSearch = async (keyword) => {
     return;
   }
 
+  // 取消之前的搜索请求
+  if (searchAbortController) {
+    searchAbortController.abort();
+  }
+
+  // 创建新的 AbortController
+  searchAbortController = new AbortController();
+  const currentController = searchAbortController;
+
   isSearching.value = true;
 
   try {
     const result = await miguMusicService.searchSongs(
       keyword.trim(),
       currentPage.value,
-      pageSize.value
+      pageSize.value,
+      currentController.signal
     );
+
+    // 检查请求是否被取消
+    if (currentController.signal.aborted) {
+      return;
+    }
 
     if (result.success) {
       searchResults.value = result.data;
       if (result.data.length === 0) {
         message.info('没有找到相关歌曲');
       }
-
-      // 搜索成功后锁定输入框 5 秒
-      isInputLocked.value = true;
-      setTimeout(() => {
-        isInputLocked.value = false;
-      }, 5000);
     } else {
       message.error(`搜索失败: ${result.error}`);
       searchResults.value = [];
     }
   } catch (error) {
+    // 忽略取消请求的错误
+    if (error.name === 'AbortError') {
+      console.log('搜索已取消');
+      return;
+    }
     console.error('搜索出错:', error);
     message.error('搜索出错，请稍后重试');
     searchResults.value = [];
   } finally {
-    isSearching.value = false;
+    // 只有当前控制器仍然是活动控制器时才重置 loading 状态
+    if (currentController === searchAbortController) {
+      isSearching.value = false;
+    }
   }
 };
 
-// 创建防抖搜索函数
-const debouncedSearch = debounce((keyword) => {
-  performSearch(keyword);
-}, 750);
-
-// 监听搜索关键词变化
-watch(searchKeyword, (newKeyword) => {
-  if (newKeyword.trim()) {
-    // 有内容时触发搜索
-    debouncedSearch(newKeyword);
-  } else {
-    // 清空内容时清空结果
-    searchResults.value = [];
+// 取消防抖计时器
+const cancelDebounce = () => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
   }
+};
+
+// 取消搜索请求
+const cancelSearch = () => {
+  if (searchAbortController) {
+    searchAbortController.abort();
+    searchAbortController = null;
+  }
+};
+
+// 处理输入事件（带防抖）
+const handleInput = () => {
+  const keyword = searchKeyword.value;
+
+  // 取消之前的防抖
+  cancelDebounce();
+
+  if (!keyword.trim()) {
+    // 输入为空，取消搜索并清空结果
+    cancelSearch();
+    searchResults.value = [];
+    return;
+  }
+
+  // 启动新的防抖
+  debounceTimer = setTimeout(() => {
+    performSearch(keyword);
+  }, 750);
+};
+
+// 处理回车事件（立即搜索）
+const handleEnter = () => {
+  const keyword = searchKeyword.value;
+
+  // 取消防抖，立即搜索
+  cancelDebounce();
+
+  if (keyword.trim()) {
+    performSearch(keyword);
+  }
+};
+
+// 处理清空事件
+const handleClear = () => {
+  // 取消防抖和搜索
+  cancelDebounce();
+  cancelSearch();
+
+  // 清空结果
+  searchResults.value = [];
+};
+
+// 组件卸载时清理
+onUnmounted(() => {
+  cancelDebounce();
+  cancelSearch();
 });
 </script>
 
@@ -85,18 +153,15 @@ watch(searchKeyword, (newKeyword) => {
     <div class="search-bar flex-none">
       <NInput
         v-model:value="searchKeyword"
-        placeholder="输入歌曲、歌手或专辑名称，即时搜索..."
+        @input="handleInput"
+        @keyup.enter="handleEnter"
+        @clear="handleClear"
+        placeholder="输入歌曲、歌手或专辑名称，即时搜索（回车立即搜索）..."
         size="large"
-        :disabled="isInputLocked"
+        :disabled="isSearching"
         :loading="isSearching"
         clearable
-      >
-        <template #suffix>
-          <span v-if="isInputLocked" class="text-xs text-[var(--text-tertiary)]">
-            {{ isSearching ? '搜索中...' : '请等待 5 秒...' }}
-          </span>
-        </template>
-      </NInput>
+      />
     </div>
 
     <!-- 搜索结果列表 - 卡片式布局 -->

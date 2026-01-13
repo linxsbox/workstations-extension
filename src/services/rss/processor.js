@@ -10,6 +10,7 @@ import {
   getNodeTextContent,
 } from "@linxs/toolkit";
 import { RssSourceTypeEnum } from "@/stores/modules/rss/config";
+import http from "@/utils/http";
 
 const { localStorage } = defaultStorage();
 
@@ -88,8 +89,7 @@ class BaseRssProcessor {
 class RssProcessor extends BaseRssProcessor {
   async fetchSourceInfo() {
     try {
-      const response = await fetch(this.source.sourceUrl);
-      const text = await response.text();
+      const text = await http.get(this.source.sourceUrl);
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(text, "text/xml");
 
@@ -139,25 +139,13 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
     const jsonMathc =
       /<script\s+id="__NEXT_DATA__"\s+type="application\/json">\s*([\s\S]+?)\s*<\/script>/;
 
-    // 记录服务器时间
-    let serverTime = 0;
-
     try {
-      const response = await fetch(this.source.sourceUrl);
-      if (response.status !== 200) return;
+      const html = await http.get(this.source.sourceUrl);
+      // 获取服务器时间（如果有，否则使用本地时间）
+      const serverTime = 0
 
-      // 获取服务器时间
-      if (!serverTime) {
-        const serDate = response.headers.get("Date");
-        serverTime = isString(serDate)
-          ? new Date(serDate)
-          : isDate(serDate)
-          ? serDate
-          : new Date();
-      }
-
-      const matchTxt = jsonMathc.exec(await response.text());
-      if (matchTxt.length < 2) return;
+      const matchTxt = jsonMathc.exec(html);
+      if (!matchTxt || matchTxt.length < 2) return;
 
       // 解析为 JSON 数据
       const dataJSON = JSON.parse(matchTxt[1]);
@@ -214,8 +202,8 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
 class Kr36Processor extends BaseRssProcessor {
   async fetchSourceInfo() {
     try {
-      const response = await fetch(this.source.sourceUrl);
-      const xml = parseXML(await response.text());
+      const text = await http.get(this.source.sourceUrl);
+      const xml = parseXML(text);
 
       const list = (xml.children || []).map((child) => {
         const title = getNodeTextContent(child, "title");

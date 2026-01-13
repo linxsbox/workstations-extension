@@ -1,4 +1,5 @@
 import { isArray } from "@linxs/toolkit";
+import http from '@/utils/http';
 
 // GitHub JSON 文件链接的正则表达式
 const githubJsonUrlRegex =
@@ -27,10 +28,7 @@ export const importDataForGithub = async function (url, isJson = true) {
     const scriptRegex =
       /<script\s+type="application\/json" data-target="react-app.embeddedData">\s*([\s\S]+?)\s*<\/script>/;
 
-    const response = await fetch(url);
-    if (response.status !== 200) return;
-
-    const text = await response.text();
+    const text = await http.get(url);
 
     const matchTxt = text.match(scriptRegex);
     if (matchTxt.length < 2) {

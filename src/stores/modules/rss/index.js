@@ -69,6 +69,9 @@ export const storeRss = defineStore({
           value: rssInfo ? rssInfo.value : source.type,
         });
 
+        // 触发当前列表更新
+        this.switchSourceData(tab.getActiveTabId(DEFAULT_PANEL));
+
         return newSource;
       } catch (error) {
         console.error("添加 RSS 源失败:", error);

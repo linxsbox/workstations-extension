@@ -35,6 +35,7 @@ watch(
     if (isOpen) {
       // 等待 DOM 渲染完成
       await nextTick();
+      await delay(0);
       const nScrollbarWrapper = document.querySelector(
         ".rss-management-scroll"
       );

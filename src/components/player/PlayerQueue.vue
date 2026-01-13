@@ -28,12 +28,13 @@ const isCurrentTrack = (trackId) => {
 const handlePlayTrack = (trackId) => {
   // 如果是当前播放的轨道
   if (isCurrentTrack(trackId)) {
-    // 检查是否已加载音频
-    if (player.getPlayStatus.src) {
-      // 已加载，切换播放状态
+    const currentTrack = playQueue.value.getCurrentTrack();
+    // 检查是否已加载音频，且加载的是正确的音频源
+    if (player.getPlayStatus.src && player.getPlayStatus.src === currentTrack?.src) {
+      // 已加载正确的音频，切换播放状态
       player.togglePlay();
     } else {
-      // 未加载，重新播放
+      // 未加载或加载的是错误的音频，重新播放
       player.playByHash(trackId);
     }
     return;
@@ -162,7 +163,7 @@ const getTrackStyle = (track) => {
 
 .queue-item {
   position: relative;
-  background-color: rgba(var(--album-theme-rgb, --color-white-rgb), 0.15);
+  background-color: rgba(var(--album-theme-rgb, var(--play-button-bg-color-default)), 0.05);
   border-left: 3px solid;
   border-color: transparent;
   transition: background-color 0.2s;
@@ -172,7 +173,7 @@ const getTrackStyle = (track) => {
   }
 
   &:hover {
-    background-color: rgba(var(--album-theme-rgb, --color-white-rgb), 0.3);
+    background-color: rgba(var(--album-theme-rgb, var(--play-button-bg-color-default)), 0.15);
 
     .delete-btn {
       opacity: 1;

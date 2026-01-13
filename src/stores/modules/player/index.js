@@ -554,7 +554,20 @@ export const storePlayer = defineStore("player", {
     loadPlayQueue() {
       const saved = storageManager.get(STORAGE_KEYS.PLAY_QUEUE);
       if (saved && saved.tracks) {
-        this.playQueue.tracks = saved.tracks || [];
+        // 数据迁移：将旧格式的 album 字符串转换为对象格式
+        this.playQueue.tracks = saved.tracks.map(track => {
+          // 如果 album 是字符串，转换为对象格式
+          if (typeof track.album === 'string') {
+            return {
+              ...track,
+              album: track.album ? {
+                title: track.album,
+                image: track.cover || '', // 使用 track 的 cover 作为专辑封面
+              } : null
+            };
+          }
+          return track;
+        });
 
         // 通过 currentHash 找到对应的 index
         if (saved.currentHash) {

@@ -10,20 +10,21 @@ import {
   NEmpty,
   useMessage,
 } from "naive-ui";
-import { isString, isObject, debounce, hex2rgb } from "@linxs/toolkit";
+import { debounce } from "@linxs/toolkit";
 import PodcastCardView from "./PodcastCardView.vue";
 import { storeRss } from "@/stores/modules/rss";
+import { storePodcast } from "@/stores/modules/podcast";
 import { RssSourceTypeEnum } from "@/stores/modules/rss/config";
 
 const message = useMessage();
 const rssStore = storeRss();
+const podcastStore = storePodcast();
 
 const formSearchWord = ref("");
 const showSearchModal = ref(false);
 const searchWord = ref("");
 const searchLoading = ref(false);
 const podcastList = ref([]);
-const podcastXyzCache = ref([]); // 使用 ref 管理缓存
 
 // 请求取消控制器
 let searchAbortController = null;
@@ -110,33 +111,18 @@ const performSearch = async (query) => {
     searchLoading.value = true;
     podcastList.value = [];
 
-    // 并行搜索小宇宙和 GetPodcast.xyz
-    const [xiaoyuzhouResults] = await Promise.allSettled([
-      searchXiaoyuzhouPodcasts(query, currentController.signal),
-      ensureGetPodcastXyzCache(currentController.signal),
-    ]);
+    // 使用 store 的搜索方法
+    const results = await podcastStore.searchPodcasts(
+      query,
+      currentController.signal
+    );
 
     // 检查请求是否被取消
     if (currentController.signal.aborted) {
       return;
     }
 
-    // 合并结果
-    const allResults = [];
-
-    if (xiaoyuzhouResults.status === "fulfilled") {
-      allResults.push(...xiaoyuzhouResults.value);
-    }
-
-    // 从缓存中搜索匹配项
-    if (podcastXyzCache.value.length > 0) {
-      const matches = podcastXyzCache.value.filter((item) =>
-        item.title.toLocaleLowerCase().includes(query.toLocaleLowerCase())
-      );
-      allResults.push(...matches);
-    }
-
-    podcastList.value = allResults;
+    podcastList.value = results;
   } catch (error) {
     // 忽略取消请求的错误
     if (error.name === "AbortError") {
@@ -150,118 +136,6 @@ const performSearch = async (query) => {
     if (currentController === searchAbortController) {
       searchLoading.value = false;
     }
-  }
-};
-
-// 搜索小宇宙播客
-const searchXiaoyuzhouPodcasts = async (query, signal) => {
-  if (!query) return [];
-
-  try {
-    const res = await fetch(
-      `https://ask.xiaoyuzhoufm.com/api/keyword/search`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }),
-        signal, // 传入 AbortSignal
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error(res.statusText || "搜索失败");
-    }
-
-    const dataJson = await res.json();
-    const podcasts = dataJson.data?.podcasts || [];
-
-    return podcasts.map((item) => {
-      const getImgSrc = () => {
-        if (isString(item.image)) return item.image;
-        return isObject(item.image) ? item.image.thumbnailUrl : "";
-      };
-
-      const getColor = () => {
-        if (isObject(item.color) && item.color.original) {
-          if (item.color.original.includes("#")) {
-            const { r, g, b } = hex2rgb(item.color.original);
-            return `${r},${g},${b}`;
-          }
-          return item.color.original;
-        }
-        if (isString(item.color)) {
-          if (item.color.includes("#")) {
-            const { r, g, b } = hex2rgb(item.color);
-            return `${r},${g},${b}`;
-          }
-          return item.color;
-        }
-        return "";
-      };
-
-      return {
-        id: item.pid,
-        title: item.title || "",
-        author: item.author || "",
-        brief: item.brief || "",
-        image: getImgSrc(),
-        color: getColor(),
-        link: `https://www.xiaoyuzhoufm.com/podcast/${item.pid}`,
-      };
-    });
-  } catch (error) {
-    // 忽略取消请求的错误
-    if (error.name === "AbortError") {
-      throw error; // 继续传播 AbortError
-    }
-    console.error("小宇宙搜索失败:", error);
-    return [];
-  }
-};
-
-// 确保 GetPodcast.xyz 缓存已加载
-const ensureGetPodcastXyzCache = async (signal) => {
-  if (podcastXyzCache.value.length > 0) {
-    return;
-  }
-
-  try {
-    const res = await fetch(`https://getpodcast.xyz/`, { signal });
-    const parser = new DOMParser();
-    const htmlDoc = parser.parseFromString(await res.text(), "text/html");
-
-    const cache = [];
-    htmlDoc.querySelectorAll(".pic_list").forEach((list) => {
-      list.querySelectorAll("li").forEach((liItem) => {
-        if (liItem.childNodes.length > 0) {
-          const titleEl = liItem.querySelector(".title");
-          const imgEl = liItem.querySelector("img");
-          const linkEl = liItem.querySelector("a");
-
-          if (titleEl && imgEl && linkEl) {
-            cache.push({
-              id: linkEl.href,
-              title: titleEl.textContent.trim(),
-              image: imgEl.src,
-              link: linkEl.href,
-              author: "",
-              brief: "",
-              color: "",
-            });
-          }
-        }
-      });
-    });
-
-    podcastXyzCache.value = cache;
-  } catch (error) {
-    // 忽略取消请求的错误
-    if (error.name === "AbortError") {
-      throw error; // 继续传播 AbortError
-    }
-    console.error("GetPodcast.xyz 缓存加载失败:", error);
   }
 };
 

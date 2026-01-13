@@ -111,7 +111,7 @@ export class HTML5AudioBackend extends AudioBackend {
   /**
    * 更新 MediaSession API 元数据
    */
-  _updateMediaSession(metadata = {}) {
+  async _updateMediaSession(metadata = {}) {
     if ('mediaSession' in navigator) {
       try {
         const { title, artist, album, duration } = metadata;
@@ -119,11 +119,16 @@ export class HTML5AudioBackend extends AudioBackend {
         // 构建 artwork 数组
         let artwork = [];
         if (album?.image) {
-          artwork.push({
-            src: album.image,
+          // 动态导入图片工具
+          const { getCoverImageFormats } = await import('../../utils/image.js');
+          const formats = getCoverImageFormats(album.image);
+
+          // 为每个格式创建 artwork 条目
+          artwork = formats.map(url => ({
+            src: url,
             sizes: '512x512',
             type: 'image/png'
-          });
+          }));
         }
 
         navigator.mediaSession.metadata = new MediaMetadata({

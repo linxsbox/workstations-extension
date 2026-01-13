@@ -275,9 +275,18 @@ export class PlayQueue {
       this.tracks.splice(index, 1);
 
       // 调整当前索引
-      if (this.currentIndex >= this.tracks.length) {
-        this.currentIndex = Math.max(0, this.tracks.length - 1);
+      if (index < this.currentIndex) {
+        // 删除的轨道在当前播放轨道之前，索引需要减1
+        this.currentIndex--;
+      } else if (index === this.currentIndex) {
+        // 删除的是当前播放的轨道
+        // 保持 currentIndex 不变，让它指向下一首（原来的下一首现在在当前位置）
+        // 但需要检查边界
+        if (this.currentIndex >= this.tracks.length) {
+          this.currentIndex = Math.max(0, this.tracks.length - 1);
+        }
       }
+      // 如果 index > this.currentIndex，不需要调整
 
       return true;
     }

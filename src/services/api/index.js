@@ -8,6 +8,8 @@
  * - LLM API（DeepSeek 等）
  */
 
+import http from '@/utils/http';
+
 // API 客户端基类示例
 export class ApiClient {
   constructor(baseURL) {
@@ -15,15 +17,12 @@ export class ApiClient {
   }
 
   async get(url, options = {}) {
-    const response = await fetch(`${this.baseURL}${url}`, {
-      method: "GET",
-      ...options,
-    });
-    return response.json();
+    const response = await http.get(`${this.baseURL}${url}`, options);
+    return response;
   }
 
   async post(url, data, options = {}) {
-    const response = await fetch(`${this.baseURL}${url}`, {
+    const response = await http.post(`${this.baseURL}${url}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -32,7 +31,7 @@ export class ApiClient {
       body: JSON.stringify(data),
       ...options,
     });
-    return response.json();
+    return response;
   }
 }
 

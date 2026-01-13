@@ -4,6 +4,7 @@
  */
 
 import { AudioBackend } from './AudioBackend.js';
+import http from '@/utils/http';
 
 export class WebAudioBackend extends AudioBackend {
   constructor(options = {}) {
@@ -72,15 +73,12 @@ export class WebAudioBackend extends AudioBackend {
         arrayBuffer = metadata.arrayBuffer;
       } else {
         try {
-          const response = await fetch(src, {
+          const response = await http.get(src, {
             credentials: 'omit',
             mode: 'cors',
           });
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
+          // http 对于非 JSON/text 类型会返回原始 response
           arrayBuffer = await response.arrayBuffer();
         } catch (fetchError) {
           console.error('Fetch error:', fetchError);
@@ -111,7 +109,7 @@ export class WebAudioBackend extends AudioBackend {
   /**
    * 更新 MediaSession API 元数据
    */
-  _updateMediaSession(metadata = {}) {
+  async _updateMediaSession(metadata = {}) {
     if ('mediaSession' in navigator) {
       try {
         const { title, artist, album, duration } = metadata;
@@ -119,11 +117,16 @@ export class WebAudioBackend extends AudioBackend {
         // 构建 artwork 数组
         let artwork = [];
         if (album?.image) {
-          artwork.push({
-            src: album.image,
+          // 动态导入图片工具
+          const { getCoverImageFormats } = await import('../../utils/image.js');
+          const formats = getCoverImageFormats(album.image);
+
+          // 为每个格式创建 artwork 条目
+          artwork = formats.map(url => ({
+            src: url,
             sizes: '512x512',
             type: 'image/png'
-          });
+          }));
         }
 
         navigator.mediaSession.metadata = new MediaMetadata({

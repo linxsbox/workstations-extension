@@ -3,8 +3,9 @@ import { ref, computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useMessage } from 'naive-ui';
 import PlayButton from '@/components/player/PlayButton.vue';
-import AddToQueueButton from '@/components/player/AddToQueueButton.vue';
 import IconPlaylistAdd from '@/components/common/Icons/IconPlaylistAdd.vue';
+import IconReply from '@/components/common/Icons/IconReply.vue';
+import ShareCard from '@/components/ShareCard.vue';
 import { storePlayer } from '@/stores/modules/player';
 import { miguMusicService } from '@/services/music';
 import { getCoverImageFormats, tryLoadCoverImage } from '@/utils/image';
@@ -23,6 +24,9 @@ const message = useMessage();
 // 缓存的轨道数据
 const cachedTrack = ref(null);
 const isLoadingTrack = ref(false);
+
+// 分享卡片状态
+const showShareCard = ref(false);
 
 // 封面图片相关
 const coverFormatIndex = ref(0);
@@ -162,8 +166,8 @@ const clickPause = () => {
   }
 };
 
-// 处理添加到队列的点击事件
-const handleAddToQueueClick = async () => {
+// 处理添加到播放列表
+const handleAddToQueue = async () => {
   if (isLoadingTrack.value) return;
 
   // 检查是否是 VIP 歌曲
@@ -173,26 +177,37 @@ const handleAddToQueueClick = async () => {
   }
 
   try {
-    await buildTrackData();
+    // 构建轨道数据
+    const trackData = await buildTrackData();
+
+    // 添加到播放列表，addToQueue 会返回 true（成功）或 false（已存在）
+    const success = store.addToQueue(trackData);
+
+    if (success) {
+      message.success(`已添加到播放列表: ${trackData.title}`);
+    } else {
+      message.warning(`${trackData.title} 已在播放列表中`);
+    }
   } catch (error) {
-    console.error('获取音乐链接失败:', error);
-    message.error(`获取音乐链接失败: ${error.message}`);
+    console.error('添加到播放列表失败:', error);
+    message.error(`添加失败: ${error.message}`);
   }
 };
 
-// 添加到队列成功
-const handleAddToQueueSuccess = (track) => {
-  message.success(`已添加到播放列表: ${track.title}`);
-};
+// 分享卡片内容
+const shareContent = computed(() => {
+  return `${props.song.name}\n${props.song.artist}${props.song.album ? `\n专辑：${props.song.album}` : ''}`;
+});
 
-// 添加到队列重复
-const handleAddToQueueDuplicate = (track) => {
-  message.warning(`${track.title} 已在播放列表中`);
-};
+// 二维码内容（可以是歌曲链接或其他信息）
+const qrcodeContent = computed(() => {
+  // 这里可以根据需要生成歌曲链接或其他内容
+  return `https://music.migu.cn/v3/music/song/${props.song.contentId}`;
+});
 
-// 添加到队列失败
-const handleAddToQueueError = (error) => {
-  message.error(`添加失败: ${error?.message || '未知错误'}`);
+// 处理分享按钮点击
+const handleShare = () => {
+  showShareCard.value = true;
 };
 </script>
 
@@ -229,29 +244,37 @@ const handleAddToQueueError = (error) => {
       </div>
 
       <!-- 操作按钮 -->
-      <div class="song-actions flex items-center justify-end gap-2 mt-1">
-        <!-- 只有当 track 已缓存时才显示 AddToQueueButton -->
-        <AddToQueueButton
-          v-if="cachedTrack"
-          class="text-base text-[var(--text-secondary)] hover:text-[var(--primary-color)]"
-          :track="cachedTrack"
-          @success="handleAddToQueueSuccess"
-          @duplicate="handleAddToQueueDuplicate"
-          @error="handleAddToQueueError"
-        />
-        <!-- 否则显示一个加载按钮，点击后预加载 track -->
+      <div class="song-actions flex items-center justify-end gap-2">
+        <!-- 分享按钮 -->
         <button
-          v-else
-          class="flex items-center justify-center bg-transparent border-none p-0 text-base text-[var(--text-secondary)] cursor-pointer transition-all duration-200 hover:text-[var(--primary-color)] hover:scale-110"
+          class="flex items-center justify-center bg-transparent border-none p-0 text-[var(--text-secondary)] cursor-pointer hover:text-[var(--primary-color)] transition-colors"
+          @click.stop="handleShare"
+          title="分享"
+        >
+          <IconReply class="text-xl" />
+        </button>
+
+        <!-- 添加到播放列表按钮 -->
+        <button
+          class="flex items-center justify-center bg-transparent border-none p-0 text-[var(--text-secondary)] cursor-pointer hover:text-[var(--primary-color)] transition-colors"
           :class="{ 'opacity-30 cursor-not-allowed': isLoadingTrack }"
           :disabled="isLoadingTrack"
-          @click.stop="handleAddToQueueClick"
+          @click.stop="handleAddToQueue"
           title="加入播放列表"
         >
-          <IconPlaylistAdd />
+          <IconPlaylistAdd class="text-xl" />
         </button>
       </div>
     </div>
+
+    <!-- 分享卡片 -->
+    <ShareCard
+      v-if="currentCoverUrl"
+      v-model:show="showShareCard"
+      :image="currentCoverUrl"
+      :content="shareContent"
+      :qrcode-content="qrcodeContent"
+    />
   </div>
 </template>
 

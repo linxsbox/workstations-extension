@@ -14,7 +14,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="player-list w-[360px] min-h-[400px] max-h-[80vh] flex flex-col gap-4">
+  <div class="player-list w-[360px] h-[80vh] min-h-[400px] max-h-[80vh] flex flex-col gap-4">
     <!-- 上部：封面、歌曲信息、播放控制 -->
     <div class="flex flex-col items-center gap-3 px-4 pt-12">
       <!-- 歌曲信息 + 播放控制 -->
@@ -40,7 +40,7 @@ const props = defineProps({
 
     <!-- 播放列表 -->
     <div class="queue-container flex flex-col flex-1 h-full px-2.5 pb-3 overflow-hidden">
-      <PlayerQueue class="h-full h-[350px] flex-1 overflow-hidden" />
+      <PlayerQueue class="flex-1 overflow-hidden" />
     </div>
   </div>
 </template>

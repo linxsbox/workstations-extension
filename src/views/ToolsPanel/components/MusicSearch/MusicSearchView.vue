@@ -1,13 +1,13 @@
 <script setup>
-import { ref, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import {
   NInput,
   NScrollbar,
   NEmpty,
   NSpin,
+  NSwitch,
   useMessage,
 } from 'naive-ui';
-import { debounce } from '@linxs/toolkit';
 import { miguMusicService } from '@/services/music';
 import MusicSongItem from './MusicSongItem.vue';
 
@@ -19,13 +19,30 @@ const isSearching = ref(false);
 const searchResults = ref([]);
 const currentPage = ref(1);
 const pageSize = ref(20);
+const totalCount = ref(0);
+
+// VIP 过滤开关（默认关闭）
+const hideVip = ref(false);
+
+// 计算总页数
+const totalPages = computed(() => {
+  return Math.ceil(totalCount.value / pageSize.value);
+});
+
+// 过滤后的搜索结果（根据 hideVip 开关）
+const filteredResults = computed(() => {
+  if (!hideVip.value) {
+    return searchResults.value;
+  }
+  return searchResults.value.filter(song => !song.isVip);
+});
 
 // 防抖和请求控制
 let debounceTimer = null; // 防抖计时器
 let searchAbortController = null; // 请求取消控制器
 
 // 执行搜索
-const performSearch = async (keyword) => {
+const performSearch = async (keyword, append = false) => {
   if (!keyword.trim()) {
     // 如果输入为空，清空结果
     searchResults.value = [];
@@ -57,13 +74,20 @@ const performSearch = async (keyword) => {
     }
 
     if (result.success) {
-      searchResults.value = result.data;
+      // 根据 append 参数决定是追加还是覆盖
+      if (append) {
+        searchResults.value = [...searchResults.value, ...result.data];
+      } else {
+        searchResults.value = result.data;
+      }
+      totalCount.value = result.totalCount || 0;
       if (result.data.length === 0) {
         message.info('没有找到相关歌曲');
       }
     } else {
       message.error(`搜索失败: ${result.error}`);
       searchResults.value = [];
+      totalCount.value = 0;
     }
   } catch (error) {
     // 忽略取消请求的错误
@@ -112,6 +136,9 @@ const handleInput = () => {
     return;
   }
 
+  // 重置页码为第一页
+  currentPage.value = 1;
+
   // 启动新的防抖
   debounceTimer = setTimeout(() => {
     performSearch(keyword);
@@ -126,6 +153,8 @@ const handleEnter = () => {
   cancelDebounce();
 
   if (keyword.trim()) {
+    // 重置页码为第一页
+    currentPage.value = 1;
     performSearch(keyword);
   }
 };
@@ -138,6 +167,18 @@ const handleClear = () => {
 
   // 清空结果
   searchResults.value = [];
+  totalCount.value = 0;
+  currentPage.value = 1;
+};
+
+// 处理加载更多（下一页）
+const handleLoadMore = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    if (searchKeyword.value.trim()) {
+      performSearch(searchKeyword.value, true); // append = true
+    }
+  }
 };
 
 // 组件卸载时清理
@@ -148,9 +189,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="music-search-view flex flex-col w-full h-full gap-4">
+  <div class="music-search-view flex flex-col size-full gap-4">
     <!-- 搜索栏 -->
-    <div class="search-bar flex-none">
+    <div class="search-bar relative flex flex-none items-center gap-3">
       <NInput
         v-model:value="searchKeyword"
         @input="handleInput"
@@ -162,25 +203,42 @@ onUnmounted(() => {
         :loading="isSearching"
         clearable
       />
+      <NSwitch v-model:value="hideVip" size="small" />
+
+      <div class="total-bar absolute top-10 left-0 text-xs" v-if="totalCount > 0">
+        <span class="p-1">{{ currentPage }} / {{ totalPages }}</span>
+        <span
+          class="ml-4 cursor-pointer text-blue-500 hover:text-blue-600"
+          v-if="currentPage < totalPages && totalPages > 1"
+          @click="handleLoadMore"
+        >
+          下一页
+        </span>
+      </div>
     </div>
 
     <!-- 搜索结果列表 - 卡片式布局 -->
-    <div class="search-results flex-1 h-full overflow-hidden">
-      <NSpin class="h-full" content-class="h-[inherit]" :show="isSearching" description="搜索中...">
+    <div class="search-results flex-1 h-full overflow-hidden flex flex-col">
+      <NSpin class="flex-1 h-full overflow-hidden" content-class="h-[inherit]" :show="isSearching" description="搜索中...">
         <NScrollbar>
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 p-1">
-            <template v-if="searchResults.length > 0">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+            <template v-if="filteredResults.length > 0">
               <MusicSongItem
-                v-for="song in searchResults"
+                v-for="song in filteredResults"
                 :key="song.id"
                 :song="song"
               />
             </template>
           </div>
           <NEmpty
-            v-if="!isSearching && searchResults.length === 0"
+            v-if="!isSearching && filteredResults.length === 0 && searchResults.length === 0"
             class="pt-10"
             description="输入关键词搜索您喜欢的音乐"
+          />
+          <NEmpty
+            v-if="!isSearching && filteredResults.length === 0 && searchResults.length > 0"
+            class="pt-10"
+            description="所有结果都是VIP歌曲，已被过滤"
           />
         </NScrollbar>
       </NSpin>

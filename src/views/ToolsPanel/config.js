@@ -3,7 +3,8 @@ import { importDataForGithub } from "@/utils/github";
 
 export const toolsList = [
   {
-    name: "股票交易计算器",
+    // name: "股票交易计算器",
+    name: "智能交易模型",
     icon: markRaw(
       defineAsyncComponent(() => import("@/components/common/Icons/IconCalculate.vue"))
     ),

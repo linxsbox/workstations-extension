@@ -36,9 +36,13 @@ class MiguMusicService {
 
       const response = await http.get(`${url}?${params.toString()}`, signal ? { signal } : {});
 
+      // 提取总数并转换为数字类型
+      const totalCount = parseInt(response?.songResultData?.totalCount || '0', 10);
+
       return {
         success: true,
         data: this._parseSongList(response),
+        totalCount: totalCount,
         raw: response,
       };
     } catch (error) {
@@ -63,15 +67,8 @@ class MiguMusicService {
       // 根据音质构建 API URL
       const apiUrl = this._buildMusicUrl(contentId, copyrightId, quality);
 
-      // 调试：打印构建的 API URL
-      console.log('🎵 Migu Music API URL:', apiUrl);
-      console.log('📝 参数:', { contentId, copyrightId, quality });
-
       // 调用 API 获取音频文件 URL
       const response = await http.get(apiUrl);
-
-      // 调试：打印 API 响应
-      console.log('🎵 API 响应:', response);
 
       // 从响应中提取音频文件 URL
       const audioUrl = this._extractAudioUrl(response);
@@ -79,8 +76,6 @@ class MiguMusicService {
       if (!audioUrl) {
         throw new Error('无法从响应中提取音频 URL');
       }
-
-      console.log('🎵 音频文件 URL:', audioUrl);
 
       return {
         success: true,
@@ -141,7 +136,7 @@ class MiguMusicService {
     // 根据音质确定 formatType 和 resourceType
     // HQ: formatType=HQ, resourceType=2
     // SQ: formatType=SQ, resourceType=E
-    const formatType = quality === this.QUALITY.SQ ? 'SQ' : 'HQ';
+    const formatType = quality === this.QUALITY.SQ ? this.QUALITY.SQ : this.QUALITY.HQ;
     const resourceType = quality === this.QUALITY.SQ ? 'E' : '2';
 
     // 构建播放链接
@@ -210,11 +205,6 @@ class MiguMusicService {
 
       // 检查是否是 VIP 歌曲
       const isVip = song.vipType === '1';
-
-      // 调试：打印第一首歌的原始数据
-      if (songs.indexOf(song) === 0) {
-        console.log('Migu API 歌曲数据示例:', song);
-      }
 
       return {
         id: song.id || song.contentId,

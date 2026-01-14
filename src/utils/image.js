@@ -116,24 +116,16 @@ export function getCoverImageFormats(originalUrl) {
   // 检查是否已经有图片后缀（支持带查询参数的 URL）
   const hasExtension = /\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(originalUrl);
 
-  // 如果已经有后缀，直接返回
-  if (hasExtension) {
-    return [originalUrl];
-  }
-
-  // 没有后缀时，返回多种格式，包含特殊标记以便后续处理
-  return [
-    originalUrl + '.jpg',
-    originalUrl + '.webp',
-    originalUrl + '.png',
-    originalUrl, // 原始无后缀 URL，在组件中会转换为 base64
-  ];
+  // 无论是否有后缀，都直接返回原始 URL
+  // 如果有后缀：直接使用
+  // 如果无后缀：在组件中使用 Image 加载并转 base64
+  return [originalUrl];
 }
 
 /**
  * 尝试加载图片，如果是无后缀的 URL 则转换为 base64
  * @param {string} url - 图片 URL
- * @param {boolean} isLastAttempt - 是否是最后一次尝试（无后缀的原始 URL）
+ * @param {boolean} isLastAttempt - 是否是最后一次尝试（已废弃，保留参数兼容性）
  * @param {boolean} hasOriginalExtension - 原始 URL 是否有扩展名
  * @returns {Promise<string>} 返回可用的 URL（原始或 base64）
  */
@@ -142,19 +134,13 @@ export async function tryLoadCoverImage(url, isLastAttempt = false, hasOriginalE
     throw new Error('No URL provided');
   }
 
-  // 如果原始 URL 有扩展名，不进行 base64 转换，直接加载或失败
+  // 如果原始 URL 有扩展名，直接尝试加载（不转 base64）
   if (hasOriginalExtension) {
     await tryLoadImage(url);
     return url;
   }
 
-  // 如果不是最后一次尝试，直接尝试加载
-  if (!isLastAttempt) {
-    await tryLoadImage(url);
-    return url;
-  }
-
-  // 最后一次尝试：无后缀的原始 URL，转换为 base64
+  // 如果原始 URL 无扩展名，使用 Image 加载并转换为 base64
   try {
     const base64Url = await imageToBase64(url);
     return base64Url;

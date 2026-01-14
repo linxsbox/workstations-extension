@@ -11,6 +11,7 @@ import PlayerList from "./modes/PlayerList.vue";
 import PlayerStandard from "./modes/PlayerStandard.vue";
 import IconMinimize from "@/components/common/Icons/IconMinimize.vue";
 import IconClose from "@/components/common/Icons/IconClose.vue";
+import IconPushPin from "@/components/common/Icons/IconPushPin.vue";
 
 const props = defineProps({
   showBackRate: { type: Boolean, default: true },
@@ -46,11 +47,6 @@ const isPlayerVisible = computed({
 /** 列表模式不显示遮罩，标准模式显示遮罩 */
 const showMask = computed(() => getViewMode.value === ViewMode.STANDARD);
 
-/** 当前播放标题 */
-const currentPlayTitle = computed(() => {
-  return getPlayStatus.value.title || "";
-});
-
 /** 当前视图模式组件 */
 const currentModeComponent = computed(() => {
   switch (getViewMode.value) {
@@ -71,13 +67,6 @@ const modeOptions = [
   { value: ViewMode.STANDARD, label: "标准", icon: "◫" },
 ];
 
-/** 当前模式的显示信息 */
-const currentModeInfo = computed(() => {
-  return (
-    modeOptions.find((opt) => opt.value === getViewMode.value) || modeOptions[1]
-  );
-});
-
 /** 最小化播放器 */
 const handleMinimize = () => {
   // 直接隐藏播放器，不停止播放
@@ -97,6 +86,35 @@ const handleClose = () => {
       // 隐藏播放器
       store.hidePlayer();
     },
+  });
+};
+
+// ==================== 固定功能 ====================
+/** 固定状态 */
+const isPinned = ref(false);
+const playerModalRef = ref(null);
+/** 保存原始的 zIndex */
+const originalZIndex = ref(null);
+
+/** 切换固定状态 */
+const togglePin = () => {
+  isPinned.value = !isPinned.value;
+
+  // 直接操作 DOM 更新 z-index
+  nextTick(() => {
+    if (playerModalRef.value?.containerRef) {
+      const container = playerModalRef.value.containerRef;
+      if (isPinned.value) {
+        // 固定前，先保存当前的 zIndex（如果还没保存过）
+        if (originalZIndex.value === null) {
+          originalZIndex.value = container.style.zIndex || window.getComputedStyle(container).zIndex;
+        }
+        container.style.zIndex = '9000';
+      } else {
+        // 取消固定，恢复原始 zIndex
+        container.style.zIndex = originalZIndex.value || '';
+      }
+    }
   });
 };
 
@@ -148,6 +166,17 @@ const initDragManager = async () => {
 watch(isPlayerVisible, (newVal) => {
   if (newVal) {
     initDragManager();
+    // 监听原始 zIndex 的变化（非固定状态下）
+    nextTick(() => {
+      if (playerModalRef.value?.containerRef && !isPinned.value) {
+        const container = playerModalRef.value.containerRef;
+        const currentZIndex = window.getComputedStyle(container).zIndex;
+        // 保存最新的原始 zIndex
+        if (currentZIndex && currentZIndex !== '9000') {
+          originalZIndex.value = currentZIndex;
+        }
+      }
+    });
   }
 });
 
@@ -179,6 +208,7 @@ onBeforeUnmount(() => {
     :close-on-esc="false"
     :auto-focus="false"
     :show-mask="showMask"
+    ref="playerModalRef"
     transform-origin="center"
     display-directive="show"
   >
@@ -200,8 +230,8 @@ onBeforeUnmount(() => {
             :key="mode.value"
             class="mode-option px-3 py-1.5 text-xs cursor-pointer transition-all"
             :class="{ active: getViewMode === mode.value }"
-            @click="store.setViewMode(mode.value)"
             :title="mode.label"
+            @click="store.setViewMode(mode.value)"
           >
             {{ mode.label }}
           </div>
@@ -213,6 +243,15 @@ onBeforeUnmount(() => {
 
         <!-- 右侧：最小化和关闭按钮 -->
         <div class="header-right h-full flex-none flex items-center">
+          <!-- 固定按钮 -->
+          <div
+            class="pin-btn h-full w-10 flex items-center justify-center cursor-pointer"
+            :class="{ active: isPinned }"
+            @click="togglePin"
+            title="固定播放器"
+          >
+            <IconPushPin class="text-xl" />
+          </div>
           <!-- 最小化按钮 -->
           <div
             class="minimize-btn h-full w-10 flex items-center justify-center cursor-pointer"
@@ -267,6 +306,10 @@ onBeforeUnmount(() => {
   // 关闭按钮（仅该组件使用）
   --player-close-hover-color: var(--color-red);
   --player-close-hover-bg: rgba(var(--color-red-rgb), 0.12);
+
+  // 固定按钮（仅该组件使用）
+  --player-pin-active-color: var(--player-color-default);
+  --player-pin-hover-bg: rgba(var(--play-button-bg-color-default), 0.12);
 }
 
 .player-header {
@@ -305,6 +348,19 @@ onBeforeUnmount(() => {
   &:hover {
     color: var(--player-close-hover-color);
     background: var(--player-close-hover-bg);
+  }
+}
+
+.pin-btn {
+  color: var(--player-header-icon-color);
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--player-pin-hover-bg);
+  }
+
+  &.active {
+    color: var(--player-pin-active-color);
   }
 }
 </style>

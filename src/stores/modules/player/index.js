@@ -451,14 +451,16 @@ export const storePlayer = defineStore("player", {
     handlePlayEnded() {
       // 如果是单曲循环，重新播放当前曲目
       if (this.playMode === PlayMode.SINGLE) {
+        this.seek(0);
         this.play();
         return;
       }
 
-      // 如果是顺序播放且到了最后，停止
+      // 如果是顺序播放，检查是否还有下一首
       if (this.playMode === PlayMode.SEQUENTIAL) {
-        const nextTrack = this.playQueue.next();
-        if (!nextTrack) {
+        const nextIndex = this.playQueue.getNextIndex();
+        if (nextIndex === -1) {
+          // 没有下一首了，停止播放
           this.pause();
           return;
         }
@@ -475,16 +477,13 @@ export const storePlayer = defineStore("player", {
       const currentConfig = PlayModeConfig[this.playMode];
       const nextMode = currentConfig.next;
 
-      // 如果要切换到随机模式，打乱队列
-      if (nextMode === PlayMode.RANDOM && !this.playQueue.isShuffled) {
-        this.playQueue.shuffle();
-      }
-      // 如果要离开随机模式，恢复原始顺序
-      else if (this.playMode === PlayMode.RANDOM && nextMode !== PlayMode.RANDOM) {
-        this.playQueue.unshuffle();
+      // 如果要切换到随机模式，生成新的随机播放顺序
+      if (nextMode === PlayMode.RANDOM) {
+        this.playQueue.generateRandomOrder();
       }
 
       this.playMode = nextMode;
+      this.playQueue.mode = nextMode;
       return this.playMode;
     },
 
@@ -494,23 +493,61 @@ export const storePlayer = defineStore("player", {
     setPlayMode(mode) {
       if (!PlayModeConfig[mode]) return false;
 
-      // 如果要切换到随机模式，打乱队列
-      if (mode === PlayMode.RANDOM && !this.playQueue.isShuffled) {
-        this.playQueue.shuffle();
-      }
-      // 如果要离开随机模式，恢复原始顺序
-      else if (this.playMode === PlayMode.RANDOM && mode !== PlayMode.RANDOM) {
-        this.playQueue.unshuffle();
+      // 如果要切换到随机模式，生成新的随机播放顺序
+      if (mode === PlayMode.RANDOM) {
+        this.playQueue.generateRandomOrder();
       }
 
       this.playMode = mode;
+      this.playQueue.mode = mode;
       return true;
     },
 
     /**
      * 从队列移除轨道
      */
-    removeFromQueue(trackId) {
+    async removeFromQueue(trackId) {
+      // 获取当前播放的轨道
+      const currentTrack = this.playQueue.getCurrentTrack();
+      const isCurrentTrack = currentTrack && currentTrack.id === trackId;
+      const isPlaying = this.playStatus.isPlaying;
+
+      // 如果删除的是当前正在播放的轨道
+      if (isCurrentTrack && isPlaying) {
+        // 单曲循环模式：直接删除并停止
+        if (this.playMode === PlayMode.SINGLE) {
+          this.stop();
+          const result = this.playQueue.removeTrack(trackId);
+          if (result) {
+            this.savePlayQueue();
+          }
+          return result;
+        }
+
+        // 顺序播放模式：如果是最后一首，直接删除并停止
+        if (this.playMode === PlayMode.SEQUENTIAL) {
+          const nextIndex = this.playQueue.getNextIndex();
+          if (nextIndex === -1) {
+            // 是最后一首，停止播放
+            this.stop();
+            const result = this.playQueue.removeTrack(trackId);
+            if (result) {
+              this.savePlayQueue();
+            }
+            return result;
+          }
+        }
+
+        // 其他模式（列表循环、随机播放）：播放下一首再删除
+        await this.playNext();
+        const result = this.playQueue.removeTrack(trackId);
+        if (result) {
+          this.savePlayQueue();
+        }
+        return result;
+      }
+
+      // 未播放状态或删除的不是当前轨道：正常删除
       const result = this.playQueue.removeTrack(trackId);
       if (result) {
         this.savePlayQueue();
@@ -545,6 +582,8 @@ export const storePlayer = defineStore("player", {
       storageManager.set(STORAGE_KEYS.PLAY_QUEUE, {
         tracks: tracksWithId,
         currentHash: currentHash,
+        randomOrder: this.playQueue.randomOrder,
+        currentRandomIndex: this.playQueue.currentRandomIndex,
       });
     },
 
@@ -575,6 +614,12 @@ export const storePlayer = defineStore("player", {
           this.playQueue.currentIndex = index >= 0 ? index : 0;
         } else {
           this.playQueue.currentIndex = 0;
+        }
+
+        // 加载随机播放顺序
+        if (saved.randomOrder && Array.isArray(saved.randomOrder)) {
+          this.playQueue.randomOrder = saved.randomOrder;
+          this.playQueue.currentRandomIndex = saved.currentRandomIndex || 0;
         }
       }
     },

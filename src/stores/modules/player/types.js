@@ -130,8 +130,8 @@ export class PlayQueue {
     this.tracks = data.tracks || [];
     this.currentIndex = data.currentIndex || 0;
     this.mode = data.mode || PlayMode.LOOP;
-    this.isShuffled = data.isShuffled || false;
-    this.originalOrder = null; // 用于保存原始顺序（随机模式时）
+    this.randomOrder = data.randomOrder || []; // 用于随机模式保存随机播放顺序（TrackId数组）
+    this.currentRandomIndex = data.currentRandomIndex || 0; // 当前在随机顺序中的位置
   }
 
   /**
@@ -142,10 +142,6 @@ export class PlayQueue {
       tracks: [...playlist.tracks],
       mode,
     });
-
-    if (mode === PlayMode.RANDOM) {
-      queue.shuffle();
-    }
 
     return queue;
   }
@@ -172,7 +168,17 @@ export class PlayQueue {
         return (this.currentIndex + 1) % length;
 
       case PlayMode.RANDOM:
-        return (this.currentIndex + 1) % length;
+        // 如果没有随机顺序或长度不匹配，生成一个
+        if (this.randomOrder.length === 0 || this.randomOrder.length !== length) {
+          this.generateRandomOrder();
+        }
+        // 移动到随机顺序中的下一个位置
+        this.currentRandomIndex = (this.currentRandomIndex + 1) % this.randomOrder.length;
+        // 获取下一个 TrackId
+        const nextTrackId = this.randomOrder[this.currentRandomIndex];
+        // 找到该 TrackId 在 tracks 中的索引
+        const nextIndex = this.tracks.findIndex(t => t.id === nextTrackId);
+        return nextIndex >= 0 ? nextIndex : -1;
 
       case PlayMode.SINGLE:
         return this.currentIndex;
@@ -183,29 +189,63 @@ export class PlayQueue {
   }
 
   /**
+   * 生成随机播放顺序（Fisher-Yates 洗牌算法）
+   */
+  generateRandomOrder() {
+    const length = this.tracks.length;
+    if (length === 0) {
+      this.randomOrder = [];
+      this.currentRandomIndex = 0;
+      return;
+    }
+
+    // 创建 TrackId 数组
+    this.randomOrder = this.tracks.map(track => track.id);
+
+    // Fisher-Yates 洗牌算法
+    for (let i = length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.randomOrder[i], this.randomOrder[j]] = [this.randomOrder[j], this.randomOrder[i]];
+    }
+
+    // 重置随机播放位置
+    this.currentRandomIndex = 0;
+  }
+
+  /**
    * 获取上一首轨道索引
    */
   getPreviousIndex() {
     const length = this.tracks.length;
     if (length === 0) return -1;
 
-    const newIndex = this.currentIndex - 1;
-
     switch (this.mode) {
       case PlayMode.SEQUENTIAL:
-        return newIndex >= 0 ? newIndex : -1;
+        return this.currentIndex > 0 ? this.currentIndex - 1 : -1;
 
       case PlayMode.LOOP:
-        return newIndex >= 0 ? newIndex : length - 1;
+        return this.currentIndex > 0 ? this.currentIndex - 1 : length - 1;
 
       case PlayMode.RANDOM:
-        return newIndex >= 0 ? newIndex : length - 1;
+        // 如果没有随机顺序或长度不匹配，生成一个
+        if (this.randomOrder.length === 0 || this.randomOrder.length !== length) {
+          this.generateRandomOrder();
+        }
+        // 移动到随机顺序中的上一个位置
+        this.currentRandomIndex = this.currentRandomIndex > 0
+          ? this.currentRandomIndex - 1
+          : this.randomOrder.length - 1;
+        // 获取上一个 TrackId
+        const prevTrackId = this.randomOrder[this.currentRandomIndex];
+        // 找到该 TrackId 在 tracks 中的索引
+        const prevIndex = this.tracks.findIndex(t => t.id === prevTrackId);
+        return prevIndex >= 0 ? prevIndex : -1;
 
       case PlayMode.SINGLE:
         return this.currentIndex;
 
       default:
-        return newIndex >= 0 ? newIndex : length - 1;
+        return this.currentIndex > 0 ? this.currentIndex - 1 : length - 1;
     }
   }
 
@@ -261,6 +301,14 @@ export class PlayQueue {
         ...track,
         id: track.id || generateId(),
       });
+
+      // 如果存在随机播放顺序，在随机位置插入新 TrackId
+      if (this.randomOrder.length > 0) {
+        const newTrackId = track.id || this.tracks[this.tracks.length - 1].id;
+        const randomPos = Math.floor(Math.random() * (this.randomOrder.length + 1));
+        this.randomOrder.splice(randomPos, 0, newTrackId);
+      }
+
       return true;
     }
     return false;
@@ -287,6 +335,11 @@ export class PlayQueue {
         }
       }
       // 如果 index > this.currentIndex，不需要调整
+
+      // 如果存在随机播放顺序，直接移除该 TrackId
+      if (this.randomOrder.length > 0) {
+        this.randomOrder = this.randomOrder.filter(id => id !== trackId);
+      }
 
       return true;
     }
@@ -325,45 +378,10 @@ export class PlayQueue {
   clear() {
     this.tracks = [];
     this.currentIndex = 0;
-    this.originalOrder = null;
+    this.randomOrder = [];
+    this.currentRandomIndex = 0;
   }
 
-  /**
-   * 随机打乱队列（用于随机模式）
-   */
-  shuffle() {
-    if (this.isShuffled) return;
-
-    // 保存原始顺序
-    this.originalOrder = [...this.tracks];
-
-    // Fisher-Yates 洗牌算法
-    for (let i = this.tracks.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.tracks[i], this.tracks[j]] = [this.tracks[j], this.tracks[i]];
-    }
-
-    this.currentIndex = 0;
-    this.isShuffled = true;
-  }
-
-  /**
-   * 恢复原始顺序（退出随机模式）
-   */
-  unshuffle() {
-    if (!this.isShuffled || !this.originalOrder) return;
-
-    const currentTrack = this.getCurrentTrack();
-    this.tracks = this.originalOrder;
-    this.originalOrder = null;
-
-    // 找到当前轨道在原始顺序中的位置
-    if (currentTrack) {
-      this.currentIndex = this.tracks.findIndex(t => t.id === currentTrack.id);
-    }
-
-    this.isShuffled = false;
-  }
 
   /**
    * 获取队列中的轨道数

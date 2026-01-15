@@ -93,11 +93,44 @@ export const storeRss = defineStore({
     },
 
     // 更新 RSS 源
-    updateSource(sourceId, updates) {
+    async updateSource(sourceId, forceUpdate = false) {
       const source = this.sources.find((s) => s.id === sourceId);
-      if (source) {
-        Object.assign(source, updates);
+      if (!source) {
+        throw new Error('RSS 源不存在');
+      }
+
+      // 检查冷却时间（除非强制更新）
+      if (!forceUpdate) {
+        const now = genISOWithZoneToDate().getTime();
+        const lastUpdate = source.lastUpdateTime || 0;
+        const cooldown = 5 * 60 * 1000; // 5分钟冷却
+
+        if (now - lastUpdate < cooldown) {
+          return;
+        }
+      }
+
+      try {
+        // 获取新数据
+        const freshData = await fetchSourceInfo(source);
+
+        // diff 新旧数据，只添加新内容（倒序）
+        const mergedList = differenceLatestItems(source.list, freshData.list);
+
+        // 更新源数据
+        source.list = mergedList;
+        source.lastUpdateTime = genISOWithZoneToDate().getTime();
+
+        // 保存
         this.saveSources();
+
+        // 如果当前正在查看这个源，更新显示
+        if (this.currentSourceData?.id === sourceId) {
+          this.currentSourceData = { ...source };
+        }
+      } catch (error) {
+        console.error('更新 RSS 源失败:', error);
+        throw error;
       }
     },
 
@@ -227,6 +260,7 @@ export const storeRss = defineStore({
 
     // 批量获取更新的 RSS
     async batchUpdateRss() {
+      // 筛选出超过 12 小时未更新的源
       const updateItems = this.sources.filter((rss) => {
         const { h } = calculateTimeDifference(
           rss.lastUpdateTime,
@@ -235,23 +269,27 @@ export const storeRss = defineStore({
         return h > 12;
       });
 
+      if (updateItems.length === 0) {
+        console.log('[BatchUpdate] 没有需要更新的 RSS 源');
+        return;
+      }
+
+      console.log(`[BatchUpdate] 开始批量更新 ${updateItems.length} 个 RSS 源`);
+
       try {
+        // 使用 updateSource 批量更新（不强制，走冷却检查）
         const results = await Promise.allSettled(
-          updateItems.map(async (item) => {
-            const newSource = await fetchSourceInfo(item);
-
-            const newList = differenceLatestItems(item.list, newSource.list);
-
-            const newRss = this.sources.find((s) => s.id === item.id);
-            newRss.list = newList;
-            newRss.lastUpdateTime = genISOWithZoneToDate().getTime();
-
-            return newRss;
-          })
+          updateItems.map((item) => this.updateSource(item.id, false))
         );
 
-        this.saveSources();
-      } catch (error) {}
+        // 统计结果
+        const succeeded = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+
+        console.log(`[BatchUpdate] 完成 - 成功: ${succeeded}, 失败: ${failed}`);
+      } catch (error) {
+        console.error('[BatchUpdate] 批量更新失败:', error);
+      }
     },
 
     // 标记 RSS 项为已读

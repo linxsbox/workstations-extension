@@ -202,7 +202,8 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
 class Kr36Processor extends BaseRssProcessor {
   async fetchSourceInfo() {
     try {
-      const text = await http.get(this.source.sourceUrl);
+      const response = await http.get(this.source.sourceUrl);
+      const text = await response.text()
       const xml = parseXML(text);
 
       const list = (xml.children || []).map((child) => {

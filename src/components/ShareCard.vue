@@ -1,7 +1,15 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { NInput, NRadioGroup, NRadioButton, NButton, NModal, useMessage } from 'naive-ui';
-import QRCode from 'qrcode';
+import { ref, computed } from "vue";
+import {
+  NInput,
+  NRadioGroup,
+  NRadioButton,
+  NButton,
+  NModal,
+  useMessage,
+} from "naive-ui";
+import { formatDate } from "@linxs/toolkit";
+import QRCode from "qrcode";
 
 const props = defineProps({
   show: {
@@ -27,24 +35,17 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['update:show', 'close']);
+const emit = defineEmits(["update:show", "close"]);
 
 const message = useMessage();
 
 // 控制面板状态
-const signature = ref('');
-const textAlign = ref('left');
-const qrcodeDataUrl = ref('');
+const signature = ref("");
+const textAlign = ref("left");
+const qrcodeDataUrl = ref("");
 
 // 当前日期
-const currentDate = computed(() => {
-  const now = new Date();
-  return now.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-});
+const currentDate = computed(() => formatDate(new Date(), "YYYY年MM月DD日"));
 
 // 生成二维码
 const generateQRCode = async () => {
@@ -53,14 +54,14 @@ const generateQRCode = async () => {
       width: props.qrcodeSize,
       margin: 1,
       color: {
-        dark: '#000000',
-        light: '#FFFFFF',
+        dark: "#000000",
+        light: "#FFFFFF",
       },
     });
     qrcodeDataUrl.value = dataUrl;
   } catch (error) {
-    console.error('生成二维码失败:', error);
-    message.error('生成二维码失败');
+    console.error("生成二维码失败:", error);
+    message.error("生成二维码失败");
   }
 };
 
@@ -71,55 +72,50 @@ generateQRCode();
 const copyCardAsImage = async () => {
   try {
     // 使用 snapdom 将卡片转换为图片
-    const { snapdom } = await import('@zumer/snapdom');
-    const cardElement = document.querySelector('.share-card-content');
+    const { snapdom } = await import("@zumer/snapdom");
+    const cardElement = document.querySelector(".share-card-content");
 
     if (!cardElement) {
-      throw new Error('未找到卡片元素');
+      throw new Error("未找到卡片元素");
     }
 
-    // 使用 snapdom.toCanvas 生成 canvas
-    const canvas = await snapdom.toCanvas(cardElement, {
-      scale: 2,
-      compress: true,
-      fast: true,
+    // 使用 snapdom.toBlob 生成 image/png
+    const snapdomBlob = await snapdom.toBlob(cardElement, {
       embedFonts: false,
+      backgroundColor: "#ffffff",
+      scale: 2,
       dpr: window.devicePixelRatio || 1,
-    });
-
-    // 将 canvas 转换为 blob
-    const blob = await new Promise((resolve) => {
-      canvas.toBlob((blob) => resolve(blob), 'image/png', 1);
+      type: "png",
     });
 
     // 使用 Clipboard API 复制图片
     if (navigator.clipboard && ClipboardItem) {
-      const clipboardItem = new ClipboardItem({ 'image/png': blob });
+      const clipboardItem = new ClipboardItem({ "image/png": snapdomBlob });
       await navigator.clipboard.write([clipboardItem]);
-      message.success('已复制到剪贴板');
+      message.success("已复制到剪贴板");
     } else {
-      throw new Error('浏览器不支持复制图片到剪贴板');
+      throw new Error("浏览器不支持复制图片到剪贴板");
     }
   } catch (error) {
-    console.error('复制图片失败:', error);
-    message.error(`复制失败: ${error.message || '未知错误'}`);
+    console.error("复制图片失败:", error);
+    message.error(`复制失败: ${error.message || "未知错误"}`);
   }
 };
 
 // 关闭
 const handleClose = () => {
-  emit('update:show', false);
-  emit('close');
+  emit("update:show", false);
+  emit("close");
 };
 
 // 复制分享链接
 const copyShareLink = async () => {
   try {
     await navigator.clipboard.writeText(props.qrcodeContent);
-    message.success('链接已复制到剪贴板');
+    message.success("链接已复制到剪贴板");
   } catch (error) {
-    console.error('复制链接失败:', error);
-    message.error('复制链接失败');
+    console.error("复制链接失败:", error);
+    message.error("复制链接失败");
   }
 };
 </script>
@@ -137,10 +133,16 @@ const copyShareLink = async () => {
   >
     <div class="flex flex-col items-center gap-5 p-5">
       <!-- 卡片主体 -->
-      <div class="share-card-content w-[420px] bg-white rounded-xl overflow-hidden shadow-lg">
+      <div
+        class="share-card-content w-[420px] bg-white rounded-xl overflow-hidden shadow-lg"
+      >
         <!-- 图片区域 -->
         <div v-if="image" class="w-full flex justify-center items-center p-5">
-          <img :src="image" alt="分享图片" class="w-[380px] h-[380px] object-cover rounded-lg shadow-md" />
+          <img
+            :src="image"
+            alt="分享图片"
+            class="w-[380px] h-[380px] object-cover rounded-lg shadow-md"
+          />
         </div>
 
         <!-- 分享内容 -->
@@ -155,7 +157,9 @@ const copyShareLink = async () => {
         <div class="flex justify-between items-end px-6 pb-5">
           <!-- 左侧：签名和日期 -->
           <div class="flex flex-col gap-2">
-            <div v-if="signature" class="text-sm font-semibold text-gray-800">{{ signature }}</div>
+            <div v-if="signature" class="text-sm font-semibold text-gray-800">
+              {{ signature }}
+            </div>
             <div class="text-xs text-gray-600">{{ currentDate }}</div>
           </div>
 
@@ -173,7 +177,9 @@ const copyShareLink = async () => {
       </div>
 
       <!-- 控制面板 -->
-      <div class="flex flex-col gap-3 w-[420px] p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]">
+      <div
+        class="flex flex-col gap-3 w-[420px] p-4 bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]"
+      >
         <!-- 第一行：签名输入和对齐方式 -->
         <div class="flex gap-3 items-center">
           <NInput
@@ -192,8 +198,12 @@ const copyShareLink = async () => {
 
         <!-- 第二行：操作按钮 -->
         <div class="flex gap-3 justify-end">
-          <NButton v-if="showShareLink" @click="copyShareLink">分享链接</NButton>
-          <NButton type="primary" @click="copyCardAsImage">复制分享卡片</NButton>
+          <NButton v-if="showShareLink" @click="copyShareLink"
+            >分享链接</NButton
+          >
+          <NButton type="primary" @click="copyCardAsImage"
+            >复制分享卡片</NButton
+          >
           <NButton @click="handleClose">关闭</NButton>
         </div>
       </div>

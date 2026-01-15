@@ -1,6 +1,10 @@
 <script setup>
-import { NScrollbar } from "naive-ui";
+import { ref, computed } from "vue";
+import { NScrollbar, useMessage } from "naive-ui";
+import { debounce } from "@linxs/toolkit";
 import RssCardView from "./RssCardView.vue";
+import IconRefresh from "@/components/common/Icons/IconRefresh.vue";
+import { storeRss } from "@/stores/modules/rss";
 
 const props = defineProps({
   data: {
@@ -11,6 +15,41 @@ const props = defineProps({
     }),
   },
 });
+
+const rssStore = storeRss();
+
+// 刷新动画状态
+const isRefreshing = ref(false);
+
+// 是否显示刷新按钮（距离上次更新 >= 5分钟，或正在刷新中）
+const showRefreshBtn = computed(() => {
+  // 刷新中时也显示按钮（用于动画）
+  if (isRefreshing.value) return true;
+
+  const now = Date.now();
+  const lastUpdate = props.data.lastUpdateTime || 0;
+  const cooldown = 5 * 60 * 1000; // 5分钟
+
+  return now - lastUpdate >= cooldown;
+});
+
+// 点击刷新（使用 debounce 防止重复点击）
+const handleRefresh = debounce(async () => {
+  if (!showRefreshBtn.value) return;
+
+  // 开启动画
+  isRefreshing.value = true;
+
+  try {
+    await rssStore.updateSource(props.data.id, true);
+  } catch (_) {
+  } finally {
+    // 500ms 后关闭动画
+    setTimeout(() => {
+      isRefreshing.value = false;
+    }, 500);
+  }
+}, 300);
 
 // 构建播客信息
 const getAlbum = () => {
@@ -67,12 +106,27 @@ const getThemeColor = (theme) => {
             >
               {{ props.data.title }}
             </a>
-            <span class="author">{{ props.data.author }}</span>
+            <div class="flex items-center gap-2">
+              <span class="author">{{ props.data.author }}</span>
+            </div>
           </div>
           <div class="description text-[var(--text-tertiary)]">
             {{ props.data.description }}
           </div>
         </div>
+
+        <button
+          v-if="showRefreshBtn"
+          class="refresh-btn absolute top-1 right-1 cursor-pointer bg-transparent border-none hidden"
+          aria-label="刷新数据源"
+          title="刷新数据源"
+          @click="handleRefresh"
+        >
+          <IconRefresh
+            class="text-sm text-[var(--color-info)] cursor-pointer"
+            :class="{ 'animate-spin': isRefreshing }"
+          />
+        </button>
       </header>
       <div class="flex flex-col gap-3 p-4">
         <RssCardView
@@ -101,6 +155,12 @@ const getThemeColor = (theme) => {
       .title {
         color: rgb(var(--origin-theme-rgb));
         text-shadow: 1px 1px 1px var(--text-tertiary);
+      }
+
+      &:hover {
+        .refresh-btn {
+          display: block;
+        }
       }
     }
   }

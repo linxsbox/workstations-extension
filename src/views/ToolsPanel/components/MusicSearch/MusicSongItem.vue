@@ -194,11 +194,6 @@ const handleAddToQueue = async () => {
   }
 };
 
-// 分享卡片内容
-const shareContent = computed(() => {
-  return `${props.song.name}\n${props.song.artist}${props.song.album ? `\n专辑：${props.song.album}` : ''}`;
-});
-
 // 二维码内容（可以是歌曲链接或其他信息）
 const qrcodeContent = computed(() => {
   // 这里可以根据需要生成歌曲链接或其他内容
@@ -272,9 +267,16 @@ const handleShare = () => {
       v-if="currentCoverUrl"
       v-model:show="showShareCard"
       :image="currentCoverUrl"
-      :content="shareContent"
       :qrcode-content="qrcodeContent"
-    />
+    >
+      <div class="share-content-wrapper">
+        <div class="song-info artist pb-2">
+          <div class="font-bold">《{{ props.song.name }}》 {{ props.song.artist }}</div>
+          <div class="text-sm text-gray-500" v-if="props.song.album">专辑：{{ props.song.album }}</div>
+        </div>
+        <div class="content text-sm" contenteditable></div>
+      </div>
+    </ShareCard>
   </div>
 </template>
 

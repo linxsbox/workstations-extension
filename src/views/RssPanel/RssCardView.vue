@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
 import { useMessage } from "naive-ui";
 import { isObject, isEmptyObject } from "@linxs/toolkit";
@@ -7,6 +7,8 @@ import { sec2min } from "@/utils/time";
 import PlayButton from "@/components/player/PlayButton.vue";
 import AddToQueueButton from "@/components/player/AddToQueueButton.vue";
 import IconFiberNew from "@/components/common/Icons/IconFiberNew.vue";
+import IconReply from "@/components/common/Icons/IconReply.vue";
+import ShareCard from "@/components/ShareCard.vue";
 import { storePlayer } from "@/stores/modules/player";
 import { storeRss } from "@/stores/modules/rss";
 
@@ -118,6 +120,39 @@ const handleAddToQueueDuplicate = (track) => {
 const handleAddToQueueError = (error) => {
   message.error(`添加失败: ${error?.message || "未知错误"}`);
 };
+
+// 分享相关
+const showShareCard = ref(false);
+
+// 获取分享图片
+const getShareImage = computed(() => {
+  const albumInfo = getAlbumInfo();
+  return albumInfo?.image || albumInfo?.cover || "";
+});
+
+// 获取分享内容
+const getShareContent = computed(() => {
+  return props.data.title || "";
+});
+
+// 获取分享链接
+const getShareLink = computed(() => {
+  return props.data.link || "";
+});
+
+// 点击分享按钮
+const handleShare = () => {
+  if (!getShareLink.value) {
+    message.warning("该内容没有可分享的链接");
+    return;
+  }
+  showShareCard.value = true;
+};
+
+// 关闭分享卡片
+const handleCloseShare = () => {
+  showShareCard.value = false;
+};
 </script>
 
 <template>
@@ -160,16 +195,26 @@ const handleAddToQueueError = (error) => {
         <footer class="card-footer flex gap-4 justify-between">
           <div class="left-info">
             <template v-if="props.data.duration || props.data.timeAgo">
-              <span v-if="props.data.duration">{{ sec2min(props.data.duration) }} 分钟 ·</span>
+              <span v-if="props.data.duration"
+                >{{ sec2min(props.data.duration) }} 分钟 ·</span
+              >
               {{ props.data.timeAgo || "" }}
             </template>
-            <div class="inline-flex gap-3" v-else-if="props.data.author || props.data.pubDate">
+            <div
+              class="inline-flex gap-3"
+              v-else-if="props.data.author || props.data.pubDate"
+            >
               <div v-if="props.data.pubDate">{{ props.data.pubDate }}</div>
-              <div v-if="props.data.author" class="font-bold">{{ props.data.author }}</div>
+              <div v-if="props.data.author" class="font-bold">
+                {{ props.data.author }}
+              </div>
             </div>
           </div>
           <div class="right-bar inline-flex gap-2">
             <!-- 预留操作扩展栏 -->
+            <button class="share-btn p-1 rounded-md" @click="handleShare" title="分享">
+              <IconReply />
+            </button>
           </div>
         </footer>
       </div>
@@ -180,6 +225,28 @@ const handleAddToQueueError = (error) => {
         class="new-badge absolute -top-3 right-1 z-[1] text-2xl text-[var(--color-error)]"
       />
     </div>
+
+    <!-- 分享卡片 -->
+    <ShareCard
+      v-model:show="showShareCard"
+      :image="getShareImage"
+      :qrcodeContent="getShareLink"
+      :showShareLink="true"
+      @close="handleCloseShare"
+    >
+      <div class="share-content-wrapper">
+        <!-- 标题 -->
+        <div class="share-title font-bold text-lg mb-2">
+          {{ getShareContent }}
+        </div>
+        <!-- 来源和作者信息 -->
+        <div v-if="!getShareImage" class="share-meta text-sm text-gray-500">
+          <span v-if="props.album?.title">来源：{{ props.album.title }}</span>
+          <span v-if="props.album?.title && props.data.author"> - </span>
+          <span v-if="props.data.author">{{ props.data.author }}</span>
+        </div>
+      </div>
+    </ShareCard>
   </section>
 </template>
 
@@ -205,7 +272,7 @@ const handleAddToQueueError = (error) => {
 
   .card-header {
     .title {
-      color: var(--origin-theme, var(--link-color))
+      color: var(--origin-theme, var(--link-color));
     }
   }
 
@@ -216,6 +283,20 @@ const handleAddToQueueError = (error) => {
 
   .card-footer {
     color: var(--text-tertiary);
+
+    .share-btn {
+      border: none;
+      background: transparent;
+
+      color: var(--origin-theme, var(--link-color));
+
+      &:hover {
+        background-color: rgba(
+          var(--play-button-bg-color, --play-button-bg-color-default),
+          0.1
+        );
+      }
+    }
   }
 
   .new-badge {

@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { NInput, NRadioGroup, NRadioButton, NButton, NModal, useMessage } from 'naive-ui';
-import { clipboard } from '@linxs/toolkit';
 import QRCode from 'qrcode';
 
 const props = defineProps({
@@ -11,15 +10,20 @@ const props = defineProps({
   },
   image: {
     type: String,
-    required: true,
-  },
-  content: {
-    type: String,
-    required: true,
+    required: false,
+    default: "",
   },
   qrcodeContent: {
     type: String,
     required: true,
+  },
+  qrcodeSize: {
+    type: Number,
+    default: 80,
+  },
+  showShareLink: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -46,7 +50,7 @@ const currentDate = computed(() => {
 const generateQRCode = async () => {
   try {
     const dataUrl = await QRCode.toDataURL(props.qrcodeContent, {
-      width: 100,
+      width: props.qrcodeSize,
       margin: 1,
       color: {
         dark: '#000000',
@@ -80,7 +84,6 @@ const copyCardAsImage = async () => {
       compress: true,
       fast: true,
       embedFonts: false,
-      backgroundColor: '#ffffff',
       dpr: window.devicePixelRatio || 1,
     });
 
@@ -89,20 +92,17 @@ const copyCardAsImage = async () => {
       canvas.toBlob((blob) => resolve(blob), 'image/png', 1);
     });
 
-    // 使用升级后的 clipboard 工具复制图片
-    await clipboard({
-      type: 'blob',
-      data: { 'image/png': blob },
-      success: async (msg) => {
-        message.success(msg);
-      },
-      error: async (msg) => {
-        message.error(msg);
-      },
-    });
+    // 使用 Clipboard API 复制图片
+    if (navigator.clipboard && ClipboardItem) {
+      const clipboardItem = new ClipboardItem({ 'image/png': blob });
+      await navigator.clipboard.write([clipboardItem]);
+      message.success('已复制到剪贴板');
+    } else {
+      throw new Error('浏览器不支持复制图片到剪贴板');
+    }
   } catch (error) {
-    console.error('生成图片失败:', error);
-    message.error('生成图片失败');
+    console.error('复制图片失败:', error);
+    message.error(`复制失败: ${error.message || '未知错误'}`);
   }
 };
 
@@ -110,6 +110,17 @@ const copyCardAsImage = async () => {
 const handleClose = () => {
   emit('update:show', false);
   emit('close');
+};
+
+// 复制分享链接
+const copyShareLink = async () => {
+  try {
+    await navigator.clipboard.writeText(props.qrcodeContent);
+    message.success('链接已复制到剪贴板');
+  } catch (error) {
+    console.error('复制链接失败:', error);
+    message.error('复制链接失败');
+  }
 };
 </script>
 
@@ -128,20 +139,20 @@ const handleClose = () => {
       <!-- 卡片主体 -->
       <div class="share-card-content w-[420px] bg-white rounded-xl overflow-hidden shadow-lg">
         <!-- 图片区域 -->
-        <div class="w-full flex justify-center items-center p-5">
+        <div v-if="image" class="w-full flex justify-center items-center p-5">
           <img :src="image" alt="分享图片" class="w-[380px] h-[380px] object-cover rounded-lg shadow-md" />
         </div>
 
         <!-- 分享内容 -->
         <div
-          class="px-6 py-4 text-base leading-relaxed text-gray-800"
+          class="share-content px-6 py-4 text-base leading-relaxed text-gray-800"
           :style="{ textAlign: textAlign }"
         >
-          {{ content }}
+          <slot></slot>
         </div>
 
         <!-- 底部信息栏 -->
-        <div class="flex justify-between items-end px-6 py-5">
+        <div class="flex justify-between items-end px-6 pb-5">
           <!-- 左侧：签名和日期 -->
           <div class="flex flex-col gap-2">
             <div v-if="signature" class="text-sm font-semibold text-gray-800">{{ signature }}</div>
@@ -150,7 +161,13 @@ const handleClose = () => {
 
           <!-- 右侧：二维码 -->
           <div class="flex items-center">
-            <img v-if="qrcodeDataUrl" :src="qrcodeDataUrl" alt="二维码" class="w-20 h-20 border-2 border-gray-200 rounded" />
+            <img
+              v-if="qrcodeDataUrl"
+              :src="qrcodeDataUrl"
+              alt="二维码"
+              :style="{ width: `${qrcodeSize}px`, height: `${qrcodeSize}px` }"
+              class="border-2 border-gray-200 rounded"
+            />
           </div>
         </div>
       </div>
@@ -175,7 +192,8 @@ const handleClose = () => {
 
         <!-- 第二行：操作按钮 -->
         <div class="flex gap-3 justify-end">
-          <NButton type="primary" @click="copyCardAsImage">复制</NButton>
+          <NButton v-if="showShareLink" @click="copyShareLink">分享链接</NButton>
+          <NButton type="primary" @click="copyCardAsImage">复制分享卡片</NButton>
           <NButton @click="handleClose">关闭</NButton>
         </div>
       </div>

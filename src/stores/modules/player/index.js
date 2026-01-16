@@ -44,7 +44,7 @@ export const storePlayer = defineStore("player", {
     playMode: PlayMode.LOOP,
 
     // 视图模式
-    viewMode: storageManager.get(STORAGE_KEYS.VIEW_MODE, ViewMode.LIST),
+    viewMode: storageManager.get(STORAGE_KEYS.PLAYER_VIEW_MODE, ViewMode.LIST),
 
     // 播放器显示状态
     isPlayerVisible: false,
@@ -579,7 +579,7 @@ export const storePlayer = defineStore("player", {
       const currentTrack = this.playQueue.getCurrentTrack();
       const currentHash = currentTrack ? currentTrack.id : null;
 
-      storageManager.set(STORAGE_KEYS.PLAY_QUEUE, {
+      storageManager.set(STORAGE_KEYS.PLAYER_PLAY_QUEUE, {
         tracks: tracksWithId,
         currentHash: currentHash,
         randomOrder: this.playQueue.randomOrder,
@@ -591,7 +591,7 @@ export const storePlayer = defineStore("player", {
      * 从本地存储加载播放队列
      */
     loadPlayQueue() {
-      const saved = storageManager.get(STORAGE_KEYS.PLAY_QUEUE);
+      const saved = storageManager.get(STORAGE_KEYS.PLAYER_PLAY_QUEUE);
       if (saved && saved.tracks) {
         // 数据迁移：将旧格式的 album 字符串转换为对象格式
         this.playQueue.tracks = saved.tracks.map(track => {
@@ -632,7 +632,7 @@ export const storePlayer = defineStore("player", {
         return false;
       }
       this.viewMode = mode;
-      storageManager.set(STORAGE_KEYS.VIEW_MODE, mode);
+      storageManager.set(STORAGE_KEYS.PLAYER_VIEW_MODE, mode);
       return true;
     },
 

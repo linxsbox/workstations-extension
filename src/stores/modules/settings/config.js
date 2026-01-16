@@ -149,6 +149,13 @@ export const settingSchema = [
         component: '@/components/dialogs/SettingDialog/components/Children/APIKeyForm.vue',
         description: '配置第三方服务的 API 密钥',
       },
+      {
+        id: 'configManagement',
+        title: '配置管理',
+        type: SETTING_TYPES.CUSTOM,
+        component: '@/components/dialogs/SettingDialog/components/Children/ConfigManagement.vue',
+        description: '导入或导出应用配置数据',
+      },
     ],
   },
 ]

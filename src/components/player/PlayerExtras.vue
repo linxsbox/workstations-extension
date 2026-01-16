@@ -8,7 +8,7 @@ import IconVolumeUp from "@/components/common/Icons/IconVolumeUp.vue";
 import IconVolumeDown from "@/components/common/Icons/IconVolumeDown.vue";
 import IconVolumeMute from "@/components/common/Icons/IconVolumeMute.vue";
 import IconVolumeOff from "@/components/common/Icons/IconVolumeOff.vue";
-import IconSquare from "@/components/common/Icons/IconSquare.vue";
+import IconStop from "@/components/common/Icons/IconStop.vue";
 import IconRepeat from "@/components/common/Icons/IconRepeat.vue";
 import IconRepeatOne from "@/components/common/Icons/IconRepeatOne.vue";
 import IconShuffle from "@/components/common/Icons/IconShuffle.vue";

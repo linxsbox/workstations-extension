@@ -1,5 +1,10 @@
 <script setup>
-import { NConfigProvider, NMessageProvider, NDialogProvider } from "naive-ui";
+import {
+  NConfigProvider,
+  NMessageProvider,
+  NDialogProvider,
+  NNotificationProvider,
+} from "naive-ui";
 
 import { themeOverrides } from "./theme/index.js";
 
@@ -33,15 +38,17 @@ onMounted(() => {
 <template>
   <NConfigProvider class="inherit-app" :theme-overrides="themeOverrides">
     <NMessageProvider>
-      <NDialogProvider>
-        <AsidePanelView />
-        <MainPanelView />
+      <NNotificationProvider>
+        <NDialogProvider>
+          <AsidePanelView />
+          <MainPanelView />
 
-        <SettingDialog />
-        <RssManagementDialog />
+          <SettingDialog />
+          <RssManagementDialog />
 
-        <PlayerView />
-      </NDialogProvider>
+          <PlayerView />
+        </NDialogProvider>
+      </NNotificationProvider>
     </NMessageProvider>
   </NConfigProvider>
 </template>

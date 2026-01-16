@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from "vue";
 import { NButton, NScrollbar, NEmpty, NModal, useMessage } from "naive-ui";
 import { clipboard } from "@linxs/toolkit";
 
@@ -10,29 +11,70 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   isCopy: { type: Boolean, default: true },
   title: { type: String, default: "" },
+  // 钩子函数
+  beforeImport: { type: Function, default: null },
+  afterImport: { type: Function, default: null },
+  beforeExport: { type: Function, default: null },
+  afterExport: { type: Function, default: null },
+  beforeCopy: { type: Function, default: null },
+  afterCopy: { type: Function, default: null },
 });
 
-const emit = defineEmits(["update:show", "import", "copy"]);
+const emit = defineEmits(["update:show", "import", "export", "copy"]);
 
 const message = useMessage();
 
-const importUrl = ref("");
+const importData = ref("");
 
-const handleImport = () => {
-  emit("import", importUrl.value);
+// 处理导入
+const handleImport = async () => {
+  try {
+    // beforeImport 钩子
+    if (props.beforeImport) {
+      const result = await props.beforeImport(importData.value);
+      if (result === false) return; // 返回 false 则取消导入
+    }
+
+    emit("import", importData.value);
+
+    // afterImport 钩子
+    if (props.afterImport) {
+      await props.afterImport(importData.value);
+    }
+  } catch (error) {
+    console.error("导入失败:", error);
+    message.error(`导入失败: ${error.message}`);
+  }
 };
 
-const handleCopy = () => {
-  clipboard({
-    data: props.exportData,
-    success: (msg) => {
-      emit("copy", props.exportData);
-      message.success(msg);
-    },
-    error: (msg) => {
-      message.error(msg);
-    },
-  });
+// 处理复制
+const handleCopy = async () => {
+  try {
+    // beforeCopy 钩子
+    if (props.beforeCopy) {
+      const result = await props.beforeCopy(props.exportData);
+      if (result === false) return;
+    }
+
+    clipboard({
+      data: props.exportData,
+      success: (msg) => {
+        emit("copy", props.exportData);
+        message.success(msg);
+
+        // afterCopy 钩子
+        if (props.afterCopy) {
+          props.afterCopy(props.exportData);
+        }
+      },
+      error: (msg) => {
+        message.error(msg);
+      },
+    });
+  } catch (error) {
+    console.error("复制失败:", error);
+    message.error(`复制失败: ${error.message}`);
+  }
 };
 
 const handleUpdateShow = (val) => {
@@ -43,15 +85,24 @@ const handleUpdateShow = (val) => {
 <template>
   <NModal
     :show="props.show"
-    preset="dialog"
     :title="props.title"
+    preset="dialog"
     @update:show="handleUpdateShow"
   >
+    <!-- 导入模式 -->
     <section v-if="importType === 1">
-      <slot name="import"></slot>
-      <div class="text-right">
+      <!-- 自定义导入内容区域 -->
+      <slot name="import-content" :data="importData"></slot>
+
+      <!-- 自定义按钮区域 -->
+      <div class="text-right mt-2">
+        <slot
+          name="import-actions"
+          :handleImport="handleImport"
+          :loading="loading"
+        >
+        </slot>
         <NButton
-          class="mt-2"
           type="primary"
           size="small"
           :loading="loading"
@@ -62,11 +113,14 @@ const handleUpdateShow = (val) => {
       </div>
     </section>
 
+    <!-- 导出模式 -->
     <section v-else>
-      <div class="flex justify-between items-centermb-2">
-        <slot name="export"></slot>
+      <!-- 自定义导出头部区域 -->
+      <div class="flex flex-wrap items-center gap-3 mb-2">
+        <!-- 自定义按钮区域 -->
+        <slot name="export-actions"></slot>
         <NButton
-          class="ml-2"
+          class=""
           type="primary"
           size="small"
           @click="handleCopy"
@@ -75,11 +129,15 @@ const handleUpdateShow = (val) => {
           复制
         </NButton>
       </div>
+
+      <!-- 自定义内容显示区域 -->
       <NScrollbar class="max-h-[680px]">
-        <div class="whitespace-pre" v-if="exportData">
-          {{ exportData }}
-        </div>
-        <NEmpty class="pt-10 mx-auto" v-else description="暂无导出数据" />
+        <slot name="export-content" :data="exportData">
+          <div class="whitespace-pre" v-if="exportData">
+            {{ exportData }}
+          </div>
+          <NEmpty class="pt-10 mx-auto" v-else description="暂无导出数据" />
+        </slot>
       </NScrollbar>
     </section>
   </NModal>

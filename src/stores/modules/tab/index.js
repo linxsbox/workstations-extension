@@ -12,11 +12,26 @@ const initializePanelTabsState = () => {
   getPanelKeys().forEach((panelKey) => {
     if (!isPanelValid(panelKey)) return;
 
-    const stored = storageManager.getTabState(panelKey) || {};
-    state[panelKey] = {
-      tabs: [...DEFAULT_TABS],
-      activeId: stored.activeId || "all",
-    };
+    const stored = storageManager.getTabState(panelKey);
+
+    if (stored && stored.tabs) {
+      // 如果有存储的数据，使用存储的 tabs 和 activeId
+      // 确保始终包含"全部" tab
+      const tabs = stored.tabs.some((tab) => tab.id === "all")
+        ? stored.tabs
+        : [DEFAULT_TABS[0], ...stored.tabs];
+
+      state[panelKey] = {
+        tabs: tabs,
+        activeId: stored.activeId || "all",
+      };
+    } else {
+      // 没有存储数据时使用默认值
+      state[panelKey] = {
+        tabs: [...DEFAULT_TABS],
+        activeId: "all",
+      };
+    }
   });
   return state;
 };

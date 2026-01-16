@@ -3,36 +3,176 @@ import { defaultStorage } from "@linxs/toolkit";
 const { localStorage, sessionStorage } = defaultStorage();
 
 /**
- * 统一的存储键定义
+ * 扩展存储键定义（使用 chrome.storage.local，降级到 localStorage）
+ * 这些数据需要跨页面共享、长期保存
  */
-export const STORAGE_KEYS = {
-  // 图片缓存
-  CACHE_IMAGE: "CACHE_IMAGE",
-
+export const EXTENSION_STORAGE_KEYS = {
   // 设置相关
   THEME_MODE: "USER_THEME_MODE",
   FONT_SIZE: "USER_FONT_SIZE",
 
   // 界面状态
-  PANEL_ACTIVE: "PANEL_ACTIVE",
   TAB_PREFIX: "USER_TAB_",
-
-  // 播放器相关
-  VOLUME: "USER_VOLUME",
-  PLAYBACK_RATE: "USER_PLAYBACK_RATE", // 使用 sessionStorage
-  PLAY_QUEUE: "PLAYER_PLAY_QUEUE", // 播放队列
-  VIEW_MODE: "PLAYER_VIEW_MODE", // 播放器视图模式
-  PLAYER_POSITION: "PLAYER_POSITION", // 播放器位置
 
   // 业务数据
   RSS_SOURCES: "USER_RSS_SOURCES",
+
+  // 播放器相关
+  VOLUME: "USER_VOLUME",
+  PLAYER_PLAY_QUEUE: "PLAYER_PLAY_QUEUE", // 播放队列
+  PLAYER_VIEW_MODE: "PLAYER_VIEW_MODE", // 播放器视图模式
+  PLAYER_POSITION: "PLAYER_POSITION", // 播放器位置
 };
 
 /**
+ * 网页存储键定义（使用 localStorage）
+ * 这些数据是临时性的、页面级的
+ */
+export const WEB_STORAGE_KEYS = {
+  // 缓存相关
+  CACHE_IMAGE: "CACHE_IMAGE", // 图片缓存
+  CACHE_RSS_LOGO: "CACHE_RSS_LOGO", // RSS Logo 缓存
+
+  // 界面状态
+  PANEL_ACTIVE: "PANEL_ACTIVE",
+
+  // 表单相关
+  FORM_DRAFT: "FORM_DRAFT", // 表单草稿
+
+  // 用户配置
+  LLM_API_KEYS: "LLM_API_KEYS", // 用户配置的 LLM API Keys
+};
+
+/**
+ * Session 存储键定义（使用 sessionStorage）
+ * 这些数据只在当前会话有效
+ */
+export const SESSION_STORAGE_KEYS = {
+  PLAYBACK_RATE: "USER_PLAYBACK_RATE", // 播放速率
+};
+
+// 向后兼容：导出所有存储键
+export const STORAGE_KEYS = {
+  ...EXTENSION_STORAGE_KEYS,
+  ...WEB_STORAGE_KEYS,
+  ...SESSION_STORAGE_KEYS,
+};
+
+/**
+ * Chrome 扩展存储适配器
+ * 优先使用 chrome.storage.local，降级到 localStorage
+ * 使用内存缓存实现同步访问
+ */
+class ChromeStorageAdapter {
+  constructor() {
+    // 检测是否支持 chrome.storage
+    this.isChromeStorageAvailable = typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local;
+
+    // 内存缓存，用于同步访问
+    this.cache = new Map();
+
+    // 初始化：从 chrome.storage 加载所有数据到缓存
+    if (this.isChromeStorageAvailable) {
+      this._initCache();
+    }
+  }
+
+  /**
+   * 初始化缓存（从 chrome.storage 加载所有数据）
+   */
+  async _initCache() {
+    try {
+      chrome.storage.local.get(null, (items) => {
+        if (items) {
+          Object.entries(items).forEach(([key, value]) => {
+            this.cache.set(key, value);
+          });
+        }
+      });
+    } catch (error) {
+      console.error('[ChromeStorage] 初始化缓存失败:', error);
+    }
+  }
+
+  /**
+   * 获取值（同步）
+   */
+  get(key, defaultValue) {
+    if (this.isChromeStorageAvailable) {
+      // 从缓存读取
+      const value = this.cache.get(key);
+      return value !== undefined && value !== null ? value : defaultValue;
+    } else {
+      // 降级到 localStorage
+      const value = localStorage.get(key);
+      return value !== undefined && value !== null ? value : defaultValue;
+    }
+  }
+
+  /**
+   * 设置值（同步更新缓存，异步写入 chrome.storage）
+   */
+  set(key, value) {
+    if (this.isChromeStorageAvailable) {
+      // 立即更新缓存
+      this.cache.set(key, value);
+
+      // 异步写入 chrome.storage
+      chrome.storage.local.set({ [key]: value }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('[ChromeStorage] 写入失败:', chrome.runtime.lastError);
+        }
+      });
+    } else {
+      // 降级到 localStorage
+      localStorage.set(key, value);
+    }
+  }
+
+  /**
+   * 删除值（同步更新缓存，异步删除 chrome.storage）
+   */
+  remove(key) {
+    if (this.isChromeStorageAvailable) {
+      // 立即从缓存删除
+      this.cache.delete(key);
+
+      // 异步从 chrome.storage 删除
+      chrome.storage.local.remove(key, () => {
+        if (chrome.runtime.lastError) {
+          console.error('[ChromeStorage] 删除失败:', chrome.runtime.lastError);
+        }
+      });
+    } else {
+      // 降级到 localStorage
+      localStorage.remove(key);
+    }
+  }
+}
+
+// 创建扩展存储适配器实例
+const chromeStorage = new ChromeStorageAdapter();
+
+/**
  * 统一的存储管理器
- * 对 @linxs/toolkit 的 localStorage 进行封装和扩展
+ * 根据 key 类型自动选择合适的存储方式
  */
 class StorageManager {
+  /**
+   * 判断 key 是否属于扩展存储
+   */
+  _isExtensionKey(key) {
+    return Object.values(EXTENSION_STORAGE_KEYS).includes(key) ||
+           key.startsWith(EXTENSION_STORAGE_KEYS.TAB_PREFIX);
+  }
+
+  /**
+   * 判断 key 是否属于 session 存储
+   */
+  _isSessionKey(key) {
+    return Object.values(SESSION_STORAGE_KEYS).includes(key);
+  }
+
   /**
    * 获取存储值
    * @param {string} key - 存储键
@@ -40,6 +180,12 @@ class StorageManager {
    * @returns {*} 存储的值或默认值
    */
   get(key, defaultValue) {
+    // 扩展存储键使用 chrome.storage.local
+    if (this._isExtensionKey(key)) {
+      return chromeStorage.get(key, defaultValue);
+    }
+
+    // 其他使用 localStorage
     const value = localStorage.get(key);
     return value !== undefined && value !== null ? value : defaultValue;
   }
@@ -50,6 +196,12 @@ class StorageManager {
    * @param {*} value - 要存储的值
    */
   set(key, value) {
+    // 扩展存储键使用 chrome.storage.local
+    if (this._isExtensionKey(key)) {
+      return chromeStorage.set(key, value);
+    }
+
+    // 其他使用 localStorage
     localStorage.set(key, value);
   }
 
@@ -58,6 +210,12 @@ class StorageManager {
    * @param {string} key - 存储键
    */
   remove(key) {
+    // 扩展存储键使用 chrome.storage.local
+    if (this._isExtensionKey(key)) {
+      return chromeStorage.remove(key);
+    }
+
+    // 其他使用 localStorage
     localStorage.remove(key);
   }
 

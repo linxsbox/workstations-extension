@@ -14,7 +14,7 @@ export const EXTENSION_STORAGE_KEYS = {
   // 界面状态
   TAB_PREFIX: "USER_TAB_",
 
-  // 业务数据
+  // RSS 相关
   RSS_SOURCES: "USER_RSS_SOURCES",
 
   // 播放器相关
@@ -41,6 +41,10 @@ export const WEB_STORAGE_KEYS = {
 
   // 用户配置
   LLM_API_KEYS: "LLM_API_KEYS", // 用户配置的 LLM API Keys
+
+  // 应用数据
+  NOTES: "APP_NOTES", // 笔记数据
+  TODOS: "APP_TODOS", // 待办事项数据
 };
 
 /**

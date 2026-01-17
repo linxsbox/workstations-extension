@@ -17,6 +17,8 @@ const tasks = ref(storageManager.get(WEB_STORAGE_KEYS.TODOS) || []);
 const showTaskDialog = ref(false);
 const showCreateDialog = ref(false);
 const editingTaskId = ref(null); // 正在编辑的任务ID
+const showExpiredDialog = ref(false); // 显示过期提示对话框
+const expiredTaskId = ref(null); // 过期的任务ID
 
 // 待启动任务
 const pendingTasks = computed(() => {
@@ -218,6 +220,15 @@ const handleStartTask = async (taskId, event) => {
   event.stopPropagation();
   const task = tasks.value.find((t) => t.id === taskId);
   if (task) {
+    // 检查计划时间是否已过期
+    if (task.executionRule === EXECUTION_RULE.SCHEDULED) {
+      if (task.scheduledTime <= Date.now()) {
+        expiredTaskId.value = taskId;
+        showExpiredDialog.value = true;
+        return;
+      }
+    }
+
     task.status = TASK_STATUS.RUNNING;
     task.startedAt = new Date().toISOString();
     task.updatedAt = new Date().toISOString();
@@ -225,6 +236,19 @@ const handleStartTask = async (taskId, event) => {
     await setupTaskScheduler(task);
     message.success("任务已启动");
   }
+};
+
+// 处理过期任务 - 重新编辑
+const handleExpiredTaskEdit = () => {
+  showExpiredDialog.value = false;
+  handleEditTask(expiredTaskId.value, { stopPropagation: () => {} });
+  expiredTaskId.value = null;
+};
+
+// 处理过期任务 - 稍后处理
+const handleExpiredTaskLater = () => {
+  showExpiredDialog.value = false;
+  expiredTaskId.value = null;
 };
 
 // 停止任务
@@ -400,6 +424,26 @@ onUnmounted(() => {
           @delete="handleDeleteTask"
         />
       </div>
+    </NModal>
+
+    <!-- 计划时间过期提示对话框 -->
+    <NModal
+      v-model:show="showExpiredDialog"
+      preset="dialog"
+      title="计划时间已过期"
+      :show-icon="false"
+      :style="{ width: '400px' }"
+    >
+      <div class="text-center py-4">
+        <p class="text-base mb-2">计划时间已过期</p>
+        <p class="text-sm text-[var(--text-tertiary)]">请编辑任务重新设置时间</p>
+      </div>
+      <template #action>
+        <div class="flex gap-3 justify-end">
+          <NButton @click="handleExpiredTaskLater">稍后处理</NButton>
+          <NButton type="primary" @click="handleExpiredTaskEdit">重新编辑</NButton>
+        </div>
+      </template>
     </NModal>
   </div>
 </template>

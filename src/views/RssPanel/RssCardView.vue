@@ -7,8 +7,8 @@ import { sec2min } from "@/utils/time";
 import PlayButton from "@/components/player/PlayButton.vue";
 import AddToQueueButton from "@/components/player/AddToQueueButton.vue";
 import IconFiberNew from "@/components/common/Icons/IconFiberNew.vue";
-import IconReply from "@/components/common/Icons/IconReply.vue";
-import ShareCard from "@/components/ShareCard.vue";
+import IconShare from "@/components/common/Icons/IconShare.vue";
+import ShareCardDialog from "@/components/dialogs/ShareCardDialog/ShareCardDialog.vue";
 import { storePlayer } from "@/stores/modules/player";
 import { storeRss } from "@/stores/modules/rss";
 
@@ -213,7 +213,7 @@ const handleCloseShare = () => {
           <div class="right-bar inline-flex gap-2">
             <!-- 预留操作扩展栏 -->
             <button class="share-btn p-1 rounded-md" @click="handleShare" title="分享">
-              <IconReply />
+              <IconShare />
             </button>
           </div>
         </footer>
@@ -227,7 +227,7 @@ const handleCloseShare = () => {
     </div>
 
     <!-- 分享卡片 -->
-    <ShareCard
+    <ShareCardDialog
       v-model:show="showShareCard"
       :image="getShareImage"
       :qrcodeContent="getShareLink"
@@ -246,7 +246,7 @@ const handleCloseShare = () => {
           <span v-if="props.data.author">{{ props.data.author }}</span>
         </div>
       </div>
-    </ShareCard>
+    </ShareCardDialog>
   </section>
 </template>
 

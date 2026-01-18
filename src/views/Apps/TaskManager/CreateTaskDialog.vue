@@ -276,6 +276,8 @@ const testNotification = () => {
     :positive-text="isEditMode ? '保存' : '创建'"
     negative-text="取消"
     :style="{ width: '540px' }"
+    :mask-closable="false"
+    :close-on-esc="true"
     @positive-click="handleCreate"
     @update:show="handleUpdateShow"
   >

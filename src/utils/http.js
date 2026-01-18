@@ -7,7 +7,11 @@ import { Amors } from '@linxs/amors';
 const http = new Amors({
   timeout: 30000,
   interceptors: {
-    request: (config) => {
+    request: ({ config, context }) => {
+      // context 包含: url, config, options, method
+      // console.log('Request URL:', context.url);
+      // console.log('Request method:', context.method);
+
       // 确保 headers 是 Headers 对象
       if (!config.headers) {
         config.headers = new Headers();
@@ -22,7 +26,7 @@ const http = new Amors({
 
       return config;
     },
-    response: async (response) => {
+    response: async ({ response, context }) => {
       // 检查响应头的 Content-Type
       const contentType = response.headers.get('content-type');
       let data;
@@ -46,6 +50,15 @@ const http = new Amors({
       // 检查HTTP状态码
       if (!response.ok) {
         throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+      }
+
+      // 如果请求需要服务器时间，返回包含时间的对象
+      if (context.needServerTime) {
+        const serverTime = response.headers.get('date');
+        return {
+          data,
+          serverTime: serverTime ? new Date(serverTime).getTime() : Date.now()
+        };
       }
 
       // 返回解析后的数据

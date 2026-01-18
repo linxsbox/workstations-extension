@@ -8,7 +8,7 @@ import {
   NModal,
   useMessage,
 } from "naive-ui";
-import { formatDate } from "@linxs/toolkit";
+import { formatDate, clipboard } from "@linxs/toolkit";
 import QRCode from "qrcode";
 
 const props = defineProps({
@@ -88,14 +88,17 @@ const copyCardAsImage = async () => {
       type: "png",
     });
 
-    // 使用 Clipboard API 复制图片
-    if (navigator.clipboard && ClipboardItem) {
-      const clipboardItem = new ClipboardItem({ "image/png": snapdomBlob });
-      await navigator.clipboard.write([clipboardItem]);
-      message.success("已复制到剪贴板");
-    } else {
-      throw new Error("浏览器不支持复制图片到剪贴板");
-    }
+    // 使用 clipboard 工具复制图片
+    await clipboard({
+      type: 'blob',
+      data: { 'image/png': snapdomBlob },
+      success: () => {
+        message.success("已复制到剪贴板");
+      },
+      error: (msg) => {
+        message.error(`复制失败: ${msg}`);
+      }
+    });
   } catch (error) {
     console.error("复制图片失败:", error);
     message.error(`复制失败: ${error.message || "未知错误"}`);
@@ -110,13 +113,16 @@ const handleClose = () => {
 
 // 复制分享链接
 const copyShareLink = async () => {
-  try {
-    await navigator.clipboard.writeText(props.qrcodeContent);
-    message.success("链接已复制到剪贴板");
-  } catch (error) {
-    console.error("复制链接失败:", error);
-    message.error("复制链接失败");
-  }
+  await clipboard({
+    type: 'text',
+    data: props.qrcodeContent,
+    success: () => {
+      message.success("链接已复制到剪贴板");
+    },
+    error: (msg) => {
+      message.error(`复制失败: ${msg}`);
+    }
+  });
 };
 </script>
 

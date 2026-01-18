@@ -340,6 +340,8 @@ onUnmounted(() => {
       preset="card"
       title="任务管理"
       class="task-modal w-[1200px] h-[95vh]"
+      :mask-closable="false"
+      :close-on-esc="true"
     >
       <div class="task-container flex h-full gap-3">
         <!-- 待启动列表 -->

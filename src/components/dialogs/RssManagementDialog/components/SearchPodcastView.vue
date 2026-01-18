@@ -62,17 +62,6 @@ const openSearchModal = async () => {
   await performSearch(searchWord.value);
 };
 
-// 处理表单输入（延迟触发）
-const handleFormInput = debounce(async () => {
-  const trimmedWord = formSearchWord.value?.trim();
-  if (!trimmedWord) {
-    return;
-  }
-
-  // 自动打开搜索弹窗
-  await openSearchModal();
-}, 500);
-
 // 执行搜索（在弹窗内）
 const handleSearchInput = debounce(async () => {
   if (!searchWord.value?.trim()) {
@@ -185,7 +174,6 @@ const handleClickPodcst = async (item) => {
         <NFormItem label="搜索播客" path="type">
           <NInput
             v-model:value="formSearchWord"
-            :on-input="handleFormInput"
             @keyup.enter="openSearchModal"
             placeholder="请输入播客名称（支持小宇宙、GetPodcast.xyz）"
             clearable

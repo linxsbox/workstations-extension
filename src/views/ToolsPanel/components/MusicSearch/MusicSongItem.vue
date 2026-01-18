@@ -4,8 +4,8 @@ import { storeToRefs } from 'pinia';
 import { useMessage } from 'naive-ui';
 import PlayButton from '@/components/player/PlayButton.vue';
 import IconPlaylistAdd from '@/components/common/Icons/IconPlaylistAdd.vue';
-import IconReply from '@/components/common/Icons/IconReply.vue';
-import ShareCard from '@/components/ShareCard.vue';
+import IconShare from '@/components/common/Icons/IconShare.vue';
+import ShareCardDialog from '@/components/dialogs/ShareCardDialog/ShareCardDialog.vue';
 import { storePlayer } from '@/stores/modules/player';
 import { miguMusicService } from '@/services/music';
 import { getCoverImageFormats, tryLoadCoverImage } from '@/utils/image';
@@ -246,7 +246,7 @@ const handleShare = () => {
           @click.stop="handleShare"
           title="分享"
         >
-          <IconReply class="text-xl" />
+          <IconShare class="text-xl" />
         </button>
 
         <!-- 添加到播放列表按钮 -->
@@ -263,7 +263,7 @@ const handleShare = () => {
     </div>
 
     <!-- 分享卡片 -->
-    <ShareCard
+    <ShareCardDialog
       v-if="currentCoverUrl"
       v-model:show="showShareCard"
       :image="currentCoverUrl"
@@ -276,7 +276,7 @@ const handleShare = () => {
         </div>
         <div class="content text-sm" contenteditable></div>
       </div>
-    </ShareCard>
+    </ShareCardDialog>
   </div>
 </template>
 

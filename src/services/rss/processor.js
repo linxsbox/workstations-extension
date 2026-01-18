@@ -140,9 +140,12 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
       /<script\s+id="__NEXT_DATA__"\s+type="application\/json">\s*([\s\S]+?)\s*<\/script>/;
 
     try {
-      const html = await http.get(this.source.sourceUrl);
-      // 获取服务器时间（如果有，否则使用本地时间）
-      const serverTime = 0
+      // 请求时携带 needServerTime 参数
+      const result = await http.get(this.source.sourceUrl, { needServerTime: true });
+
+      // 解构获取数据和服务器时间
+      const html = result.data;
+      const serverTime = result.serverTime;
 
       const matchTxt = jsonMathc.exec(html);
       if (!matchTxt || matchTxt.length < 2) return;

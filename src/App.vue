@@ -17,19 +17,24 @@ import PlayerView from "./components/player/PlayerView.vue";
 import { storeRss } from "@/stores/modules/rss/index";
 import { storeSettings } from "@/stores/modules/settings/index";
 import { storePlayer } from "@/stores/modules/player/index";
+import { storeTab } from "@/stores/modules/tab/index";
 import { onMounted, nextTick } from "vue";
 
 const storeRssInstance = storeRss();
-storeRssInstance.init();
-
 const storeSettingsInstance = storeSettings();
-
 const storePlayerInstance = storePlayer();
+const storeTabInstance = storeTab();
 
 onMounted(() => {
   storeSettingsInstance.initializeSettings();
 
-  nextTick(() => {
+  nextTick(async () => {
+    // 先初始化 Tab store 和 RSS store，确保存储数据已加载
+    await Promise.all([
+      storeTabInstance.init(),
+      storeRssInstance.init()
+    ]);
+    // 然后批量更新 RSS
     storeRssInstance.batchUpdateRss();
   });
 });

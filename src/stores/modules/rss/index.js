@@ -5,7 +5,7 @@ import {
   genISOWithZoneToDate,
 } from "@linxs/toolkit";
 import { storageManager, STORAGE_KEYS } from "../../storage";
-import { RSS_SOURCE_TYPES } from "./config";
+import { RSS_SOURCE_TYPES, RSS_UPDATE_COOLDOWN, RSS_BATCH_UPDATE_INTERVAL } from "./config";
 import { RssProcessorFactory } from "@/services/rss/processor";
 import { storeTab } from "../tab/index";
 import { DEFAULT_PANEL } from "@/stores/config";
@@ -103,7 +103,7 @@ export const storeRss = defineStore({
       if (!forceUpdate) {
         const now = genISOWithZoneToDate().getTime();
         const lastUpdate = source.lastUpdateTime || 0;
-        const cooldown = 5 * 60 * 1000; // 5分钟冷却
+        const cooldown = RSS_UPDATE_COOLDOWN;
 
         if (now - lastUpdate < cooldown) {
           return;
@@ -169,12 +169,16 @@ export const storeRss = defineStore({
     },
 
     // 初始化
-    init() {
-      // 初始化 RSS 源
-      if (this.sources.length === 0) {
-        this.sources = [];
-        this.saveSources();
+    async init() {
+      // 等待存储初始化完成，确保数据已从 chrome.storage 加载
+      await storageManager.waitForInit();
+
+      // 重新从存储加载 RSS 源（此时缓存已初始化完成）
+      const savedSources = storageManager.get(STORAGE_KEYS.RSS_SOURCES);
+      if (savedSources && savedSources.length > 0) {
+        this.sources = savedSources;
       }
+
       const tab = storeTab();
 
       // 初始化显示数据
@@ -260,13 +264,13 @@ export const storeRss = defineStore({
 
     // 批量获取更新的 RSS
     async batchUpdateRss() {
-      // 筛选出超过 12 小时未更新的源
+      // 筛选出超过指定时间未更新的源
       const updateItems = this.sources.filter((rss) => {
         const { h } = calculateTimeDifference(
           rss.lastUpdateTime,
           genISOWithZoneToDate().getTime()
         );
-        return h > 12;
+        return h > RSS_BATCH_UPDATE_INTERVAL;
       });
 
       if (updateItems.length === 0) {

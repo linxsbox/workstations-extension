@@ -75,9 +75,15 @@ class ChromeStorageAdapter {
     // 内存缓存，用于同步访问
     this.cache = new Map();
 
+    // 初始化状态标记
+    this.isInitialized = false;
+    this.initPromise = null;
+
     // 初始化：从 chrome.storage 加载所有数据到缓存
     if (this.isChromeStorageAvailable) {
-      this._initCache();
+      this.initPromise = this._initCache();
+    } else {
+      this.isInitialized = true;
     }
   }
 
@@ -86,17 +92,31 @@ class ChromeStorageAdapter {
    */
   async _initCache() {
     try {
-      chrome.storage.local.get(null, (items) => {
-        if (items) {
-          Object.entries(items).forEach(([key, wrappedData]) => {
-            // 解包数据，提取 value
-            const value = this._unwrap(wrappedData);
-            this.cache.set(key, value);
-          });
-        }
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.get(null, (items) => {
+          if (chrome.runtime.lastError) {
+            console.error('[ChromeStorage] 初始化缓存失败:', chrome.runtime.lastError);
+            reject(chrome.runtime.lastError);
+            return;
+          }
+
+          if (items) {
+            Object.entries(items).forEach(([key, wrappedData]) => {
+              // 解包数据，提取 value
+              const value = this._unwrap(wrappedData);
+              this.cache.set(key, value);
+            });
+          }
+
+          this.isInitialized = true;
+          console.log('[ChromeStorage] 缓存初始化完成，已加载', this.cache.size, '个键');
+          resolve();
+        });
       });
     } catch (error) {
       console.error('[ChromeStorage] 初始化缓存失败:', error);
+      this.isInitialized = true; // 即使失败也标记为已初始化，避免阻塞
+      throw error;
     }
   }
 
@@ -152,6 +172,7 @@ class ChromeStorageAdapter {
 
   /**
    * 获取值（同步）
+   * 注意：必须在 waitForInit() 完成后调用，否则可能读取到空缓存
    */
   get(key, defaultValue) {
     if (this.isChromeStorageAvailable) {
@@ -162,6 +183,16 @@ class ChromeStorageAdapter {
       // 降级到 localStorage
       const value = localStorage.get(key);
       return value !== undefined && value !== null ? value : defaultValue;
+    }
+  }
+
+  /**
+   * 等待初始化完成
+   * 在读取数据前调用此方法确保缓存已加载
+   */
+  async waitForInit() {
+    if (this.initPromise && !this.isInitialized) {
+      await this.initPromise;
     }
   }
 
@@ -215,6 +246,14 @@ const chromeStorage = new ChromeStorageAdapter();
  * 根据 key 类型自动选择合适的存储方式
  */
 class StorageManager {
+  /**
+   * 等待存储初始化完成
+   * 在应用启动时调用，确保数据已从 chrome.storage 加载到缓存
+   */
+  async waitForInit() {
+    await chromeStorage.waitForInit();
+  }
+
   /**
    * 判断 key 是否属于扩展存储
    */

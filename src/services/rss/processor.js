@@ -208,7 +208,8 @@ class Kr36Processor extends BaseRssProcessor {
   async fetchSourceInfo() {
     try {
       const response = await http.get(this.source.sourceUrl);
-      const xml = parseXML(response || "");
+      const text = await response.text();
+      const xml = parseXML(text || "");
 
       const list = (xml.children || []).map((child) => {
         const title = getNodeTextContent(child, "title");

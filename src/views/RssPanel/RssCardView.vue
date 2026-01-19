@@ -231,6 +231,7 @@ const handleCloseShare = () => {
       v-model:show="showShareCard"
       :image="getShareImage"
       :qrcodeContent="getShareLink"
+      :qrcodeSize="64"
       :showShareLink="true"
       @close="handleCloseShare"
     >
@@ -239,8 +240,12 @@ const handleCloseShare = () => {
         <div class="share-title font-bold text-lg mb-2">
           {{ getShareContent }}
         </div>
+        <!-- 描述 -->
+        <div class="description text-sm break-words line-clamp-2">
+          {{ props.data.description || props.data.summary }}
+        </div>
         <!-- 来源和作者信息 -->
-        <div v-if="!getShareImage" class="share-meta text-sm text-gray-500">
+        <div v-if="!getShareImage" class="share-meta text-sm text-gray-400 mt-1">
           <span v-if="props.album?.title">来源：{{ props.album.title }}</span>
           <span v-if="props.album?.title && props.data.author"> - </span>
           <span v-if="props.data.author">{{ props.data.author }}</span>

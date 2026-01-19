@@ -160,7 +160,7 @@ const copyShareLink = async () => {
 
         <!-- 分享内容 -->
         <div
-          class="share-content px-6 py-4 text-base leading-relaxed text-gray-800"
+          class="share-content px-6 py-4 text-base leading-relaxed text-gray-700"
           :style="{ textAlign: textAlign }"
         >
           <slot></slot>
@@ -170,10 +170,10 @@ const copyShareLink = async () => {
         <div class="flex justify-between items-end px-6 pb-5">
           <!-- 左侧：签名和日期 -->
           <div class="flex flex-col gap-2">
-            <div v-if="signature" class="text-sm font-semibold text-gray-800">
+            <div v-if="signature" class="user-signature text-sm text-zinc-700">
               {{ signature }}
             </div>
-            <div class="text-xs text-gray-600">{{ currentDate }}</div>
+            <div class="text-xs text-gray-400">{{ currentDate }}</div>
           </div>
 
           <!-- 右侧：二维码 -->
@@ -224,6 +224,10 @@ const copyShareLink = async () => {
 </template>
 
 <style lang="scss" scoped>
+.share-card-modal {
+  .user-signature {
+  }
+}
 // Modal 透明样式
 :deep(.share-card-modal) {
   background: transparent;

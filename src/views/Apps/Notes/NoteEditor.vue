@@ -85,7 +85,7 @@ const handleShare = () => {
             title="分享笔记"
           >
             <template #icon>
-              <IconShare />
+              <IconShare class="hover:text-[var(--color-info)]" />
             </template>
           </NButton>
 
@@ -102,7 +102,7 @@ const handleShare = () => {
                 title="删除笔记"
               >
                 <template #icon>
-                  <IconDelete />
+                  <IconDelete class="hover:text-[var(--color-error)]" />
                 </template>
               </NButton>
             </template>

@@ -23,7 +23,8 @@ const props = defineProps({
   },
   qrcodeContent: {
     type: String,
-    required: true,
+    required: false,
+    default: "",
   },
   qrcodeSize: {
     type: Number,
@@ -49,6 +50,12 @@ const currentDate = computed(() => formatDate(new Date(), "YYYY年MM月DD日"));
 
 // 生成二维码
 const generateQRCode = async () => {
+  // 如果没有二维码内容，不生成二维码
+  if (!props.qrcodeContent) {
+    qrcodeDataUrl.value = "";
+    return;
+  }
+
   try {
     const dataUrl = await QRCode.toDataURL(props.qrcodeContent, {
       width: props.qrcodeSize,
@@ -90,14 +97,14 @@ const copyCardAsImage = async () => {
 
     // 使用 clipboard 工具复制图片
     await clipboard({
-      type: 'blob',
-      data: { 'image/png': snapdomBlob },
+      type: "blob",
+      data: { "image/png": snapdomBlob },
       success: () => {
         message.success("已复制到剪贴板");
       },
       error: (msg) => {
         message.error(`复制失败: ${msg}`);
-      }
+      },
     });
   } catch (error) {
     console.error("复制图片失败:", error);
@@ -114,14 +121,14 @@ const handleClose = () => {
 // 复制分享链接
 const copyShareLink = async () => {
   await clipboard({
-    type: 'text',
+    type: "text",
     data: props.qrcodeContent,
     success: () => {
       message.success("链接已复制到剪贴板");
     },
     error: (msg) => {
       message.error(`复制失败: ${msg}`);
-    }
+    },
   });
 };
 </script>
@@ -170,9 +177,8 @@ const copyShareLink = async () => {
           </div>
 
           <!-- 右侧：二维码 -->
-          <div class="flex items-center">
+          <div v-if="qrcodeContent && qrcodeDataUrl" class="flex items-center">
             <img
-              v-if="qrcodeDataUrl"
               :src="qrcodeDataUrl"
               alt="二维码"
               :style="{ width: `${qrcodeSize}px`, height: `${qrcodeSize}px` }"
@@ -204,12 +210,12 @@ const copyShareLink = async () => {
 
         <!-- 第二行：操作按钮 -->
         <div class="flex gap-3 justify-end">
-          <NButton v-if="showShareLink" @click="copyShareLink"
-            >分享链接</NButton
-          >
-          <NButton type="primary" @click="copyCardAsImage"
-            >复制分享卡片</NButton
-          >
+          <NButton v-if="showShareLink" @click="copyShareLink">
+            分享链接
+          </NButton>
+          <NButton type="primary" @click="copyCardAsImage">
+            复制分享卡片
+          </NButton>
           <NButton @click="handleClose">关闭</NButton>
         </div>
       </div>

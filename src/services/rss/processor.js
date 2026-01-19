@@ -141,11 +141,13 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
 
     try {
       // 请求时携带 needServerTime 参数
-      const result = await http.get(this.source.sourceUrl, { needServerTime: true });
+      const { data, serverTime } = await http.get(this.source.sourceUrl, {
+        needServerTime: true,
+      });
 
       // 解构获取数据和服务器时间
-      const html = result.data;
-      const serverTime = result.serverTime;
+      const html = data || '';
+      // const serverTime = result.serverTime;
 
       const matchTxt = jsonMathc.exec(html);
       if (!matchTxt || matchTxt.length < 2) return;
@@ -206,7 +208,7 @@ class Kr36Processor extends BaseRssProcessor {
   async fetchSourceInfo() {
     try {
       const response = await http.get(this.source.sourceUrl);
-      const text = await response.text()
+      const text = await response.text();
       const xml = parseXML(text);
 
       const list = (xml.children || []).map((child) => {

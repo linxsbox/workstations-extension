@@ -514,6 +514,17 @@ export const storePlayer = defineStore("player", {
 
       // 如果删除的是当前正在播放的轨道
       if (isCurrentTrack && isPlaying) {
+        // 检查删除后列表是否为空
+        if (this.playQueue.tracks.length === 1) {
+          // 只剩一首歌，删除后列表为空，直接停止并删除
+          this.stop();
+          const result = this.playQueue.removeTrack(trackId);
+          if (result) {
+            this.savePlayQueue();
+          }
+          return result;
+        }
+
         // 单曲循环模式：直接删除并停止
         if (this.playMode === PlayMode.SINGLE) {
           this.stop();

@@ -89,7 +89,7 @@ const handleShare = () => {
               @click.stop
               title="删除"
             >
-              <IconDelete class="text-base text-red-500" />
+              <IconDelete class="text-base text-[var(--color-error)]" />
             </button>
           </template>
           确定要删除这条笔记吗？
@@ -101,7 +101,7 @@ const handleShare = () => {
           @click.stop="handleShare"
           title="分享"
         >
-          <IconShare class="text-base text-blue-500" />
+          <IconShare class="text-base text-[var(--color-info)]" />
         </button>
       </div>
     </div>

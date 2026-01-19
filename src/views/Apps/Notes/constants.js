@@ -13,3 +13,27 @@ export const NOTES_CONFIG = {
   // 编辑器最小行数
   editorMinRows: 20,
 };
+
+/**
+ * 分享类型
+ */
+export const SHARE_TYPE = {
+  FULL: 'full', // 整篇文章
+  SELECTED: 'selected', // 选中内容
+};
+
+/**
+ * 分享卡片配置
+ */
+export const SHARE_CARD_CONFIG = {
+  // 单行高度（px）
+  lineHeight: 28,
+  // 目标行数
+  targetLines: 6,
+  // 空div宽度（px）- 用于估算单行字符容量
+  emptyDivWidth: 372,
+  // 目标总宽度（px）- 约6行的字符容量
+  targetTotalWidth: 2380,
+  // 平均字符宽度（px）- 根据字体大小估算，中文约14px，英文约7px
+  avgCharWidth: 14,
+};

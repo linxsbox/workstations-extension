@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { storageManager, STORAGE_KEYS } from "../../storage";
 import { createAudioManager } from "@/services/audio/manager";
 import { PlayMode, PlayModeConfig, Playlist, PlayQueue, ViewMode } from "./types";
+import { isExtensionEnvironment, handoverToOffscreen, getOffscreenPlayerState, closeOffscreen } from "@/services/player/bridge";
 
 const MAX_HISTORY_LENGTH = 50;
 
@@ -659,6 +660,70 @@ export const storePlayer = defineStore("player", {
      */
     hidePlayer() {
       this.isPlayerVisible = false;
+    },
+
+    /**
+     * 交接播放到 Offscreen Document
+     * 在页面关闭前调用
+     */
+    async handoverPlayback() {
+      // 只在扩展环境且正在播放时交接
+      if (!isExtensionEnvironment()) {
+        return { success: false, error: 'Not in extension environment' };
+      }
+
+      if (!this.playStatus.isPlaying) {
+        return { success: false, error: 'Not playing' };
+      }
+
+      const currentTrack = this.playQueue.getCurrentTrack();
+      if (!currentTrack) {
+        return { success: false, error: 'No current track' };
+      }
+
+      console.log('[Player Store] Handing over playback to offscreen');
+
+      const result = await handoverToOffscreen(currentTrack.id, this.currentTime);
+
+      return result;
+    },
+
+    /**
+     * 从 Offscreen Document 接管播放
+     * 在页面重新打开时调用
+     */
+    async takeoverPlayback() {
+      if (!isExtensionEnvironment()) {
+        return { success: false, error: 'Not in extension environment' };
+      }
+
+      console.log('[Player Store] Checking offscreen player state');
+
+      const offscreenState = await getOffscreenPlayerState();
+
+      if (!offscreenState || !offscreenState.isPlaying) {
+        console.log('[Player Store] No active playback in offscreen');
+        return { success: false, error: 'No active playback' };
+      }
+
+      console.log('[Player Store] Taking over playback from offscreen:', offscreenState);
+
+      // 从播放队列中找到对应的曲目
+      const track = this.playQueue.tracks.find(t => t.id === offscreenState.trackId);
+      if (!track) {
+        console.error('[Player Store] Track not found:', offscreenState.trackId);
+        return { success: false, error: 'Track not found' };
+      }
+
+      // 加载音频并从指定进度开始播放
+      await this.loadAudio(track.src, track);
+      this.seek(offscreenState.currentTime);
+      this.play();
+
+      // 关闭 Offscreen Document
+      await closeOffscreen();
+
+      return { success: true };
     },
   },
 });

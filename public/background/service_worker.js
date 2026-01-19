@@ -137,3 +137,162 @@ chrome.tabs.onCreated.addListener(async (tab) => {
     }
   }
 });
+
+// ==================== 播放器管理 ====================
+const PLAYER_LOCATION = {
+  INDEX: 'index',
+  OFFSCREEN: 'offscreen',
+  NONE: 'none',
+};
+
+const MESSAGE_TYPES = {
+  PLAY: 'PLAYER_PLAY',
+  PAUSE: 'PLAYER_PAUSE',
+  STOP: 'PLAYER_STOP',
+  NEXT: 'PLAYER_NEXT',
+  PREVIOUS: 'PLAYER_PREVIOUS',
+  SEEK: 'PLAYER_SEEK',
+  SET_VOLUME: 'PLAYER_SET_VOLUME',
+  SET_PLAYBACK_RATE: 'PLAYER_SET_PLAYBACK_RATE',
+  HANDOVER_TO_OFFSCREEN: 'HANDOVER_TO_OFFSCREEN',
+  HANDOVER_TO_INDEX: 'HANDOVER_TO_INDEX',
+  GET_PLAYER_STATE: 'GET_PLAYER_STATE',
+  PLAYER_STATE_RESPONSE: 'PLAYER_STATE_RESPONSE',
+  CREATE_OFFSCREEN: 'CREATE_OFFSCREEN',
+  CLOSE_OFFSCREEN: 'CLOSE_OFFSCREEN',
+  OFFSCREEN_READY: 'OFFSCREEN_READY',
+};
+
+// 当前播放器位置
+let currentPlayerLocation = PLAYER_LOCATION.NONE;
+let offscreenDocumentCreated = false;
+
+/**
+ * 创建 Offscreen Document
+ */
+async function createOffscreenDocument() {
+  if (offscreenDocumentCreated) {
+    console.log('[Player Manager] Offscreen document already exists');
+    return true;
+  }
+
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen/player.html',
+      reasons: ['AUDIO_PLAYBACK'],
+      justification: 'Playing audio in background'
+    });
+
+    offscreenDocumentCreated = true;
+    console.log('[Player Manager] Offscreen document created');
+    return true;
+  } catch (error) {
+    console.error('[Player Manager] Failed to create offscreen document:', error);
+    return false;
+  }
+}
+
+/**
+ * 关闭 Offscreen Document
+ */
+async function closeOffscreenDocument() {
+  if (!offscreenDocumentCreated) {
+    console.log('[Player Manager] No offscreen document to close');
+    return true;
+  }
+
+  try {
+    await chrome.offscreen.closeDocument();
+    offscreenDocumentCreated = false;
+    currentPlayerLocation = PLAYER_LOCATION.NONE;
+    console.log('[Player Manager] Offscreen document closed');
+    return true;
+  } catch (error) {
+    console.error('[Player Manager] Failed to close offscreen document:', error);
+    return false;
+  }
+}
+
+/**
+ * 处理播放交接到 Offscreen
+ */
+async function handleHandoverToOffscreen(data) {
+  console.log('[Player Manager] Handling handover to offscreen:', data);
+
+  // 创建 Offscreen Document
+  const created = await createOffscreenDocument();
+  if (!created) {
+    return { success: false, error: 'Failed to create offscreen document' };
+  }
+
+  // 从 storage 读取播放队列
+  const queue = await new Promise((resolve) => {
+    chrome.storage.local.get('PLAYER_PLAY_QUEUE', (result) => {
+      resolve(result.PLAYER_PLAY_QUEUE || null);
+    });
+  });
+
+  if (!queue || !queue.tracks) {
+    console.error('[Player Manager] No queue found in storage');
+    return { success: false, error: 'No queue found' };
+  }
+
+  // 找到对应的曲目
+  const track = queue.tracks.find(t => t.id === data.trackId);
+  if (!track) {
+    console.error('[Player Manager] Track not found:', data.trackId);
+    return { success: false, error: 'Track not found' };
+  }
+
+  console.log('[Player Manager] Found track:', track.title);
+
+  // 等待一小段时间让 Offscreen Document 初始化
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  // 发送交接消息到 Offscreen Document，包含完整的曲目信息
+  console.log('[Player Manager] Sending handover message to offscreen');
+  const response = await chrome.runtime.sendMessage({
+    type: MESSAGE_TYPES.HANDOVER_TO_OFFSCREEN,
+    data: {
+      track: track,
+      currentTime: data.currentTime
+    }
+  });
+
+  console.log('[Player Manager] Received response from offscreen:', response);
+
+  if (response && response.success) {
+    currentPlayerLocation = PLAYER_LOCATION.OFFSCREEN;
+    console.log('[Player Manager] Handover to offscreen successful');
+  }
+
+  return response;
+}
+
+/**
+ * 消息监听器
+ */
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('[Player Manager] Received message:', message.type, message);
+
+  switch (message.type) {
+    case MESSAGE_TYPES.HANDOVER_TO_OFFSCREEN:
+      console.log('[Player Manager] Handling handover to offscreen');
+      handleHandoverToOffscreen(message.data).then(sendResponse);
+      return true;
+
+    case MESSAGE_TYPES.CLOSE_OFFSCREEN:
+      console.log('[Player Manager] Closing offscreen');
+      closeOffscreenDocument().then(sendResponse);
+      return true;
+
+    case MESSAGE_TYPES.OFFSCREEN_READY:
+      console.log('[Player Manager] Offscreen document ready');
+      sendResponse({ success: true });
+      break;
+
+    default:
+      // 其他消息不处理，让原有逻辑继续
+      break;
+  }
+});

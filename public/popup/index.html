@@ -111,6 +111,23 @@
         .items-center {
             align-items: center;
         }
+
+        .player-controls button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .player-controls button:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .player-controls button:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 
@@ -128,9 +145,31 @@
                 <span class="naive-switch-slider"></span>
             </label>
         </div>
-        <div class="menu-item flex items-center">
 
+        <!-- 播放控制器 -->
+        <div class="menu-item" id="playerControl">
+            <div class="flex items-center">
+                <span>🎵</span>
+                <span>播放控制器</span>
+            </div>
+            <div class="player-controls flex items-center" style="gap: 8px; margin-top: 8px; display: none;">
+                <button id="prevBtn" title="上一曲">⏮️</button>
+                <button id="playPauseBtn" title="播放/暂停">▶️</button>
+                <button id="nextBtn" title="下一曲">⏭️</button>
+            </div>
         </div>
+
+        <!-- 进行的任务状态 -->
+        <a class="menu-item flex items-center" id="openTasks">
+            <span>📋</span>
+            <span>进行的任务</span>
+        </a>
+
+        <!-- 打开笔记 -->
+        <a class="menu-item flex items-center" id="openNotes">
+            <span>📝</span>
+            <span>打开笔记</span>
+        </a>
     </div>
     <script src="popup.js"></script>
 </body>

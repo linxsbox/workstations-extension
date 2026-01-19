@@ -23,16 +23,14 @@
       "128": "icons/icon128.svg"
     }
   },
-  "chrome_url_overrides_1": {
-    "newtab": "index.html"
-  },
   "permissions": [
     "alarms",
     "storage",
     "topSites",
     "favicon",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "offscreen"
   ],
-  "host_permissions": ["http://*/*", "https://*/*", "chrome-extension://*/*"]
+  "host_permissions": ["http://*/*", "https://*/*"]
 }

@@ -65,7 +65,7 @@ export const STORAGE_KEYS = {
 /**
  * Chrome 扩展存储适配器
  * 优先使用 chrome.storage.local，降级到 localStorage
- * 使用内存缓存实现同步访问
+ * 使用统一的数据结构 { value, timestamp } 保证类型安全
  */
 class ChromeStorageAdapter {
   constructor() {
@@ -88,7 +88,9 @@ class ChromeStorageAdapter {
     try {
       chrome.storage.local.get(null, (items) => {
         if (items) {
-          Object.entries(items).forEach(([key, value]) => {
+          Object.entries(items).forEach(([key, wrappedData]) => {
+            // 解包数据，提取 value
+            const value = this._unwrap(wrappedData);
             this.cache.set(key, value);
           });
         }
@@ -99,11 +101,61 @@ class ChromeStorageAdapter {
   }
 
   /**
+   * 包装数据：统一结构 { value, timestamp }
+   * 自动解除 Proxy 包装，确保类型安全
+   */
+  _wrap(value) {
+    return {
+      value: this._toRaw(value),
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * 递归解除 Proxy 包装，转换为原始值
+   */
+  _toRaw(value) {
+    // null 或 undefined
+    if (value == null) return value;
+
+    // 数组：递归处理每个元素
+    if (Array.isArray(value)) {
+      return value.map(item => this._toRaw(item));
+    }
+
+    // 对象：递归处理每个属性
+    if (typeof value === 'object') {
+      const raw = {};
+      for (const key in value) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+          raw[key] = this._toRaw(value[key]);
+        }
+      }
+      return raw;
+    }
+
+    // 基本类型：直接返回
+    return value;
+  }
+
+  /**
+   * 解包数据：提取 value
+   */
+  _unwrap(wrappedData) {
+    // 如果是统一结构，提取 value
+    if (wrappedData && typeof wrappedData === 'object' && 'value' in wrappedData && 'timestamp' in wrappedData) {
+      return wrappedData.value;
+    }
+    // 兼容旧数据：直接返回原始数据
+    return wrappedData;
+  }
+
+  /**
    * 获取值（同步）
    */
   get(key, defaultValue) {
     if (this.isChromeStorageAvailable) {
-      // 从缓存读取
+      // 从缓存读取（已解包的原始值）
       const value = this.cache.get(key);
       return value !== undefined && value !== null ? value : defaultValue;
     } else {
@@ -118,11 +170,12 @@ class ChromeStorageAdapter {
    */
   set(key, value) {
     if (this.isChromeStorageAvailable) {
-      // 立即更新缓存
+      // 立即更新缓存（存储原始值）
       this.cache.set(key, value);
 
-      // 异步写入 chrome.storage
-      chrome.storage.local.set({ [key]: value }, () => {
+      // 包装后异步写入 chrome.storage
+      const wrappedData = this._wrap(value);
+      chrome.storage.local.set({ [key]: wrappedData }, () => {
         if (chrome.runtime.lastError) {
           console.error('[ChromeStorage] 写入失败:', chrome.runtime.lastError);
         }

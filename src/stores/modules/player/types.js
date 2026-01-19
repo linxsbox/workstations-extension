@@ -279,6 +279,16 @@ export class PlayQueue {
   jump(index) {
     if (index >= 0 && index < this.tracks.length) {
       this.currentIndex = index;
+
+      // 如果是随机模式，同步 currentRandomIndex
+      if (this.mode === PlayMode.RANDOM && this.randomOrder.length > 0) {
+        const trackId = this.tracks[index].id;
+        const randomIndex = this.randomOrder.indexOf(trackId);
+        if (randomIndex >= 0) {
+          this.currentRandomIndex = randomIndex;
+        }
+      }
+
       return this.getCurrentTrack();
     }
     return null;

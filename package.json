@@ -2,7 +2,7 @@
   "name": "workstations-extension",
   "author": "Lin.xs",
   "private": true,
-  "version": "0.2.3",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

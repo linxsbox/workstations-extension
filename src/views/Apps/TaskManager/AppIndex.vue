@@ -453,12 +453,6 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .task-manager-app {
   .app-icon {
-    &.active {
-      background-color: rgba(76, 175, 80, 0.15);
-      border-color: #4caf50;
-      box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
-    }
-
     // 运行中指示器
     .indicator {
       @apply absolute -bottom-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold;

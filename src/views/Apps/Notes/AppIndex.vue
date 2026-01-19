@@ -1,12 +1,12 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { NModal, useMessage } from "naive-ui";
 import { storageManager, WEB_STORAGE_KEYS } from "@/stores/storage";
 import IconAssignment from "@/components/common/Icons/IconAssignment.vue";
 import NoteList from "./NoteList.vue";
 import NoteEditor from "./NoteEditor.vue";
 import ShareCardDialog from "@/components/dialogs/ShareCardDialog/ShareCardDialog.vue";
-import { NOTES_CONFIG } from "./constants";
+import { NOTES_CONFIG, SHARE_CARD_CONFIG, SHARE_TYPE } from "./constants";
 
 const message = useMessage();
 
@@ -21,6 +21,9 @@ const searchKeyword = ref("");
 const showShareDialog = ref(false);
 const shareContent = ref("");
 const shareNoteId = ref(null);
+const shareNoteContentRef = ref(null); // 分享内容元素引用
+const shareContentElement = ref(null); // 待渲染的内容元素
+const shareType = ref(""); // 分享类型：'full' 整篇文章, 'selected' 选中内容
 
 // 分享确认对话框状态
 const showShareConfirmDialog = ref(false);
@@ -114,7 +117,7 @@ const saveNotes = () => {
   storageManager.set(WEB_STORAGE_KEYS.NOTES, notes.value);
 };
 
-// 从编辑器分享笔记（检测选中内容）
+// 从编辑器分享笔记（检查是否选中内容）
 const handleShareNote = (noteId) => {
   const note = notes.value.find((n) => n.id === noteId);
   if (!note) return;
@@ -162,6 +165,152 @@ const handleShareSelectedContent = () => {
   }
 };
 
+// 格式化整篇文章
+const formatFullArticle = (note) => {
+  const title = note.title || "";
+  const content = note.content || "";
+
+  // 获取第一个换行符之前的内容
+  const firstLineBreak = content.indexOf("\n");
+  const contentText = firstLineBreak > -1
+    ? content.substring(0, firstLineBreak)
+    : content;
+
+  // 创建内容容器
+  const contentDiv = document.createElement("div");
+
+  // 添加标题
+  if (title) {
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "share-title";
+    titleDiv.textContent = title;
+    contentDiv.appendChild(titleDiv);
+  }
+
+  // 添加内容
+  const contentTextDiv = document.createElement("div");
+  contentTextDiv.className = "share-content";
+  contentTextDiv.textContent = formatTextForShare(contentText);
+  contentDiv.appendChild(contentTextDiv);
+
+  // 保存到变量，等待 modal 打开后渲染
+  shareContentElement.value = contentDiv;
+  shareType.value = SHARE_TYPE.FULL; // 设置分享类型为整篇文章
+
+  return "";
+};
+
+// 格式化文本：处理换行符
+const formatTextForShare = (text) => {
+  return text
+    .replace(/\r/g, "") // 移除所有 \r
+    .replace(/\n+/g, " "); // 将一个或多个 \n 替换为一个空格
+};
+
+// 创建测量元素
+const createMeasureElement = () => {
+  const element = document.createElement("div");
+  element.style.position = "absolute";
+  element.style.visibility = "hidden";
+  element.style.whiteSpace = "nowrap";
+  element.style.fontSize = "18px"; // 与分享卡片的字体大小一致
+  element.style.lineHeight = "1.5";
+  element.style.height = "0px"
+  element.style.overflow = "hidden"
+  document.body.appendChild(element);
+  return element;
+};
+
+// 测量文本宽度
+const measureTextWidth = (text, measureElement) => {
+  measureElement.textContent = text;
+  return measureElement.offsetWidth;
+};
+
+// 格式化选中内容
+const formatSelectedContent = (note, selectedText) => {
+  if (!selectedText) return "";
+
+  const content = note.content || "";
+  const selectedIndex = content.indexOf(selectedText);
+
+  // 如果找不到选中内容，直接返回选中文本
+  if (selectedIndex === -1) {
+    return selectedText;
+  }
+
+  // 创建测量元素
+  const measureElement = createMeasureElement();
+
+  try {
+    // 测量选中内容的宽度
+    const selectedWidth = measureTextWidth(selectedText, measureElement);
+
+    // 计算前后需要的宽度（平均分配剩余空间）
+    const remainingWidth = SHARE_CARD_CONFIG.targetTotalWidth - selectedWidth;
+    const beforeWidth = remainingWidth / 2;
+    const afterWidth = remainingWidth / 2;
+
+    // 获取前文和后文
+    const beforeText = content.substring(0, selectedIndex);
+    const afterText = content.substring(selectedIndex + selectedText.length);
+
+    // 从后向前取前文字符，直到达到目标宽度
+    let beforeResult = "";
+    for (let i = beforeText.length - 1; i >= 0; i--) {
+      const testText = beforeText[i] + beforeResult;
+      const testWidth = measureTextWidth(testText, measureElement);
+
+      if (testWidth > beforeWidth) break;
+
+      beforeResult = testText;
+    }
+
+    // 从前向后取后文字符，直到达到目标宽度
+    let afterResult = "";
+    for (let i = 0; i < afterText.length; i++) {
+      const testText = afterResult + afterText[i];
+      const testWidth = measureTextWidth(testText, measureElement);
+
+      if (testWidth > afterWidth) break;
+
+      afterResult = testText;
+    }
+
+    // 创建内容 div
+    const contentDiv = document.createElement("div");
+
+    // 添加前文（去除换行符）
+    if (beforeResult) {
+      const beforeSpan = document.createTextNode(
+        formatTextForShare(beforeResult)
+      );
+      contentDiv.appendChild(beforeSpan);
+    }
+
+    // 添加选中内容（高亮显示）
+    const selectedSpan = document.createElement("span");
+    selectedSpan.textContent = formatTextForShare(selectedText);
+    selectedSpan.classList.add('text-highlight')
+    contentDiv.appendChild(selectedSpan);
+
+    // 添加后文（去除换行符）
+    if (afterResult) {
+      const afterSpan = document.createTextNode(formatTextForShare(afterResult));
+      contentDiv.appendChild(afterSpan);
+    }
+
+    // 保存到变量，等待 modal 打开后渲染
+    shareContentElement.value = contentDiv;
+    shareType.value = SHARE_TYPE.SELECTED; // 设置分享类型为选中内容
+
+    return ""; // 返回空字符串，因为内容会在 modal 打开后添加到 DOM
+  } finally {
+    // 清理测量元素
+    document.body.removeChild(measureElement);
+  }
+};
+
 // 分享整篇文章
 const shareFullArticle = (note) => {
   const content = formatFullArticle(note);
@@ -178,64 +327,16 @@ const shareSelectedContent = (note, selectedText) => {
   showShareDialog.value = true;
 };
 
-// 格式化整篇文章（约6行，全部高亮+虚线）
-const formatFullArticle = (note) => {
-  const title = note.title || NOTES_CONFIG.untitledPlaceholder;
-  const content = note.content || "";
-  const fullText = `${title}\n\n${content}`;
-
-  // 取前约6行
-  const lines = fullText.split('\n').slice(0, 6);
-  return `<div class="share-highlight">${lines.join('<br>')}</div>`;
-};
-
-// 格式化选中内容（选中高亮+虚线，前后上下文浅灰色，总共约6行）
-const formatSelectedContent = (note, selectedText) => {
-  const fullContent = note.content || "";
-  const selectedIndex = fullContent.indexOf(selectedText);
-
-  if (selectedIndex === -1) {
-    // 找不到选中内容，降级为分享整篇
-    return formatFullArticle(note);
+// 监听分享对话框打开，将内容添加到 DOM
+watch(showShareDialog, async (isOpen) => {
+  if (isOpen && shareContentElement.value) {
+    await nextTick();
+    if (shareNoteContentRef.value) {
+      shareNoteContentRef.value.innerHTML = "";
+      shareNoteContentRef.value.appendChild(shareContentElement.value);
+    }
   }
-
-  // 计算前后上下文
-  const before = fullContent.substring(0, selectedIndex);
-  const after = fullContent.substring(selectedIndex + selectedText.length);
-
-  // 分割成行
-  const beforeLines = before.split('\n').filter(l => l.trim());
-  const selectedLines = selectedText.split('\n');
-  const afterLines = after.split('\n').filter(l => l.trim());
-
-  // 计算需要的前后行数（总共约6行）
-  const selectedLineCount = selectedLines.length;
-  const remainingLines = 6 - selectedLineCount;
-  const beforeCount = Math.floor(remainingLines / 2);
-  const afterCount = remainingLines - beforeCount;
-
-  // 提取前后上下文
-  const contextBefore = beforeLines.slice(-beforeCount);
-  const contextAfter = afterLines.slice(0, afterCount);
-
-  // 构建HTML
-  let html = '';
-
-  // 前文（浅灰色）
-  if (contextBefore.length > 0) {
-    html += `<div class="share-context">${contextBefore.join('<br>')}</div>`;
-  }
-
-  // 选中内容（高亮+虚线）
-  html += `<div class="share-highlight">${selectedLines.join('<br>')}</div>`;
-
-  // 后文（浅灰色）
-  if (contextAfter.length > 0) {
-    html += `<div class="share-context">${contextAfter.join('<br>')}</div>`;
-  }
-
-  return html;
-};
+});
 </script>
 
 <template>
@@ -287,12 +388,16 @@ const formatSelectedContent = (note, selectedText) => {
     </NModal>
 
     <!-- 分享卡片弹窗 -->
+    <!-- :qrcodeContent="`https://example.com/note/${shareNoteId}`" -->
     <ShareCardDialog
       v-model:show="showShareDialog"
-      :qrcodeContent="`https://example.com/note/${shareNoteId}`"
-      :qrcodeSize="80"
     >
-      <div v-html="shareContent"></div>
+      <div
+        ref="shareNoteContentRef"
+        class="share-note-content relative min-h-[106px] max-h-[200px] flex flex-col justify-center text-lg overflow-hidden"
+        :class="shareType === SHARE_TYPE.FULL ? 'share-full-article' : 'share-selected-content'"
+      >
+      </div>
     </ShareCardDialog>
 
     <!-- 分享确认对话框 -->
@@ -306,12 +411,10 @@ const formatSelectedContent = (note, selectedText) => {
       @positive-click="handleShareFullArticle"
       @negative-click="handleShareSelectedContent"
     >
-      <div class="text-sm text-gray-600">
-        检测到您选中了部分内容，请选择分享方式：
-      </div>
+      <div class="text-sm text-gray-600">当前选中了内容，您需要如何分享？</div>
       <div class="mt-3 text-xs text-gray-500">
-        <div>• 分享文章：分享完整的标题和内容（约6行）</div>
-        <div>• 分享选中内容：仅分享选中部分及上下文（约6行）</div>
+        <div>• 分享文章：以文章格式进行分享</div>
+        <div>• 分享选中内容：分享选中的内容</div>
       </div>
     </NModal>
   </div>
@@ -319,32 +422,70 @@ const formatSelectedContent = (note, selectedText) => {
 
 <style lang="scss" scoped>
 .notes-app {
-  .app-icon {
-    &.active {
-      background-color: rgba(255, 193, 7, 0.15);
-      border-color: #ffc107;
-      box-shadow: 0 0 8px rgba(255, 193, 7, 0.3);
-    }
-  }
 }
 
 .notes-modal {
-  .notes-container {
-    height: calc(95vh - 120px);
+}
+
+.share-note-content {
+  color: rgba(31, 41, 55, 0.45);
+
+  :deep(.text-highlight) {
+    color: var(--color-info);
+    border-bottom: 1px dashed rgba(var(--color-info-rgb), 0.3);
   }
 }
 
-// 分享内容样式
-:deep(.share-highlight) {
-  color: #000;
-  font-weight: 500;
-  border-bottom: 1px dashed rgba(0, 0, 0, 0.15);
-  padding-bottom: 2px;
-  margin-bottom: 8px;
+// 选中内容分享样式
+.share-selected-content {
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(255, 255, 255, 0) 35%,
+      rgba(255, 255, 255, 0) 65%,
+      rgba(255, 255, 255, 1) 100%
+    );
+  }
 }
 
-:deep(.share-context) {
-  color: #999;
-  margin-bottom: 8px;
+// 整篇文章分享样式
+.share-full-article {
+  justify-content: flex-start !important;
+  padding-top: 1rem;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 35%,
+      rgba(255, 255, 255, 0) 65%,
+      rgba(255, 255, 255, 1) 100%
+    );
+  }
+
+  :deep(.share-title) {
+    @apply text-xl font-bold mb-2 truncate;
+    color: var(--color-info);
+  }
+
+  :deep(.share-content) {
+    @apply text-base leading-relaxed line-clamp-3;
+    color: rgba(31, 41, 55, 0.65);
+  }
 }
 </style>

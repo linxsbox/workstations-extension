@@ -53,7 +53,7 @@ const http = new Amors({
       }
 
       // 如果请求需要服务器时间，返回包含时间的对象
-      if (context.needServerTime) {
+      if (context.config && context.config.needServerTime) {
         const serverTime = response.headers.get('date');
         return {
           data,

@@ -71,11 +71,14 @@
   --player-queue-header-border: rgba(var(--color-black-rgb), 0.06);
   --player-queue-panel-border: rgba(var(--color-white-rgb), 0.96);
 
+  --player-lyrics-bg: rgba(var(--color-white-rgb), 0.1);
+  --player-lyrics-border-bg: rgba(var(--color-white-rgb), 0.2);
   --player-lyrics-color: rgba(var(--color-white-rgb), 0.7);
-  --player-lyrics-placeholder-color: rgba(var(--color-black-rgb), 0.85);
+  --player-lyrics-hover-color: rgba(var(--color-white-rgb), 0.9);
+  --player-lyrics-text-bg: rgba(var(--color-black-rgb), 0.45);
 
   --player-cover-bg: #fff;
-  --player-cover-placeholder-color: rgba(var(--color-black-rgb), 0.36);
+  --player-cover-placeholder-color: rgba(var(--color-black-rgb), 0.15);
 }
 
 // Dark 模式特定变量
@@ -104,11 +107,14 @@
   --player-queue-header-border: rgba(var(--color-white-rgb), 0.08);
   --player-queue-panel-border: rgba(var(--color-white-rgb), 0.08);
 
+  --player-lyrics-bg: rgba(var(--color-white-rgb), 0.1);
+  --player-lyrics-border-bg: rgba(var(--color-white-rgb), 0.15);
   --player-lyrics-color: rgba(var(--color-white-rgb), 0.7);
-  --player-lyrics-placeholder-color: rgba(var(--color-white-rgb), 0.85);
+  --player-lyrics-hover-color: rgba(var(--color-white-rgb), 0.9);
+  --player-lyrics-text-bg: rgba(var(--color-black-rgb), 0.45);
 
-  --player-cover-bg: rgba(15, 20, 25, 1);
-  --player-cover-placeholder-color: rgba(var(--color-white-rgb), 0.36);
+  --player-cover-bg: #0f1419;
+  --player-cover-placeholder-color: rgba(var(--color-white-rgb), 0.15);
 }
 
 // 应用播放器主题

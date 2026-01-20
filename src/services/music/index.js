@@ -56,6 +56,49 @@ class MiguMusicService {
   }
 
   /**
+   * 获取歌词
+   * @param {string} copyrightId - 版权ID
+   * @returns {Promise<Object>} 歌词信息
+   */
+  async getLyric(copyrightId) {
+    try {
+      const url = `https://music.migu.cn/v3/api/music/audioPlayer/getLyric?copyrightId=${copyrightId}`;
+
+      const response = await http.get(url, {
+        headers: {
+          'Referer': 'http://music.migu.cn/'
+        }
+      });
+
+      if (!response || !response.lyric) {
+        return {
+          success: false,
+          error: '未找到歌词',
+          data: null,
+        };
+      }
+
+      // 解析歌词
+      const parsedLyric = this._parseLyric(response.lyric);
+
+      return {
+        success: true,
+        data: {
+          lyric: response.lyric, // 原始歌词文本
+          parsed: parsedLyric, // 解析后的歌词数组
+        },
+      };
+    } catch (error) {
+      console.error('获取歌词失败:', error);
+      return {
+        success: false,
+        error: error.message,
+        data: null,
+      };
+    }
+  }
+
+  /**
    * 获取音乐播放链接
    * @param {string} contentId - 歌曲ID
    * @param {string} copyrightId - 版权ID
@@ -91,6 +134,50 @@ class MiguMusicService {
         url: null,
       };
     }
+  }
+
+  /**
+   * 解析歌词文本为时间轴数组
+   * @private
+   * @param {string} lyricText - 歌词文本
+   * @returns {Array} 解析后的歌词数组 [{time: number, text: string}]
+   */
+  _parseLyric(lyricText) {
+    if (!lyricText) return [];
+
+    const lines = lyricText.split('\n');
+    const lyricArray = [];
+
+    // 正则匹配时间标签 [mm:ss.ms] 或 [mm:ss]
+    const timeRegex = /\[(\d{2}):(\d{2})(?:\.(\d{2,3}))?\]/g;
+
+    lines.forEach(line => {
+      const matches = [...line.matchAll(timeRegex)];
+      if (matches.length === 0) return;
+
+      // 提取歌词文本（去除所有时间标签）
+      const text = line.replace(timeRegex, '').trim();
+      if (!text) return;
+
+      // 一行可能有多个时间标签
+      matches.forEach(match => {
+        const minutes = parseInt(match[1], 10);
+        const seconds = parseInt(match[2], 10);
+        const milliseconds = match[3] ? parseInt(match[3].padEnd(3, '0'), 10) : 0;
+
+        const time = minutes * 60 + seconds + milliseconds / 1000;
+
+        lyricArray.push({
+          time,
+          text,
+        });
+      });
+    });
+
+    // 按时间排序
+    lyricArray.sort((a, b) => a.time - b.time);
+
+    return lyricArray;
   }
 
   /**

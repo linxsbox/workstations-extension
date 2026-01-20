@@ -170,7 +170,7 @@ const handleSwitchPlayMode = () => {
       aria-label="停止"
       title="停止"
     >
-      <IconSquare :style="{ fontSize: `${iconSize}px` }" />
+      <IconStop :style="{ fontSize: `${iconSize}px` }" />
     </button>
 
     <!-- 音量控制 -->

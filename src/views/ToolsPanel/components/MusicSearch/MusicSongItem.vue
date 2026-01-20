@@ -111,6 +111,8 @@ const buildTrackData = async () => {
         image: props.song.cover || '',
       } : null,
       cover: props.song.cover || '',
+      copyrightId: props.song.copyrightId,
+      lyricUrl: props.song.lyricUrl,
     };
 
     // 缓存轨道数据

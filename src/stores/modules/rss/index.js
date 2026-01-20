@@ -80,8 +80,8 @@ export const storeRss = defineStore({
     },
 
     // 删除 RSS 源
-    removeSource(sourceId) {
-      const index = this.sources.findIndex((s) => s.id === sourceId);
+    removeSource(sourceUrl) {
+      const index = this.sources.findIndex((s) => s.sourceUrl === sourceUrl);
       if (index === -1) return;
 
       this.sources.splice(index, 1);
@@ -93,8 +93,8 @@ export const storeRss = defineStore({
     },
 
     // 更新 RSS 源
-    async updateSource(sourceId, forceUpdate = false) {
-      const source = this.sources.find((s) => s.id === sourceId);
+    async updateSource(sourceUrl, forceUpdate = false) {
+      const source = this.sources.find((s) => s.sourceUrl === sourceUrl);
       if (!source) {
         throw new Error('RSS 源不存在');
       }
@@ -125,7 +125,7 @@ export const storeRss = defineStore({
         this.saveSources();
 
         // 如果当前正在查看这个源，更新显示
-        if (this.currentSourceData?.id === sourceId) {
+        if (this.currentSourceData?.sourceUrl === sourceUrl) {
           this.currentSourceData = { ...source };
         }
       } catch (error) {
@@ -135,8 +135,8 @@ export const storeRss = defineStore({
     },
 
     // 强制刷新指定 RSS 源（重新获取所有数据）
-    async refreshSource(sourceId) {
-      const source = this.sources.find((s) => s.id === sourceId);
+    async refreshSource(sourceUrl) {
+      const source = this.sources.find((s) => s.sourceUrl === sourceUrl);
       if (!source) {
         throw new Error('RSS 源不存在');
       }
@@ -145,13 +145,13 @@ export const storeRss = defineStore({
         const freshData = await fetchSourceInfo(source);
 
         // 完全替换数据（包括 list）
-        const index = this.sources.findIndex((s) => s.id === sourceId);
+        const index = this.sources.findIndex((s) => s.sourceUrl === sourceUrl);
         if (index > -1) {
           this.sources[index] = { ...source, ...freshData };
           this.saveSources();
 
           // 如果当前正在查看这个源，更新显示
-          if (this.currentSourceData?.id === sourceId) {
+          if (this.currentSourceData?.sourceUrl === sourceUrl) {
             this.currentSourceData = this.sources[index];
           }
         }

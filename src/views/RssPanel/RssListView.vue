@@ -41,7 +41,7 @@ const handleRefresh = debounce(async () => {
   isRefreshing.value = true;
 
   try {
-    await rssStore.updateSource(props.data.id, true);
+    await rssStore.updateSource(props.data.sourceUrl, true);
   } catch (_) {
   } finally {
     // 500ms 后关闭动画
@@ -100,7 +100,7 @@ const getThemeColor = (theme) => {
           <div class="flex justify-between items-center">
             <a
               class="title text-lg font-bold"
-              :href="props.data.sourceUrl"
+              :href="props.data.link || props.data.sourceUrl"
               target="_blank"
               rel="noopener noreferrer"
             >

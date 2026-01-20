@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_manifest_app_name__",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "__MSG_manifest_app_description__",
   "author": "Lin.xs",
   "default_locale": "zh_CN",
@@ -23,9 +23,6 @@
       "128": "icons/icon128.svg"
     }
   },
-  "chrome_url_overrides_1": {
-    "newtab": "index.html"
-  },
   "permissions": [
     "alarms",
     "storage",
@@ -34,5 +31,8 @@
     "scripting",
     "activeTab"
   ],
-  "host_permissions": ["http://*/*", "https://*/*", "chrome-extension://*/*"]
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ]
 }

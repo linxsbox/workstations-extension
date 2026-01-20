@@ -1,7 +1,6 @@
 export const RssSourceTypeEnum = {
   XIAOYUZHOU: "xiaoyuzhou",
-  KR36: "36Kr",
-  // WECHAT: "wechat",
+  PRESET: "preset",
   RSS: "rss",
 };
 
@@ -17,17 +16,11 @@ export const RSS_SOURCE_TYPES = [
     needsUrl: true,
   },
   {
-    label: "36Kr",
-    value: RssSourceTypeEnum.KR36,
-    description: "科技新闻",
+    label: "可用源",
+    value: RssSourceTypeEnum.PRESET,
+    description: "预设的优质 RSS 源",
     hasPresets: true,
   },
-  // {
-  //   label: "公众号",
-  //   value: RssSourceTypeEnum.WECHAT,
-  //   description: "微信公众号",
-  //   needsSearch: true,
-  // },
   {
     label: "RSS",
     value: RssSourceTypeEnum.RSS,
@@ -36,30 +29,54 @@ export const RSS_SOURCE_TYPES = [
   },
 ];
 
-// 36Kr 的预设源
-export const KR36_RSS_OPTIONS = [
+// 预设的优质 RSS 源
+export const PRESET_RSS_OPTIONS = [
+  // 科技类
   {
-    label: "文章资讯",
+    label: "少数派",
+    value: "https://sspai.com/feed",
+    category: "科技",
+  },
+  {
+    label: "虎嗅网",
+    value: "https://www.huxiu.com/rss/0.xml",
+    category: "科技",
+  },
+  {
+    label: "机器之心",
+    value: "https://www.jiqizhixin.com/rss",
+    category: "AI",
+  },
+  {
+    label: "36Kr - 文章资讯",
     value: "https://36kr.com/feed-article",
-    type: "rss",
-    description: "深度文章和行业分析",
+    category: "科技",
   },
   {
-    label: "综合资讯",
+    label: "36Kr - 综合资讯",
     value: "https://36kr.com/feed",
-    type: "rss",
-    description: "全站综合内容",
+    category: "科技",
   },
   {
-    label: "最新快讯",
+    label: "36Kr - 最新快讯",
     value: "https://36kr.com/feed-newsflash",
-    type: "rss",
-    description: "实时科技快讯",
+    category: "科技",
   },
   {
-    label: "动态内容",
+    label: "36Kr - 动态内容",
     value: "https://36kr.com/feed-moment",
-    type: "rss",
-    description: "行业动态更新",
+    category: "技术",
+  },
+  // 技术类
+  {
+    label: "阮一峰的网络日志",
+    value: "https://www.ruanyifeng.com/blog/atom.xml",
+    category: "技术",
+  },
+  // 财经投资类
+  {
+    label: "雪球 - 今日话题",
+    value: "https://xueqiu.com/hots/topic/rss",
+    category: "财经投资",
   },
 ];

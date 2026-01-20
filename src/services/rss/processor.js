@@ -87,43 +87,173 @@ class BaseRssProcessor {
 
 // 标准 RSS 处理器
 class RssProcessor extends BaseRssProcessor {
-  async fetchSourceInfo() {
-    try {
-      const text = await http.get(this.source.sourceUrl);
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(text, "text/xml");
+  // 清理 HTML 描述
+  cleanDescription(description) {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = description;
 
-      const result = {
-        lastUpdateTime: genISOWithZoneToDate().getTime(),
-      };
-      if (xmlDoc.firstChild) {
-        if (xmlDoc.firstChild.nodeName === "feed") {
-          result.title = xmlDoc.querySelector("feed > title")?.textContent;
-          result.description =
-            xmlDoc.querySelector("feed > subtitle")?.textContent;
-          result.link = this.source.sourceUrl;
+    tempDiv.querySelectorAll("a").forEach((el) => el.remove());
 
-          const getLink = (item) => {
-            const el = item.querySelector("link");
-            return el?.textContent ? el?.textContent : el.getAttribute("href");
-          };
+    const texts = Array.from(tempDiv.children).map((child) =>
+      child.textContent.trim()
+    );
+    return texts.join("；") || tempDiv.textContent.trim();
+  }
 
-          const list = Array.from(xmlDoc.querySelectorAll("entry")).map(
-            (item) => {
-              return {
-                title: getNodeTextContent(item, "title"),
-                description: getNodeTextContent(item, "summary"),
-                link: getLink(item),
-                pubDate: rmSecAndZone(getNodeTextContent(item, "published")),
-              };
-            }
-          );
+  // 解析 RSS 1.x 格式（RDF）
+  parseRss1x(xmlDoc) {
+    const result = {};
+    const channel = xmlDoc.querySelector("channel");
 
-          result.list = list;
-        }
+    if (channel) {
+      result.title = getNodeTextContent(channel, "title");
+      result.description = getNodeTextContent(channel, "description");
+      result.link = getNodeTextContent(channel, "link");
+
+      // 解析 image
+      const imageUrl = getNodeTextContent(channel, "image > url");
+      if (imageUrl) {
+        result.image = imageUrl;
       }
 
-      return Object.keys(result).length ? result : result;
+      const list = Array.from(xmlDoc.querySelectorAll("item")).map((item) => {
+        return {
+          title: getNodeTextContent(item, "title"),
+          description: this.cleanDescription(
+            getNodeTextContent(item, "description") ||
+              getNodeTextContent(item, "content:encoded")
+          ),
+          link: getNodeTextContent(item, "link"),
+          pubDate: rmSecAndZone(
+            getNodeTextContent(item, "dc:date") ||
+              getNodeTextContent(item, "pubDate")
+          ),
+        };
+      });
+
+      result.list = list;
+    }
+
+    return result;
+  }
+
+  // 解析 RSS 2.x 格式
+  parseRss2x(xmlDoc) {
+    const result = {};
+    const channel = xmlDoc.querySelector("channel");
+
+    if (channel) {
+      result.title = getNodeTextContent(channel, "title");
+      result.description = getNodeTextContent(channel, "description");
+      result.link = getNodeTextContent(channel, "link");
+
+      // 解析 image
+      const imageUrl = getNodeTextContent(channel, "image > url");
+      if (imageUrl) {
+        result.image = imageUrl;
+      }
+
+      const list = Array.from(xmlDoc.querySelectorAll("item")).map((item) => {
+        return {
+          title: getNodeTextContent(item, "title"),
+          description: this.cleanDescription(
+            getNodeTextContent(item, "description")
+          ),
+          link: getNodeTextContent(item, "link"),
+          author: getNodeTextContent(item, "author"),
+          pubDate: rmSecAndZone(getNodeTextContent(item, "pubDate")),
+        };
+      });
+
+      result.list = list;
+    }
+
+    return result;
+  }
+
+  // 解析 Atom 格式
+  parseAtom(xmlDoc) {
+    const result = {};
+    result.title = xmlDoc.querySelector("feed > title")?.textContent;
+    result.description = xmlDoc.querySelector("feed > subtitle")?.textContent;
+    result.link = this.source.sourceUrl;
+
+    // 解析 Atom 的 logo 或 icon
+    const logo = xmlDoc.querySelector("feed > logo")?.textContent;
+    const icon = xmlDoc.querySelector("feed > icon")?.textContent;
+    if (logo || icon) {
+      result.image = logo || icon;
+    }
+
+    const getLink = (item) => {
+      const el = item.querySelector("link");
+      return el?.textContent ? el?.textContent : el.getAttribute("href");
+    };
+
+    const list = Array.from(xmlDoc.querySelectorAll("entry")).map((item) => {
+      return {
+        title: getNodeTextContent(item, "title"),
+        description: this.cleanDescription(
+          getNodeTextContent(item, "summary") ||
+            getNodeTextContent(item, "content")
+        ),
+        link: getLink(item),
+        pubDate: rmSecAndZone(
+          getNodeTextContent(item, "published") ||
+            getNodeTextContent(item, "updated")
+        ),
+      };
+    });
+
+    result.list = list;
+    return result;
+  }
+
+  async fetchSourceInfo() {
+    try {
+      const response = await http.get(this.source.sourceUrl);
+      const xmlText =
+        typeof response === "string" ? response : await response.text();
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+
+      let result = {
+        lastUpdateTime: genISOWithZoneToDate().getTime(),
+      };
+
+      if (xmlDoc.firstChild) {
+        let version = "1";
+        let versionItem = "";
+        if (xmlDoc.firstChild.attributes) {
+          versionItem = xmlDoc.firstChild.attributes.getNamedItem("version");
+          if (versionItem) {
+            version = versionItem.nodeValue[0];
+          }
+        }
+
+        const rootNode = xmlDoc.firstChild.nodeName;
+
+        // RSS 2.x 格式
+        if (rootNode === "rss" && version === "2") {
+          const parsed = this.parseRss2x(xmlDoc);
+          result = { ...result, ...parsed };
+        }
+        // RSS 1.x 格式（RDF）
+        else if (rootNode === "rss" && version === "1") {
+          const parsed = this.parseRss1x(xmlDoc);
+          result = { ...result, ...parsed };
+        }
+        // Atom 格式
+        else if (rootNode === "feed") {
+          const parsed = this.parseAtom(xmlDoc);
+          result = { ...result, ...parsed };
+        } else {
+          const parsed = this.parseRss1x(xmlDoc);
+          result = { ...result, ...parsed };
+        }
+
+        return Object.keys(result).length ? result : result;
+      }
     } catch (error) {
       console.error("RSS源信息获取失败:", error);
       throw error;
@@ -146,7 +276,7 @@ class XiaoyuzhouProcessor extends BaseRssProcessor {
       });
 
       // 解构获取数据和服务器时间
-      const html = data || '';
+      const html = data || "";
       // const serverTime = result.serverTime;
 
       const matchTxt = jsonMathc.exec(html);

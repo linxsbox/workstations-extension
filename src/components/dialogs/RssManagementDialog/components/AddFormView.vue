@@ -16,7 +16,7 @@ import { storeRss } from "@/stores/modules/rss";
 import {
   RssSourceTypeEnum,
   RSS_SOURCE_TYPES,
-  KR36_RSS_OPTIONS,
+  PRESET_RSS_OPTIONS,
 } from "@/stores/modules/rss/config";
 import { storeAside } from "@/stores/modules/aside";
 import { storeTab } from "@/stores/modules/tab";
@@ -31,20 +31,22 @@ const formValue = ref({
   type: RssSourceTypeEnum.RSS,
   name: "",
   sourceUrl: "",
+  xiaoyuzhouUrl: "",
   searchQuery: "",
-  kr36Selected: [], // 存储选中的36Kr源
+  presetSelected: [], // 存储选中的预设源
 });
 
 const showNameField = computed(
   () => formValue.value.type === RssSourceTypeEnum.RSS
 );
-const showUrlField = computed(() =>
-  [RssSourceTypeEnum.XIAOYUZHOU, RssSourceTypeEnum.RSS].includes(
-    formValue.value.type
-  )
+const showRssUrlField = computed(
+  () => formValue.value.type === RssSourceTypeEnum.RSS
 );
-const showKr36Select = computed(
-  () => formValue.value.type === RssSourceTypeEnum.KR36
+const showXiaoyuzhouUrlField = computed(
+  () => formValue.value.type === RssSourceTypeEnum.XIAOYUZHOU
+);
+const showPresetSelect = computed(
+  () => formValue.value.type === RssSourceTypeEnum.PRESET
 );
 const showSearchField = computed(
   () => formValue.value.type === RssSourceTypeEnum.WECHAT
@@ -52,17 +54,20 @@ const showSearchField = computed(
 
 const rules = {
   sourceUrl: {
-    required: computed(() => showUrlField.value),
+    required: computed(() => showRssUrlField.value),
     message: "请输入 RSS 源地址",
     trigger: ["blur", "input"],
   },
+  xiaoyuzhouUrl: {
+    required: computed(() => showXiaoyuzhouUrlField.value),
+    message: "请输入小宇宙频道地址",
+    trigger: ["blur", "input"],
+  },
   name: {
-    required: computed(() => showNameField.value),
+    required: false,
     trigger: ["blur", "input"],
     validator: (rule, value) => {
-      if (!value) return new Error("请输入源名称");
-
-      if (!value && !showNameField.value) return true;
+      if (!value) return true;
 
       // 基本字符验证
       const pattern = /^[\u4e00-\u9fa5a-zA-Z0-9_-]+$/;
@@ -113,14 +118,14 @@ const rules = {
     message: "请输入公众号名称",
     trigger: ["blur", "input"],
   },
-  kr36Selected: {
-    required: computed(() => showKr36Select.value),
+  presetSelected: {
+    required: computed(() => showPresetSelect.value),
     validator: (rule, value) => {
       if (
-        formValue.value.type === RssSourceTypeEnum.KR36 &&
+        formValue.value.type === RssSourceTypeEnum.PRESET &&
         (!value || value.length === 0)
       ) {
-        return new Error("请至少选择一个 36Kr RSS 源");
+        return new Error("请至少选择一个 RSS 源");
       }
       return true;
     },
@@ -129,11 +134,11 @@ const rules = {
 };
 
 onMounted(() => {
-  // 处理已选择过的 36Kr 源
-  const kr36List = (store.getSources || []).filter(
-    (item) => item.type === RssSourceTypeEnum.KR36
+  // 处理已选择过的预设源
+  const presetList = (store.getSources || []).filter(
+    (item) => item.type === RssSourceTypeEnum.PRESET
   );
-  kr36List.forEach((item) => formValue.value.kr36Selected.push(item.url));
+  presetList.forEach((item) => formValue.value.presetSelected.push(item.url));
 });
 
 // 表单提交逻辑
@@ -147,24 +152,24 @@ const submitForm = async () => {
 
     if (formValue.value.type === RssSourceTypeEnum.XIAOYUZHOU) {
       // 小宇宙表单
-      sourceData.sourceUrl = formValue.value.sourceUrl;
+      sourceData.sourceUrl = formValue.value.xiaoyuzhouUrl;
 
       await store.addSource(sourceData, RssSourceTypeEnum.XIAOYUZHOU);
       submitSuccessSwitchTab(RssSourceTypeEnum.XIAOYUZHOU);
-    } else if (formValue.value.type === RssSourceTypeEnum.KR36) {
-      // 对于36Kr，为每个选中的源创建一个订阅
-      const promises = formValue.value.kr36Selected.map(async (url) => {
-        const selected = KR36_RSS_OPTIONS.find((opt) => opt.value === url);
+    } else if (formValue.value.type === RssSourceTypeEnum.PRESET) {
+      // 对于预设源，为每个选中的源创建一个订阅
+      const promises = formValue.value.presetSelected.map(async (url) => {
+        const selected = PRESET_RSS_OPTIONS.find((opt) => opt.value === url);
         const sourceData = {
-          type: formValue.value.type,
-          name: `${formValue.value.type}-${selected.label}`,
+          type: RssSourceTypeEnum.RSS,
+          name: formValue.value.name || selected.label,
           sourceUrl: selected.value,
         };
         return await store.addSource(sourceData, true);
       });
 
       await Promise.all(promises);
-      submitSuccessSwitchTab(RssSourceTypeEnum.KR36);
+      submitSuccessSwitchTab(RssSourceTypeEnum.RSS);
     } else if (formValue.value.type === RssSourceTypeEnum.WECHAT) {
       // 微信公众号
 
@@ -172,21 +177,20 @@ const submitForm = async () => {
       submitSuccessSwitchTab(RssSourceTypeEnum.WECHAT);
     } else {
       // RSS 自定义源
-      sourceData.name = formValue.value.name || "未命名";
+      sourceData.name = formValue.value.name;
       sourceData.sourceUrl = formValue.value.sourceUrl;
 
       await store.addSource(sourceData);
       submitSuccessSwitchTab(RssSourceTypeEnum.RSS);
     }
 
-
     message.success("添加成功");
+    resetForm();
   } catch (error) {
     message.error(error.message);
   } finally {
     await delay(300);
     loading.value = false;
-    resetForm();
   }
 };
 
@@ -203,9 +207,10 @@ const resetForm = () => {
   formValue.value = {
     type: RssSourceTypeEnum.RSS,
     name: "",
-    url: "",
+    sourceUrl: "",
+    xiaoyuzhouUrl: "",
     searchQuery: "",
-    kr36Selected: [],
+    presetSelected: [],
   };
 };
 
@@ -215,10 +220,8 @@ const handleCancel = () => {
 };
 
 const handleTypeChange = () => {
-  // formValue.value.sourceUrl = "";
   formValue.value.name = "";
   formValue.value.searchQuery = "";
-  // formValue.value.kr36Selected = [];
 };
 
 // 提交成功后切换 tab
@@ -269,24 +272,27 @@ defineExpose({
           <NInput v-model:value="formValue.name" placeholder="请输入源名称" />
         </NFormItem>
 
-        <NFormItem v-if="showUrlField" label="URL" path="url">
+        <NFormItem v-if="showRssUrlField" label="URL" path="sourceUrl">
           <NInput
             v-model:value="formValue.sourceUrl"
-            :placeholder="
-              formValue.type === RssSourceTypeEnum.XIAOYUZHOU
-                ? '请输入小宇宙频道地址（Url）'
-                : '请输入 RSS 源地址'
-            "
+            placeholder="请输入 RSS 源地址"
           />
         </NFormItem>
 
-        <NFormItem v-if="showKr36Select" label="选择源" path="kr36Selected">
+        <NFormItem v-if="showXiaoyuzhouUrlField" label="URL" path="xiaoyuzhouUrl">
+          <NInput
+            v-model:value="formValue.xiaoyuzhouUrl"
+            placeholder="请输入小宇宙频道地址（Url）"
+          />
+        </NFormItem>
+
+        <NFormItem v-if="showPresetSelect" label="选择源" path="presetSelected">
           <NCheckboxGroup
             class="flex flex-wrap gap-4"
-            v-model:value="formValue.kr36Selected"
+            v-model:value="formValue.presetSelected"
           >
             <NCheckbox
-              v-for="option in KR36_RSS_OPTIONS"
+              v-for="option in PRESET_RSS_OPTIONS"
               :key="option.value"
               :value="option.value"
             >

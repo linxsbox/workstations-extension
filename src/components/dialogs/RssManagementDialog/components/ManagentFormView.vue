@@ -26,8 +26,8 @@ const sourceTypeMap = computed(() =>
 );
 
 // 处理删除订阅源
-const handleDeleteSource = (sourceId) => {
-  store.removeSource(sourceId);
+const handleDeleteSource = (sourceUrl) => {
+  store.removeSource(sourceUrl);
 
   const st = setTimeout(() => {
     message.success("已取消关注");
@@ -165,7 +165,7 @@ const handleImport = async () => {
           <NPopconfirm
             positive-text="取消关注"
             negative-text="关闭"
-            @positive-click="handleDeleteSource(source.id)"
+            @positive-click="handleDeleteSource(source.sourceUrl)"
           >
             取消关注【{{ source.title || "此订阅源" }}】？
             <template #trigger>

@@ -460,7 +460,8 @@ export const storePlayer = defineStore("player", {
       if (this.playMode === PlayMode.SEQUENTIAL) {
         const nextIndex = this.playQueue.getNextIndex();
         if (nextIndex === -1) {
-          // 没有下一首了，停止播放
+          // 没有下一首了，停止播放并重置进度
+          this.seek(0);
           this.pause();
           return;
         }

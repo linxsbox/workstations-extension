@@ -1,14 +1,13 @@
 <script setup>
-import { ref } from 'vue';
-import PlayerCover from '../PlayerCover.vue';
-import PlayerInfo from '../PlayerInfo.vue';
-import PlayerProgressBar from '../PlayerProgressBar.vue';
-import PlayerExtras from '../PlayerExtras.vue';
-import PlayerControls from '../PlayerControls.vue';
-import PlayerQueue from '../PlayerQueue.vue';
-import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
-// import { storePlayer } from '@/stores/modules/player';
-// import { storeToRefs } from 'pinia';
+import { ref } from "vue";
+import PlayerCover from "../PlayerCover.vue";
+import PlayerInfo from "../PlayerInfo.vue";
+import PlayerProgressBar from "../PlayerProgressBar.vue";
+import PlayerExtras from "../PlayerExtras.vue";
+import PlayerControls from "../PlayerControls.vue";
+import PlayerQueue from "../PlayerQueue.vue";
+import PlayerLyric from "../PlayerLyric.vue";
+import IconQueueMusic from "@/components/common/Icons/IconQueueMusic.vue";
 
 const props = defineProps({
   showBackRate: { type: Boolean, default: true },
@@ -24,8 +23,6 @@ const isPlaylistVisible = ref(false);
 const handleTogglePlaylist = () => {
   isPlaylistVisible.value = !isPlaylistVisible.value;
 };
-
-// const player = storePlayer();
 </script>
 
 <template>
@@ -34,11 +31,11 @@ const handleTogglePlaylist = () => {
     <div class="cover-section flex-1 relative overflow-hidden">
       <!-- 大封面作为背景 -->
       <PlayerCover asBackground :size="200">
-        <div class="content-overlay size-full flex flex-col  items-center justify-center p-8">
-          <!-- 歌词区域（预留） -->
-          <div class="lyrics-area flex-1 flex items-center justify-center text-center">
-            <div class="lyrics-placeholder mt-48 text-xl">暂无歌词</div>
-          </div>
+        <div
+          class="content-overlay size-full flex flex-col items-center justify-center px-8 pb-8 pt-10"
+        >
+          <!-- 歌词区域 -->
+          <PlayerLyric />
 
           <!-- 播放控制组件 -->
           <PlayerControls />
@@ -77,7 +74,9 @@ const handleTogglePlaylist = () => {
           >
             <IconQueueMusic
               class="text-2xl"
-              :style="{ color: 'var(--player-color, var(--player-color-default))' }"
+              :style="{
+                color: 'var(--player-color, var(--player-color-default))',
+              }"
             />
           </button>
         </PlayerExtras>
@@ -100,16 +99,6 @@ const handleTogglePlaylist = () => {
 .cover-section {
   min-width: 0;
   position: relative;
-}
-
-.lyrics-area {
-  overflow-y: auto;
-  padding: 20px;
-  color: var(--player-lyrics-color);
-}
-
-.lyrics-placeholder {
-  color: var(--player-lyrics-placeholder-color);
 }
 
 .player-bar {

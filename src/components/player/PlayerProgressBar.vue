@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { storePlayer } from '@/stores/modules/player';
 import { formatPlayTime, PlayerProgressDnD } from './config';
@@ -13,6 +13,9 @@ const playerBox = ref(null);
 const playerProgress = ref(null);
 const progressBarTransition = ref('');
 let apDnd = null;
+
+// 事件取消函数
+const unsubscribers = [];
 
 /**
  * 计算播放时长状态
@@ -42,7 +45,7 @@ const setProgressBarTransitionWidth = (width = 0) => {
 /**
  * 设置当前状态下的进度条宽度
  */
-const setCurrentStateProgressWidth = (width = 0, remainingTime, event = '') => {
+const setCurrentStateProgressWidth = (width = 0, remainingTime) => {
   const style = [
     `width:${
       typeof width === 'number' && !isNaN(width)
@@ -77,7 +80,7 @@ onMounted(() => {
   let lastRemainingTime = 0;
   apDnd.on('mousemove', ({ width }) => {
     setProgressBarTransitionWidth(width);
-    const { currentTime: ct, remainingTime } = calcPlayTime(width);
+    const { remainingTime } = calcPlayTime(width);
     lastRemainingTime = remainingTime;
   });
 
@@ -107,6 +110,59 @@ onMounted(() => {
       })
     }
   }, 300)
+
+  // ==================== 事件驱动 UI 更新 ====================
+
+  // 监听 canplay 事件 - 音频可以播放
+  unsubscribers.push(
+    player.onPlayerEvent('canplay', () => {
+      setProgressBarTransitionWidth(0);
+      apDnd.disabled = false;
+    })
+  );
+
+  // 监听 play 事件 - 开始播放
+  unsubscribers.push(
+    player.onPlayerEvent('play', () => {
+      setCurrentStateProgressWidth(null, null, 'play event');
+      apDnd.disabled = false;
+    })
+  );
+
+  // 监听 pause 事件 - 暂停播放
+  unsubscribers.push(
+    player.onPlayerEvent('pause', () => {
+      setCurrentStateProgressWidth(null, null, 'pause event');
+    })
+  );
+
+  // 监听 ended 事件 - 播放完成
+  unsubscribers.push(
+    player.onPlayerEvent('ended', () => {
+      setProgressBarTransitionWidth(0);
+    })
+  );
+
+  // 监听 loadstart 事件 - 开始加载新音频
+  unsubscribers.push(
+    player.onPlayerEvent('loadstart', () => {
+      setProgressBarTransitionWidth(0);
+      apDnd.disabled = true;
+    })
+  );
+
+  // 监听 error 事件 - 播放错误
+  unsubscribers.push(
+    player.onPlayerEvent('error', () => {
+      setProgressBarTransitionWidth(0);
+      apDnd.disabled = true;
+    })
+  );
+});
+
+onUnmounted(() => {
+  // 取消所有事件监听
+  unsubscribers.forEach(unsub => unsub());
 });
 
 // 进度条拖动
@@ -149,25 +205,6 @@ const currentTimeFormatted = computed(() => {
 const totalTimeFormatted = computed(() => {
   return formatPlayTime(duration.value);
 });
-
-/** 监听播放状态变化，更新进度条 */
-watch(
-  () => getPlayStatus.value.isPlaying,
-  (newVal) => {
-    setCurrentStateProgressWidth(null, null, 'play state changed');
-    apDnd.disabled = !getIsPlayerEnable.value;
-  }
-);
-
-/** 监听播放源变化，重置进度条 */
-watch(
-  () => getPlayStatus.value.src,
-  (newSrc) => {
-    if (newSrc) {
-      setProgressBarTransitionWidth(0);
-    }
-  }
-);
 </script>
 
 <template>

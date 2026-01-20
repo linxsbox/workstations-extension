@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_manifest_app_name__",
-  "version": "0.2.0",
+  "version": "0.3.2",
   "description": "__MSG_manifest_app_description__",
   "author": "Lin.xs",
   "default_locale": "zh_CN",

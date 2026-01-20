@@ -5,53 +5,30 @@ import { getPanelKeys, isPanelValid } from "../../config/panelConfig";
 const MAX_TABS = 6;
 const DEFAULT_TABS = [{ id: "all", label: "全部" }];
 
-// 初始化所有面板的默认 tab 状态
-const initializePanelTabsState = () => {
-  const state = {};
-
-  getPanelKeys().forEach((panelKey) => {
-    if (!isPanelValid(panelKey)) return;
-
-    const stored = storageManager.getTabState(panelKey);
-
-    if (stored && stored.tabs) {
-      // 如果有存储的数据，使用存储的 tabs 和 activeId
-      // 确保始终包含"全部" tab
-      const tabs = stored.tabs.some((tab) => tab.id === "all")
-        ? stored.tabs
-        : [DEFAULT_TABS[0], ...stored.tabs];
-
-      state[panelKey] = {
-        tabs: tabs,
-        activeId: stored.activeId || "all",
-      };
-    } else {
-      // 没有存储数据时使用默认值
-      state[panelKey] = {
-        tabs: [...DEFAULT_TABS],
-        activeId: "all",
-      };
-    }
-  });
-  return state;
-};
-
 export const storeTab = defineStore("tab", {
   state: () => ({
     // 每个面板的 tab 列表和选中状态
-    panelTabs: initializePanelTabsState(),
+    panelTabs: {},
+    // 标记是否已初始化
+    isInitialized: false,
   }),
 
   getters: {
     // 获取指定面板的 tab 列表
-    getTabs: (state) => (panelKey) => state.panelTabs[panelKey]?.tabs || [],
+    getTabs: (state) => (panelKey) => {
+      if (!state.isInitialized) return DEFAULT_TABS;
+      return state.panelTabs[panelKey]?.tabs || DEFAULT_TABS;
+    },
 
     // 获取指定面板当前选中的 tab ID
-    getActiveTabId: (state) => (panelKey) =>
-      state.panelTabs[panelKey]?.activeId || "all",
+    getActiveTabId: (state) => (panelKey) => {
+      if (!state.isInitialized) return "all";
+      return state.panelTabs[panelKey]?.activeId || "all";
+    },
 
     // 获取指定面板当前选中的 tab 对象
     getActiveTab: (state) => (panelKey) => {
+      if (!state.isInitialized) return DEFAULT_TABS[0];
       const panel = state.panelTabs[panelKey];
       if (!panel) return DEFAULT_TABS[0];
       return (
@@ -61,8 +38,54 @@ export const storeTab = defineStore("tab", {
   },
 
   actions: {
+    // 初始化所有面板的 tab 状态
+    async init() {
+      if (this.isInitialized) return;
+
+      // 等待存储初始化完成
+      await storageManager.waitForInit();
+
+      const state = {};
+
+      getPanelKeys().forEach((panelKey) => {
+        if (!isPanelValid(panelKey)) return;
+
+        const stored = storageManager.getTabState(panelKey);
+
+        if (stored && stored.tabs) {
+          // 如果有存储的数据，使用存储的 tabs 和 activeId
+          // 确保始终包含"全部" tab
+          const tabs = stored.tabs.some((tab) => tab.id === "all")
+            ? stored.tabs
+            : [DEFAULT_TABS[0], ...stored.tabs];
+
+          state[panelKey] = {
+            tabs: tabs,
+            activeId: stored.activeId || "all",
+          };
+        } else {
+          // 没有存储数据时使用默认值
+          state[panelKey] = {
+            tabs: [...DEFAULT_TABS],
+            activeId: "all",
+          };
+        }
+      });
+
+      this.panelTabs = state;
+      this.isInitialized = true;
+    },
+
+    // 确保已初始化（在每个 getter/action 中调用）
+    async ensureInitialized() {
+      if (!this.isInitialized) {
+        await this.init();
+      }
+    },
+
     // 添加新的 tab
-    addTab(panelKey, tabInfo) {
+    async addTab(panelKey, tabInfo) {
+      await this.ensureInitialized();
       const panel = this.panelTabs[panelKey];
       if (!panel) return false;
 
@@ -87,7 +110,8 @@ export const storeTab = defineStore("tab", {
     },
 
     // 删除 tab
-    removeTab(panelKey, tabId) {
+    async removeTab(panelKey, tabId) {
+      await this.ensureInitialized();
       const panel = this.panelTabs[panelKey];
       if (!panel) return;
 
@@ -108,7 +132,8 @@ export const storeTab = defineStore("tab", {
     },
 
     // 切换选中的 tab
-    switchTab(panelKey, tabId) {
+    async switchTab(panelKey, tabId) {
+      await this.ensureInitialized();
       const panel = this.panelTabs[panelKey];
       if (!panel) return;
 
@@ -119,7 +144,8 @@ export const storeTab = defineStore("tab", {
     },
 
     // 从本地存储加载状态
-    loadFromStorage(panelKey) {
+    async loadFromStorage(panelKey) {
+      await this.ensureInitialized();
       const stored = storageManager.getTabState(panelKey);
       if (stored) {
         // 确保始终包含"全部" tab
@@ -139,7 +165,8 @@ export const storeTab = defineStore("tab", {
     },
 
     // 初始化面板的 tabs
-    initializePanelTabs(panelKey) {
+    async initializePanelTabs(panelKey) {
+      await this.ensureInitialized();
       if (!this.panelTabs[panelKey]) {
         this.panelTabs[panelKey] = {
           tabs: [...DEFAULT_TABS],

@@ -6,7 +6,6 @@ import { delay } from "@linxs/toolkit";
 import { storePlayer } from "@/stores/modules/player";
 import { ViewMode } from "@/stores/modules/player/types";
 import { PlayerDragManager } from "./config";
-import PlayerMini from "./modes/PlayerMini.vue";
 import PlayerList from "./modes/PlayerList.vue";
 import PlayerStandard from "./modes/PlayerStandard.vue";
 import IconMinimize from "@/components/common/Icons/IconMinimize.vue";
@@ -50,8 +49,6 @@ const showMask = computed(() => getViewMode.value === ViewMode.STANDARD);
 /** 当前视图模式组件 */
 const currentModeComponent = computed(() => {
   switch (getViewMode.value) {
-    case ViewMode.MINI:
-      return PlayerMini;
     case ViewMode.STANDARD:
       return PlayerStandard;
     case ViewMode.LIST:
@@ -62,7 +59,6 @@ const currentModeComponent = computed(() => {
 
 /** 模式切换选项 */
 const modeOptions = [
-  { value: ViewMode.MINI, label: "Mini", icon: "━" },
   { value: ViewMode.LIST, label: "列表", icon: "☰" },
   { value: ViewMode.STANDARD, label: "标准", icon: "◫" },
 ];

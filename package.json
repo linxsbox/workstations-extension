@@ -2,14 +2,15 @@
   "name": "workstations-extension",
   "author": "Lin.xs",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "dev:ext": "vite build --watch --mode development",
-    "build:ext": "vite build --mode production"
+    "build:ext": "vite build --mode production",
+    "sync-version": "node scripts/sync-version.js"
   },
   "dependencies": {
     "@linxs/amors": "^0.4.0",

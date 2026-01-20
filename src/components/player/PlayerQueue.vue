@@ -90,7 +90,7 @@ const getTrackStyle = (track) => {
 
     <div
       v-if="playQueue.tracks.length === 0"
-      class="flex-1 flex items-center justify-center text-sm py-10 px-5 rounded-b-xl text-[var(--text-secondary)]"
+      class="flex-1 flex items-center justify-center text-sm py-10 px-5 rounded-b-xl text-[var(--text-secondary)] bg-[var(--player-queue-list-bg)]"
     >
       播放列表为空
     </div>

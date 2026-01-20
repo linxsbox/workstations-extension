@@ -1,17 +1,23 @@
 import { defineStore } from "pinia";
 import { storageManager, STORAGE_KEYS } from "../../storage";
 import { createAudioManager } from "@/services/audio/manager";
-import { PlayMode, PlayModeConfig, Playlist, PlayQueue, ViewMode } from "./types";
+import {
+  PlayMode,
+  PlayModeConfig,
+  Playlist,
+  PlayQueue,
+  ViewMode,
+} from "./types";
 
 const MAX_HISTORY_LENGTH = 50;
 
 // 🔧 临时配置：切换音频后端
 // 可选值: 'HTML5Audio' | 'WebAudio' | 'HybridAudio' | null (自动选择)
-const PREFERRED_BACKEND = 'HTML5Audio'; // 👈 改这里来切换后端
+const PREFERRED_BACKEND = "HTML5Audio"; // 👈 改这里来切换后端
 
 // 创建音频管理器实例
 const audioManager = createAudioManager({
-  preferredBackend: PREFERRED_BACKEND
+  preferredBackend: PREFERRED_BACKEND,
 });
 
 export const storePlayer = defineStore("player", {
@@ -54,6 +60,9 @@ export const storePlayer = defineStore("player", {
 
     // 音频管理器初始化状态
     isAudioManagerInitialized: false,
+
+    // 事件监听器管理
+    eventListeners: new Map(),
   }),
 
   getters: {
@@ -88,15 +97,95 @@ export const storePlayer = defineStore("player", {
      * 生成轨道的稳定 hash ID
      */
     generateTrackHash(track) {
-      const key = `${track.src || ''}_${track.title || ''}_${track.artist || ''}`;
+      const key = `${track.src || ""}_${track.title || ""}_${track.artist || ""}`;
       // 简单 hash 算法
       let hash = 0;
       for (let i = 0; i < key.length; i++) {
         const char = key.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash; // Convert to 32bit integer
       }
       return `track_${Math.abs(hash).toString(36)}`;
+    },
+
+    /**
+     * 创建带 hash 和 duration 的 track 对象
+     */
+    createTrackWithMeta(track) {
+      return {
+        ...track,
+        id: this.generateTrackHash(track),
+        duration: track.duration || 0,
+      };
+    },
+
+    // ==================== 事件管理系统 ====================
+
+    /**
+     * 监听播放器事件
+     * @param {string} event - 事件名称 (canplay, timeupdate, ended, play, pause, error, loadstart, seeking, seeked)
+     * @param {Function} callback - 回调函数
+     * @returns {Function} 取消监听的函数
+     */
+    onPlayerEvent(event, callback) {
+      if (!this.eventListeners.has(event)) {
+        this.eventListeners.set(event, []);
+      }
+      this.eventListeners.get(event).push(callback);
+
+      // 返回取消监听的函数
+      return () => {
+        this.offPlayerEvent(event, callback);
+      };
+    },
+
+    /**
+     * 一次性监听播放器事件
+     * @param {string} event - 事件名称
+     * @param {Function} callback - 回调函数
+     * @returns {Function} 取消监听的函数
+     */
+    oncePlayerEvent(event, callback) {
+      const wrappedCallback = (...args) => {
+        callback(...args);
+        // 执行后立即移除监听
+        this.offPlayerEvent(event, wrappedCallback);
+      };
+
+      return this.onPlayerEvent(event, wrappedCallback);
+    },
+
+    /**
+     * 取消监听播放器事件
+     * @param {string} event - 事件名称
+     * @param {Function} callback - 回调函数
+     */
+    offPlayerEvent(event, callback) {
+      const listeners = this.eventListeners.get(event);
+      if (listeners) {
+        const index = listeners.indexOf(callback);
+        if (index > -1) {
+          listeners.splice(index, 1);
+        }
+      }
+    },
+
+    /**
+     * 触发播放器事件
+     * @param {string} event - 事件名称
+     * @param {...any} args - 事件参数
+     */
+    _emitPlayerEvent(event, ...args) {
+      const listeners = this.eventListeners.get(event);
+      if (listeners && listeners.length > 0) {
+        listeners.forEach((callback) => {
+          try {
+            callback(...args);
+          } catch (error) {
+            console.error(`Error in player event listener for "${event}":`, error);
+          }
+        });
+      }
     },
 
     /**
@@ -117,10 +206,14 @@ export const storePlayer = defineStore("player", {
         // 时间更新
         audioManager.on("timeupdate", (time) => {
           this.currentTime = time;
+          this._emitPlayerEvent("timeupdate", time);
         });
 
         // 播放结束 - 根据模式决定下一步
         audioManager.on("ended", () => {
+          // 先重置进度，确保 UI 立即更新
+          this.currentTime = 0;
+          this._emitPlayerEvent("ended");
           this.handlePlayEnded();
         });
 
@@ -128,6 +221,7 @@ export const storePlayer = defineStore("player", {
         audioManager.on("error", (error) => {
           this.playStatus.isError = true;
           this.playStatus.isLoading = false;
+          this._emitPlayerEvent("error", error);
           console.error("Audio playback error:", error);
         });
 
@@ -135,21 +229,42 @@ export const storePlayer = defineStore("player", {
         audioManager.on("canplay", () => {
           this.duration = audioManager.getDuration();
           this.playStatus.isLoading = false;
+
+          // 更新当前 track 的 duration
+          const currentTrack = this.playQueue.getCurrentTrack();
+          if (currentTrack && this.duration) {
+            currentTrack.duration = this.duration;
+            this.savePlayQueue();
+          }
+
+          this._emitPlayerEvent("canplay");
         });
 
         // 开始加载
         audioManager.on("loadstart", () => {
           this.playStatus.isLoading = true;
           this.playStatus.isError = false;
+          this._emitPlayerEvent("loadstart");
         });
 
         // 播放/暂停事件
         audioManager.on("play", () => {
           this.playStatus.isPlaying = true;
+          this._emitPlayerEvent("play");
         });
 
         audioManager.on("pause", () => {
           this.playStatus.isPlaying = false;
+          this._emitPlayerEvent("pause");
+        });
+
+        // 跳转事件
+        audioManager.on("seeking", () => {
+          this._emitPlayerEvent("seeking");
+        });
+
+        audioManager.on("seeked", () => {
+          this._emitPlayerEvent("seeked");
         });
 
         this.backendName = audioManager.getBackendName();
@@ -172,6 +287,10 @@ export const storePlayer = defineStore("player", {
       this.playStatus.album = metadata.album || null;
       this.playStatus.isError = false;
       this.playStatus.isLoading = true;
+
+      // 重置播放进度
+      this.currentTime = 0;
+      this.duration = 0;
 
       // 提取主题色（如果存在）
       if (metadata.album?.theme) {
@@ -196,7 +315,7 @@ export const storePlayer = defineStore("player", {
 
         return true;
       } catch (error) {
-        console.error('[Player] 音频加载异常:', error);
+        console.error("[Player] 音频加载异常:", error);
         this.playStatus.isError = true;
         this.playStatus.isLoading = false;
         return false;
@@ -314,13 +433,9 @@ export const storePlayer = defineStore("player", {
      * 加入队列 - 添加到队列末尾
      */
     addToQueue(track) {
-      const hash = this.generateTrackHash(track);
-      if (!this.playQueue.tracks.some((item) => item.id === hash)) {
-        const trackWithHash = {
-          ...track,
-          id: hash,
-        };
-        this.playQueue.addTrack(trackWithHash);
+      const trackWithMeta = this.createTrackWithMeta(track);
+      if (!this.playQueue.tracks.some((item) => item.id === trackWithMeta.id)) {
+        this.playQueue.addTrack(trackWithMeta);
         this.savePlayQueue();
         return true;
       }
@@ -331,20 +446,19 @@ export const storePlayer = defineStore("player", {
      * 加入播放 - 添加为下一首播放
      */
     addToPlayNext(track) {
-      const hash = this.generateTrackHash(track);
+      const trackWithMeta = this.createTrackWithMeta(track);
 
       // 如果队列中已存在，先移除
-      const existingIndex = this.playQueue.tracks.findIndex((item) => item.id === hash);
+      const existingIndex = this.playQueue.tracks.findIndex(
+        (item) => item.id === trackWithMeta.id,
+      );
       if (existingIndex > -1) {
-        this.playQueue.removeTrack(hash);
+        this.playQueue.removeTrack(trackWithMeta.id);
       }
 
       // 插入到当前播放索引的下一位
       const nextIndex = this.playQueue.currentIndex + 1;
-      this.playQueue.tracks.splice(nextIndex, 0, {
-        ...track,
-        id: hash,
-      });
+      this.playQueue.tracks.splice(nextIndex, 0, trackWithMeta);
 
       this.savePlayQueue();
       return true;
@@ -354,26 +468,24 @@ export const storePlayer = defineStore("player", {
      * 添加到队列并立即播放
      */
     async addAndPlay(track) {
-      const hash = this.generateTrackHash(track);
+      const trackWithMeta = this.createTrackWithMeta(track);
 
       // 如果队列中已存在该轨道，先移除
-      const existingIndex = this.playQueue.tracks.findIndex((item) => item.id === hash);
+      const existingIndex = this.playQueue.tracks.findIndex(
+        (item) => item.id === trackWithMeta.id,
+      );
       if (existingIndex > -1) {
-        this.playQueue.removeTrack(hash);
+        this.playQueue.removeTrack(trackWithMeta.id);
       }
 
       // 添加轨道到队列
-      const trackWithHash = {
-        ...track,
-        id: hash,
-      };
-      this.playQueue.addTrack(trackWithHash);
+      this.playQueue.addTrack(trackWithMeta);
 
       // 保存队列
       this.savePlayQueue();
 
       // 立即跳转到该轨道并播放
-      await this.playTrackFromQueue(hash);
+      await this.playTrackFromQueue(trackWithMeta.id);
 
       return true;
     },
@@ -412,7 +524,7 @@ export const storePlayer = defineStore("player", {
      * 根据 hash 播放队列中的轨道
      */
     playByHash(hashCode) {
-      const track = this.playQueue.tracks.find(t => t.id === hashCode);
+      const track = this.playQueue.tracks.find((t) => t.id === hashCode);
       if (track) {
         return this.playTrackFromQueue(hashCode);
       }
@@ -583,9 +695,9 @@ export const storePlayer = defineStore("player", {
      */
     savePlayQueue() {
       // 确保所有 track 都有 id
-      const tracksWithId = this.playQueue.tracks.map(track => ({
+      const tracksWithId = this.playQueue.tracks.map((track) => ({
         ...track,
-        id: track.id || this.generateTrackHash(track)
+        id: track.id || this.generateTrackHash(track),
       }));
 
       const currentTrack = this.playQueue.getCurrentTrack();
@@ -606,15 +718,17 @@ export const storePlayer = defineStore("player", {
       const saved = storageManager.get(STORAGE_KEYS.PLAYER_PLAY_QUEUE);
       if (saved && saved.tracks) {
         // 数据迁移：将旧格式的 album 字符串转换为对象格式
-        this.playQueue.tracks = saved.tracks.map(track => {
+        this.playQueue.tracks = saved.tracks.map((track) => {
           // 如果 album 是字符串，转换为对象格式
-          if (typeof track.album === 'string') {
+          if (typeof track.album === "string") {
             return {
               ...track,
-              album: track.album ? {
-                title: track.album,
-                image: track.cover || '', // 使用 track 的 cover 作为专辑封面
-              } : null
+              album: track.album
+                ? {
+                    title: track.album,
+                    image: track.cover || "", // 使用 track 的 cover 作为专辑封面
+                  }
+                : null,
             };
           }
           return track;
@@ -622,7 +736,9 @@ export const storePlayer = defineStore("player", {
 
         // 通过 currentHash 找到对应的 index
         if (saved.currentHash) {
-          const index = this.playQueue.tracks.findIndex(t => t.id === saved.currentHash);
+          const index = this.playQueue.tracks.findIndex(
+            (t) => t.id === saved.currentHash,
+          );
           this.playQueue.currentIndex = index >= 0 ? index : 0;
         } else {
           this.playQueue.currentIndex = 0;

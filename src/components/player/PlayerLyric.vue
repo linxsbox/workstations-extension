@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { storePlayer } from "@/stores/modules/player";
 import { ViewMode } from "@/stores/modules/player/types";
 import { miguMusicService } from "@/services/music";
@@ -32,6 +32,9 @@ const lastFetchedTrackId = ref(null);
 const showStatus = computed(
   () => isLoading.value || error.value || !lyrics.value.length
 );
+
+// 事件取消函数
+const unsubscribers = [];
 
 /**
  * 获取歌词
@@ -185,16 +188,39 @@ const scrollToCurrentLyric = () => {
   });
 };
 
-// 监听当前播放时间
+onMounted(() => {
+  // ==================== 事件驱动 UI 更新 ====================
+
+  // 监听 ended 事件 - 播放完成时清空歌词（仅当 stop 时）
+  unsubscribers.push(
+    store.onPlayerEvent('ended', () => {
+      // 如果 stop 清空了 src，说明是真正的停止，清空歌词
+      if (!store.playStatus.src) {
+        lyrics.value = [];
+        currentLyricIndex.value = -1;
+        lastFetchedTrackId.value = null;
+      }
+    })
+  );
+});
+
+onUnmounted(() => {
+  // 取消所有事件监听
+  unsubscribers.forEach(unsub => unsub());
+});
+
+// ==================== 保留的业务逻辑 watch ====================
+
+// 监听当前播放时间 - 更新歌词索引（业务逻辑）
 watch(currentTime, (newTime) => {
   updateCurrentLyric(newTime);
 });
 
-// 监听当前歌曲变化
+// 监听当前歌曲变化 - 加载歌词（业务逻辑）
 watch(
   currentTrack,
-  (newTrack, oldTrack) => {
-    console.log("歌曲变化 - 新:", newTrack, "旧:", oldTrack);
+  (newTrack) => {
+    console.log("歌曲变化 - 新:", newTrack);
 
     // 只在标准模式下加载歌词
     if (viewMode.value !== ViewMode.STANDARD) {

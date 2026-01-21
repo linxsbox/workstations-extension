@@ -6,15 +6,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
     "dev:ext": "vite build --watch --mode development",
     "build:ext": "vite build --mode production",
     "sync-version": "node scripts/sync-version.js"
   },
   "dependencies": {
     "@linxs/amors": "^0.4.0",
-    "@linxs/toolkit": "^0.5.1",
+    "@linxs/toolkit": "^0.5.2",
     "@linxs/toolkit-vue": "^0.1.5",
     "@vue/compiler-sfc": "^3.5.13",
     "@zumer/snapdom": "^2.0.1",

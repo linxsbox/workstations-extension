@@ -61,7 +61,7 @@ watch(showSettingDialog, async (isOpen) => {
     transform-origin="center"
     preset="card"
     title="设置"
-    class="w-[80vw] max-w-[1200px]"
+    class="w-[80vw] max-w-[980px]"
   >
     <div class="flex gap-4 h-[70vh]">
       <!-- 左侧导航 -->

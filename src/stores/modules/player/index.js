@@ -754,7 +754,7 @@ export const storePlayer = defineStore("player", {
           // 恢复播放器状态（加载歌曲但不自动播放）
           const currentTrack = this.playQueue.getCurrentTrack();
           if (currentTrack) {
-            this.loadTrack(currentTrack);
+            this.loadAudio(currentTrack.src, currentTrack);
           }
         } else {
           // 找不到对应的歌曲，重置索引

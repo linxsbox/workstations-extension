@@ -181,15 +181,14 @@ export function useKeyboardShortcuts(handlers = {}) {
     const config = shortcutMap[action];
     if (!config) return "";
 
-    const isMac = isMacOS();
     const parts = [];
 
     if (isMac) {
-      // macOS: Shift + Option + Key
-      if (config.shift) parts.push("⇧");
-      if (config.alt) parts.push("⌥");
-      if (config.ctrl) parts.push("⌃");
-      if (config.meta) parts.push("⌘");
+      // macOS: 使用普通英文显示
+      if (config.shift) parts.push("Shift");
+      if (config.alt) parts.push("Option");
+      if (config.ctrl) parts.push("Ctrl");
+      if (config.meta) parts.push("Cmd");
     } else {
       // Windows/Linux
       if (config.ctrl) parts.push("Ctrl");
@@ -201,7 +200,7 @@ export function useKeyboardShortcuts(handlers = {}) {
     const keyName = keyCodeToKeyName(config.keyCode);
     parts.push(keyName);
 
-    return parts.join(isMac ? "" : "+");
+    return parts.join("+");
   };
 
   // 生命周期钩子

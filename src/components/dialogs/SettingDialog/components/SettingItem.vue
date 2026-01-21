@@ -6,6 +6,19 @@ import SettingRadio from './SettingRadio.vue'
 import SettingSwitch from './SettingSwitch.vue'
 import SettingSelect from './SettingSelect.vue'
 
+// 预先导入所有自定义组件
+const customComponents = {
+  'ShortcutsTable': defineAsyncComponent(() =>
+    import('./Children/ShortcutsTable.vue')
+  ),
+  'APIKeyForm': defineAsyncComponent(() =>
+    import('./Children/APIKeyForm.vue')
+  ),
+  'ConfigManagement': defineAsyncComponent(() =>
+    import('./Children/ConfigManagement.vue')
+  ),
+}
+
 const props = defineProps({
   config: {
     type: Object,
@@ -27,35 +40,12 @@ const handleValueChange = (value) => {
   }
 }
 
-// 动态加载自定义组件
+// 根据组件路径获取对应的组件
 const customComponent = computed(() => {
   if (props.config.type === SETTING_TYPES.CUSTOM && props.config.component) {
-    // 处理别名路径，转换为相对路径
-    let componentPath = props.config.component
-
-    // 如果使用了 @/ 别名，转换为相对路径
-    if (componentPath.startsWith('@/components/dialogs/SettingDialog/components/')) {
-      // 转换为相对当前文件的路径
-      componentPath = componentPath.replace(
-        '@/components/dialogs/SettingDialog/components/',
-        './'
-      )
-    } else if (componentPath.startsWith('@/')) {
-      // 其他 @/ 别名路径，转换为从 src 开始的相对路径
-      componentPath = componentPath.replace('@/', '../../../../')
-    }
-
-    // 使用动态 import
-    return defineAsyncComponent(() =>
-      import(/* @vite-ignore */ componentPath).catch(err => {
-        console.error('Failed to load component:', componentPath, err)
-        // 返回一个错误占位组件
-        return {
-          template: '<div class="text-sm text-red-500">组件加载失败: {{ error }}</div>',
-          data: () => ({ error: err.message })
-        }
-      })
-    )
+    // 从路径中提取组件名称
+    const componentName = props.config.component.split('/').pop().replace('.vue', '')
+    return customComponents[componentName] || null
   }
   return null
 })

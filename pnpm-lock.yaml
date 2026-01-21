@@ -12,8 +12,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0
       '@linxs/toolkit':
-        specifier: ^0.5.1
-        version: 0.5.1
+        specifier: ^0.5.2
+        version: 0.5.2
       '@linxs/toolkit-vue':
         specifier: ^0.1.5
         version: 0.1.5(vue@3.5.13)
@@ -298,8 +298,8 @@ packages:
     peerDependencies:
       vue: ^3.4.0
 
-  '@linxs/toolkit@0.5.1':
-    resolution: {integrity: sha512-IkU3bXshaoVtAkHF6QlcsSl0/7ABC1hKBymAJwBQUclC5m9dAg/qDjBitVjAsfqWvocz53lmNOUJiESvDmNBJg==}
+  '@linxs/toolkit@0.5.2':
+    resolution: {integrity: sha512-xXOdcCzVxTWS128pPojUVvbUAasPc/OgNVLmZV+cE2wd3jtW5ym5Ydy8/GPql+K19NnQiip/4if3/ZE34IKQLA==}
     engines: {node: '>=16', npm: '>=7'}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -1530,7 +1530,7 @@ snapshots:
     dependencies:
       vue: 3.5.13
 
-  '@linxs/toolkit@0.5.1': {}
+  '@linxs/toolkit@0.5.2': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

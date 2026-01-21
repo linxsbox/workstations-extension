@@ -3,25 +3,54 @@ import { defaultStorage } from "@linxs/toolkit";
 const { localStorage, sessionStorage } = defaultStorage();
 
 /**
+ * 系统配置存储键
+ */
+export const SYSTEM_STORAGE_KEYS = {
+  THEME_MODE: "USER_THEME_MODE",
+  FONT_SIZE: "USER_FONT_SIZE",
+};
+
+/**
+ * 播放器存储键
+ */
+export const PLAYER_STORAGE_KEYS = {
+  PLAYER_PLAY_QUEUE: "PLAYER_PLAY_QUEUE",
+  PLAYER_VIEW_MODE: "PLAYER_VIEW_MODE",
+  PLAYER_PLAY_MODE: "PLAYER_PLAY_MODE",
+  PLAYER_POSITION: "PLAYER_POSITION",
+  PLAYER_VOLUME: "PLAYER_VOLUME",
+};
+
+/**
+ * RSS 存储键
+ */
+export const RSS_STORAGE_KEYS = {
+  RSS_SOURCES: "RSS_SOURCES",
+  RSS_PANEL_TAB_STATE: "RSS_PANEL_TAB_STATE", // RSS 面板的 Tab 状态（单个键存储所有面板的 Tab 状态）
+};
+
+/**
+ * 笔记存储键
+ */
+export const NOTES_STORAGE_KEYS = {
+  NOTES: "APP_NOTES",
+};
+
+/**
+ * 任务存储键
+ */
+export const TASKS_STORAGE_KEYS = {
+  TODOS: "APP_TODOS",
+};
+
+/**
  * 扩展存储键定义（使用 chrome.storage.local，降级到 localStorage）
  * 这些数据需要跨页面共享、长期保存
  */
 export const EXTENSION_STORAGE_KEYS = {
-  // 设置相关
-  THEME_MODE: "USER_THEME_MODE",
-  FONT_SIZE: "USER_FONT_SIZE",
-
-  // 界面状态
-  TAB_PREFIX: "USER_TAB_",
-
-  // RSS 相关
-  RSS_SOURCES: "USER_RSS_SOURCES",
-
-  // 播放器相关
-  VOLUME: "USER_VOLUME",
-  PLAYER_PLAY_QUEUE: "PLAYER_PLAY_QUEUE", // 播放队列
-  PLAYER_VIEW_MODE: "PLAYER_VIEW_MODE", // 播放器视图模式
-  PLAYER_POSITION: "PLAYER_POSITION", // 播放器位置
+  ...SYSTEM_STORAGE_KEYS,
+  ...PLAYER_STORAGE_KEYS,
+  ...RSS_STORAGE_KEYS,
 };
 
 /**
@@ -29,6 +58,9 @@ export const EXTENSION_STORAGE_KEYS = {
  * 这些数据是临时性的、页面级的
  */
 export const WEB_STORAGE_KEYS = {
+  ...NOTES_STORAGE_KEYS,
+  ...TASKS_STORAGE_KEYS,
+
   // 缓存相关
   CACHE_IMAGE: "CACHE_IMAGE", // 图片缓存
   CACHE_RSS_LOGO: "CACHE_RSS_LOGO", // RSS Logo 缓存
@@ -41,10 +73,6 @@ export const WEB_STORAGE_KEYS = {
 
   // 用户配置
   LLM_API_KEYS: "LLM_API_KEYS", // 用户配置的 LLM API Keys
-
-  // 应用数据
-  NOTES: "APP_NOTES", // 笔记数据
-  TODOS: "APP_TODOS", // 待办事项数据
 };
 
 /**
@@ -258,8 +286,8 @@ class StorageManager {
    * 判断 key 是否属于扩展存储
    */
   _isExtensionKey(key) {
-    return Object.values(EXTENSION_STORAGE_KEYS).includes(key) ||
-           key.startsWith(EXTENSION_STORAGE_KEYS.TAB_PREFIX);
+    if (!key || typeof key !== 'string') return false;
+    return Object.values(EXTENSION_STORAGE_KEYS).includes(key);
   }
 
   /**
@@ -344,29 +372,26 @@ class StorageManager {
   }
 
   /**
-   * 获取 Tab 状态（自动处理前缀）
-   * @param {string} panelKey - 面板键
-   * @returns {*} Tab 状态
+   * 获取 RSS 面板的 Tab 状态
+   * @returns {*} RSS Tab 状态
    */
-  getTabState(panelKey) {
-    return this.get(`${STORAGE_KEYS.TAB_PREFIX}${panelKey}`);
+  getRssTabState() {
+    return this.get(RSS_STORAGE_KEYS.RSS_PANEL_TAB_STATE);
   }
 
   /**
-   * 保存 Tab 状态（自动处理前缀）
-   * @param {string} panelKey - 面板键
+   * 保存 RSS 面板的 Tab 状态
    * @param {*} value - Tab 状态值
    */
-  setTabState(panelKey, value) {
-    this.set(`${STORAGE_KEYS.TAB_PREFIX}${panelKey}`, value);
+  setRssTabState(value) {
+    this.set(RSS_STORAGE_KEYS.RSS_PANEL_TAB_STATE, value);
   }
 
   /**
-   * 清除指定面板的 Tab 状态
-   * @param {string} panelKey - 面板键
+   * 清除 RSS 面板的 Tab 状态
    */
-  removeTabState(panelKey) {
-    this.remove(`${STORAGE_KEYS.TAB_PREFIX}${panelKey}`);
+  removeRssTabState() {
+    this.remove(RSS_STORAGE_KEYS.RSS_PANEL_TAB_STATE);
   }
 }
 

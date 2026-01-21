@@ -1,9 +1,9 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, watch } from "vue";
 import {
   NButton,
-  NRadioGroup,
-  NRadio,
+  NCheckbox,
+  NCheckboxGroup,
   NModal,
   NUpload,
   NUploadDragger,
@@ -15,17 +15,23 @@ import {
 import DataImportExport from "@/components/widgets/DataImportExport/DataImportExport.vue";
 import {
   storageManager,
-  EXTENSION_STORAGE_KEYS,
-  WEB_STORAGE_KEYS,
+  SYSTEM_STORAGE_KEYS,
+  PLAYER_STORAGE_KEYS,
+  RSS_STORAGE_KEYS,
+  NOTES_STORAGE_KEYS,
+  TASKS_STORAGE_KEYS,
 } from "@/stores/storage";
 
 const message = useMessage();
 
-// 导出范围枚举
-const ExportScope = {
-  ALL: "all",
-  EXTENSION: "extension",
-  WEB: "web",
+// 导出模块枚举
+const ExportModule = {
+  SYSTEM: "system",       // 系统配置（主题、字体等）
+  ALL: "all",            // 全部
+  PLAYER: "player",      // 播放器
+  RSS: "rss",           // RSS
+  NOTES: "notes",       // 笔记
+  TASKS: "tasks",       // 任务
 };
 
 // 导入策略枚举
@@ -37,7 +43,7 @@ const ImportStrategy = {
 // 导出相关
 const showExportConfirm = ref(false); // 导出确认对话框
 const showExportDialog = ref(false);
-const exportScope = ref(ExportScope.ALL);
+const exportModules = ref([ExportModule.SYSTEM]); // 默认选中系统配置
 const exportData = ref("");
 
 // 导入相关
@@ -47,24 +53,66 @@ const importStrategy = ref(ImportStrategy.MERGE);
 const importLoading = ref(false);
 const uploadFileList = ref([]);
 
-// 导出配置选项
-const exportOptions = [
-  { label: "全部", value: ExportScope.ALL },
-  { label: "扩展配置", value: ExportScope.EXTENSION },
-  { label: "网页配置", value: ExportScope.WEB },
+// 导出模块选项
+const exportModuleOptions = [
+  { label: "系统配置", value: ExportModule.SYSTEM, disabled: true, description: "主题、字体等系统设置" },
+  { label: "全部", value: ExportModule.ALL, description: "导出所有数据" },
+  { label: "播放器", value: ExportModule.PLAYER, description: "播放队列、播放模式等" },
+  { label: "RSS", value: ExportModule.RSS, description: "RSS 订阅源" },
+  { label: "笔记", value: ExportModule.NOTES, description: "笔记数据" },
+  { label: "任务", value: ExportModule.TASKS, description: "待办事项" },
 ];
 
-// 导入策略选项
-const importStrategyOptions = [
-  { label: "合并配置", value: ImportStrategy.MERGE },
-  { label: "覆盖配置", value: ImportStrategy.OVERWRITE },
-];
+// 计算是否选中了"全部"
+const isAllSelected = computed(() => exportModules.value.includes(ExportModule.ALL));
+
+// 计算可选的模块（除了系统配置和全部）
+const selectableModules = computed(() =>
+  exportModuleOptions
+    .filter(opt => opt.value !== ExportModule.SYSTEM && opt.value !== ExportModule.ALL)
+    .map(opt => opt.value)
+);
+
+// 监听"全部"选项的变化
+watch(exportModules, (newValue, oldValue) => {
+  // 如果新选中了"全部"
+  if (newValue.includes(ExportModule.ALL) && !oldValue.includes(ExportModule.ALL)) {
+    // 选中所有模块
+    exportModules.value = [
+      ExportModule.SYSTEM,
+      ExportModule.ALL,
+      ...selectableModules.value
+    ];
+  }
+  // 如果取消了"全部"
+  else if (!newValue.includes(ExportModule.ALL) && oldValue.includes(ExportModule.ALL)) {
+    // 只保留系统配置
+    exportModules.value = [ExportModule.SYSTEM];
+  }
+  // 如果手动取消了某个模块（且"全部"已选中）
+  else if (oldValue.includes(ExportModule.ALL) && newValue.length < oldValue.length) {
+    // 自动取消"全部"
+    exportModules.value = newValue.filter(v => v !== ExportModule.ALL);
+  }
+  // 如果手动选中了所有可选模块
+  else if (!newValue.includes(ExportModule.ALL)) {
+    const selectedCount = newValue.filter(v => v !== ExportModule.SYSTEM).length;
+    if (selectedCount === selectableModules.value.length) {
+      // 自动选中"全部"
+      exportModules.value = [
+        ExportModule.SYSTEM,
+        ExportModule.ALL,
+        ...selectableModules.value
+      ];
+    }
+  }
+});
 
 // ========== 导出相关函数 ==========
 
 // 打开导出确认对话框
 const openExportDialog = () => {
-  exportScope.value = ExportScope.ALL;
+  exportModules.value = [ExportModule.SYSTEM];
   showExportConfirm.value = true;
 };
 
@@ -80,41 +128,66 @@ const generateExportData = async () => {
   try {
     let configData = {};
 
-    // 导出扩展配置
-    if (
-      exportScope.value === ExportScope.ALL ||
-      exportScope.value === ExportScope.EXTENSION
-    ) {
-      const extensionConfig = {};
-      for (const [key, value] of Object.entries(EXTENSION_STORAGE_KEYS)) {
-        const data = await storageManager.get(value);
-        if (data !== undefined && data !== null) {
-          extensionConfig[value] = data;
+    // 系统配置（必选）
+    if (exportModules.value.includes(ExportModule.SYSTEM)) {
+      configData.system = {};
+      for (const key of Object.values(SYSTEM_STORAGE_KEYS)) {
+        const value = await storageManager.get(key);
+        if (value !== undefined && value !== null) {
+          configData.system[key] = value;
         }
       }
-      configData.extension = extensionConfig;
     }
 
-    // 导出网页配置
-    if (
-      exportScope.value === ExportScope.ALL ||
-      exportScope.value === ExportScope.WEB
-    ) {
-      const webConfig = {};
-      for (const [key, value] of Object.entries(WEB_STORAGE_KEYS)) {
-        const data = storageManager.get(value);
-        if (data !== undefined && data !== null) {
-          webConfig[value] = data;
+    // 播放器
+    if (exportModules.value.includes(ExportModule.PLAYER) || exportModules.value.includes(ExportModule.ALL)) {
+      configData.player = {};
+      for (const key of Object.values(PLAYER_STORAGE_KEYS)) {
+        const value = await storageManager.get(key);
+        if (value !== undefined && value !== null) {
+          configData.player[key] = value;
         }
       }
-      configData.web = webConfig;
+    }
+
+    // RSS
+    if (exportModules.value.includes(ExportModule.RSS) || exportModules.value.includes(ExportModule.ALL)) {
+      configData.rss = {};
+      for (const key of Object.values(RSS_STORAGE_KEYS)) {
+        const value = await storageManager.get(key);
+        if (value !== undefined && value !== null) {
+          configData.rss[key] = value;
+        }
+      }
+    }
+
+    // 笔记
+    if (exportModules.value.includes(ExportModule.NOTES) || exportModules.value.includes(ExportModule.ALL)) {
+      configData.notes = {};
+      for (const key of Object.values(NOTES_STORAGE_KEYS)) {
+        const value = storageManager.get(key);
+        if (value !== undefined && value !== null) {
+          configData.notes[key] = value;
+        }
+      }
+    }
+
+    // 任务
+    if (exportModules.value.includes(ExportModule.TASKS) || exportModules.value.includes(ExportModule.ALL)) {
+      configData.tasks = {};
+      for (const key of Object.values(TASKS_STORAGE_KEYS)) {
+        const value = storageManager.get(key);
+        if (value !== undefined && value !== null) {
+          configData.tasks[key] = value;
+        }
+      }
     }
 
     // 添加元数据
     configData.meta = {
       exportTime: new Date().toISOString(),
-      version: "1.0.0",
-      scope: exportScope.value,
+      version: "2.0.0",
+      modules: exportModules.value,
     };
 
     exportData.value = JSON.stringify(configData, null, 2);
@@ -124,8 +197,8 @@ const generateExportData = async () => {
   }
 };
 
-// 导出范围变化时重新生成数据
-const handleExportScopeChange = async () => {
+// 导出模块变化时重新生成数据
+const handleExportModulesChange = async () => {
   await generateExportData();
 };
 
@@ -141,7 +214,10 @@ const handleDownload = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `config-${exportScope.value}-${new Date().getTime()}.json`;
+    const modulesStr = exportModules.value.includes(ExportModule.ALL)
+      ? "all"
+      : exportModules.value.filter(m => m !== ExportModule.SYSTEM).join("-") || "system";
+    a.download = `config-${modulesStr}-${new Date().getTime()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -154,6 +230,12 @@ const handleDownload = () => {
 };
 
 // ========== 导入相关函数 ==========
+
+// 导入策略选项
+const importStrategyOptions = [
+  { label: "合并配置", value: ImportStrategy.MERGE },
+  { label: "覆盖配置", value: ImportStrategy.OVERWRITE },
+];
 
 // 打开导入对话框
 const openImportDialog = () => {
@@ -209,35 +291,126 @@ const handleImport = async () => {
 
     let importCount = 0;
 
-    // 导入扩展配置
-    if (configData.extension) {
-      for (const [key, value] of Object.entries(configData.extension)) {
-        if (importStrategy.value === ImportStrategy.OVERWRITE) {
-          // 覆盖模式：直接设置
-          await storageManager.set(key, value);
-          importCount++;
-        } else {
-          // 合并模式：检查是否存在
-          const existing = await storageManager.get(key);
-          if (!existing) {
+    // 导入系统配置
+    if (configData.system) {
+      for (const [key, value] of Object.entries(configData.system)) {
+        if (value !== undefined && value !== null) {
+          if (importStrategy.value === ImportStrategy.OVERWRITE) {
             await storageManager.set(key, value);
             importCount++;
+          } else {
+            const existing = await storageManager.get(key);
+            if (!existing) {
+              await storageManager.set(key, value);
+              importCount++;
+            }
           }
         }
       }
     }
 
-    // 导入网页配置
-    if (configData.web) {
-      for (const [key, value] of Object.entries(configData.web)) {
-        if (importStrategy.value === ImportStrategy.OVERWRITE) {
-          storageManager.set(key, value);
-          importCount++;
-        } else {
-          const existing = storageManager.get(key);
-          if (!existing) {
+    // 导入播放器配置
+    if (configData.player) {
+      for (const [key, value] of Object.entries(configData.player)) {
+        if (value !== undefined && value !== null) {
+          if (importStrategy.value === ImportStrategy.OVERWRITE) {
+            await storageManager.set(key, value);
+            importCount++;
+          } else {
+            const existing = await storageManager.get(key);
+            if (!existing) {
+              await storageManager.set(key, value);
+              importCount++;
+            }
+          }
+        }
+      }
+    }
+
+    // 导入 RSS 配置
+    if (configData.rss) {
+      for (const [key, value] of Object.entries(configData.rss)) {
+        if (value !== undefined && value !== null) {
+          if (importStrategy.value === ImportStrategy.OVERWRITE) {
+            await storageManager.set(key, value);
+            importCount++;
+          } else {
+            const existing = await storageManager.get(key);
+            if (!existing) {
+              await storageManager.set(key, value);
+              importCount++;
+            }
+          }
+        }
+      }
+    }
+
+    // 导入笔记
+    if (configData.notes) {
+      for (const [key, value] of Object.entries(configData.notes)) {
+        if (value !== undefined && value !== null) {
+          if (importStrategy.value === ImportStrategy.OVERWRITE) {
             storageManager.set(key, value);
             importCount++;
+          } else {
+            const existing = storageManager.get(key);
+            if (!existing) {
+              storageManager.set(key, value);
+              importCount++;
+            }
+          }
+        }
+      }
+    }
+
+    // 导入任务
+    if (configData.tasks) {
+      for (const [key, value] of Object.entries(configData.tasks)) {
+        if (value !== undefined && value !== null) {
+          if (importStrategy.value === ImportStrategy.OVERWRITE) {
+            storageManager.set(key, value);
+            importCount++;
+          } else {
+            const existing = storageManager.get(key);
+            if (!existing) {
+              storageManager.set(key, value);
+              importCount++;
+            }
+          }
+        }
+      }
+    }
+
+    // 兼容旧版本格式（v1.0.0）
+    if (configData.extension) {
+      for (const [key, value] of Object.entries(configData.extension)) {
+        if (value !== undefined && value !== null) {
+          if (importStrategy.value === ImportStrategy.OVERWRITE) {
+            await storageManager.set(key, value);
+            importCount++;
+          } else {
+            const existing = await storageManager.get(key);
+            if (!existing) {
+              await storageManager.set(key, value);
+              importCount++;
+            }
+          }
+        }
+      }
+    }
+
+    if (configData.web) {
+      for (const [key, value] of Object.entries(configData.web)) {
+        if (value !== undefined && value !== null) {
+          if (importStrategy.value === ImportStrategy.OVERWRITE) {
+            storageManager.set(key, value);
+            importCount++;
+          } else {
+            const existing = storageManager.get(key);
+            if (!existing) {
+              storageManager.set(key, value);
+              importCount++;
+            }
           }
         }
       }
@@ -272,22 +445,28 @@ const handleImport = async () => {
     <NModal
       v-model:show="showExportConfirm"
       preset="dialog"
-      title="选择导出范围"
+      title="选择导出模块"
       positive-text="确认"
       negative-text="取消"
       @positive-click="confirmExport"
     >
-      <NRadioGroup v-model:value="exportScope" class="pt-3">
-        <div class="flex gap-3">
-          <NRadio
-            v-for="option in exportOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </NRadio>
-        </div>
-      </NRadioGroup>
+      <div class="pt-3">
+        <NCheckboxGroup v-model:value="exportModules" @update:value="handleExportModulesChange">
+          <div class="flex flex-col gap-3">
+            <NCheckbox
+              v-for="option in exportModuleOptions"
+              :key="option.value"
+              :value="option.value"
+              :disabled="option.disabled || (option.value !== ExportModule.ALL && option.value !== ExportModule.SYSTEM && isAllSelected)"
+            >
+              <div class="flex flex-col">
+                <span>{{ option.label }}</span>
+                <span class="text-xs text-[var(--text-tertiary)]">{{ option.description }}</span>
+              </div>
+            </NCheckbox>
+          </div>
+        </NCheckboxGroup>
+      </div>
     </NModal>
 
     <!-- 导出对话框 -->

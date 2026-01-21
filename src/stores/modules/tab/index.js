@@ -50,21 +50,30 @@ export const storeTab = defineStore("tab", {
       getPanelKeys().forEach((panelKey) => {
         if (!isPanelValid(panelKey)) return;
 
-        const stored = storageManager.getTabState(panelKey);
+        // 只有 RSS 面板有 Tab 状态
+        if (panelKey === 'rss') {
+          const stored = storageManager.getRssTabState();
 
-        if (stored && stored.tabs) {
-          // 如果有存储的数据，使用存储的 tabs 和 activeId
-          // 确保始终包含"全部" tab
-          const tabs = stored.tabs.some((tab) => tab.id === "all")
-            ? stored.tabs
-            : [DEFAULT_TABS[0], ...stored.tabs];
+          if (stored && stored.tabs) {
+            // 如果有存储的数据，使用存储的 tabs 和 activeId
+            // 确保始终包含"全部" tab
+            const tabs = stored.tabs.some((tab) => tab.id === "all")
+              ? stored.tabs
+              : [DEFAULT_TABS[0], ...stored.tabs];
 
-          state[panelKey] = {
-            tabs: tabs,
-            activeId: stored.activeId || "all",
-          };
+            state[panelKey] = {
+              tabs: tabs,
+              activeId: stored.activeId || "all",
+            };
+          } else {
+            // 没有存储数据时使用默认值
+            state[panelKey] = {
+              tabs: [...DEFAULT_TABS],
+              activeId: "all",
+            };
+          }
         } else {
-          // 没有存储数据时使用默认值
+          // 其他面板使用默认值
           state[panelKey] = {
             tabs: [...DEFAULT_TABS],
             activeId: "all",
@@ -146,21 +155,25 @@ export const storeTab = defineStore("tab", {
     // 从本地存储加载状态
     async loadFromStorage(panelKey) {
       await this.ensureInitialized();
-      const stored = storageManager.getTabState(panelKey);
-      if (stored) {
-        // 确保始终包含"全部" tab
-        if (!stored.tabs.some((tab) => tab.id === "all")) {
-          stored.tabs.unshift(DEFAULT_TABS[0]);
+      if (panelKey === 'rss') {
+        const stored = storageManager.getRssTabState();
+        if (stored) {
+          // 确保始终包含"全部" tab
+          if (!stored.tabs.some((tab) => tab.id === "all")) {
+            stored.tabs.unshift(DEFAULT_TABS[0]);
+          }
+          this.panelTabs[panelKey] = stored;
         }
-        this.panelTabs[panelKey] = stored;
       }
     },
 
     // 保存到本地存储
     saveToStorage(panelKey) {
-      const panel = this.panelTabs[panelKey];
-      if (panel) {
-        storageManager.setTabState(panelKey, panel);
+      if (panelKey === 'rss') {
+        const panel = this.panelTabs[panelKey];
+        if (panel) {
+          storageManager.setRssTabState(panel);
+        }
       }
     },
 

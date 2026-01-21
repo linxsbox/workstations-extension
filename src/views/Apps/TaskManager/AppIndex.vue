@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { NModal, NButton, useMessage, useNotification } from "naive-ui";
 import { storageManager, WEB_STORAGE_KEYS } from "@/stores/storage";
+import { storeApp } from "@/stores/modules/app";
 import IconAddTask from "@/components/common/Icons/IconAddTask.vue";
 import IconTaskAlt from "@/components/common/Icons/IconTaskAlt.vue";
 import CreateTaskDialog from "./CreateTaskDialog.vue";
@@ -11,6 +12,7 @@ import { TASK_STATUS, EXECUTION_RULE, NOTIFICATION_CONFIG } from "./constants";
 
 const message = useMessage();
 const notification = useNotification();
+const appStore = storeApp();
 
 // 任务数据
 const tasks = ref(storageManager.get(WEB_STORAGE_KEYS.TODOS) || []);
@@ -328,6 +330,19 @@ onMounted(async () => {
 onUnmounted(() => {
   // TaskScheduler 在 Service Worker 或 Extension 环境中会持续运行
   // 不需要手动清理
+});
+
+// 监听 app store 的任务对话框状态
+watch(() => appStore.showTasksDialog, (show) => {
+  if (show) {
+    handleOpenTasks();
+    appStore.closeTasksDialog();
+  }
+});
+
+// 暴露方法供外部调用
+defineExpose({
+  handleOpenTasks,
 });
 </script>
 

@@ -27,6 +27,7 @@
  */
 
 import { storageManager } from "@/stores/storage";
+import { env } from "@/utils/env";
 
 const STORAGE_KEY = "SCHEDULER_TASKS";
 const ALARM_PREFIX = "scheduler_";
@@ -36,25 +37,8 @@ class TaskScheduler {
   constructor() {
     this.listeners = new Map();
     this.initialized = false;
-    this.isExtension = this.detectExtension();
+    this.isExtension = env.hasAlarms();
     this.checkIntervalId = null;
-
-    console.log(`[TaskScheduler] Environment: ${this.isExtension ? "Chrome Extension" : "Web"}`);
-  }
-
-  /**
-   * 检测是否在 Chrome Extension 环境中
-   */
-  detectExtension() {
-    try {
-      return (
-        typeof chrome !== "undefined" &&
-        chrome.alarms !== undefined &&
-        typeof chrome.alarms.create === "function"
-      );
-    } catch (e) {
-      return false;
-    }
   }
 
   /**
@@ -89,9 +73,7 @@ class TaskScheduler {
 
       // 恢复已存在的任务
       await this.restoreTasks();
-      console.log("[TaskScheduler] Extension scheduler initialized");
     } catch (error) {
-      console.error("[TaskScheduler] Extension init error:", error);
       // 降级到 Web 方案
       this.isExtension = false;
       await this.initWebScheduler();
@@ -102,8 +84,6 @@ class TaskScheduler {
    * 初始化 Web 调度器（降级方案）
    */
   async initWebScheduler() {
-    console.log("[TaskScheduler] Using web scheduler (fallback)");
-
     // 使用定时检查机制
     this.checkIntervalId = setInterval(() => {
       this.checkPendingTasks();
@@ -195,39 +175,32 @@ class TaskScheduler {
    * @param {any} options.data - 任务数据
    */
   async schedule({ id, triggerAt, data }) {
-    try {
-      if (!this.initialized) {
-        await this.init();
-      }
+    if (!this.initialized) {
+      await this.init();
+    }
 
-      // 存储任务
-      const tasks = this.getTasks();
-      const existingIndex = tasks.findIndex((t) => t.id === id);
+    // 存储任务
+    const tasks = this.getTasks();
+    const existingIndex = tasks.findIndex((t) => t.id === id);
 
-      const task = {
-        id,
-        triggerAt,
-        data,
-        createdAt: Date.now(),
-      };
+    const task = {
+      id,
+      triggerAt,
+      data,
+      createdAt: Date.now(),
+    };
 
-      if (existingIndex > -1) {
-        tasks[existingIndex] = task;
-      } else {
-        tasks.push(task);
-      }
+    if (existingIndex > -1) {
+      tasks[existingIndex] = task;
+    } else {
+      tasks.push(task);
+    }
 
-      this.saveTasks(tasks);
+    this.saveTasks(tasks);
 
-      // 创建调度
-      if (this.isExtension) {
-        await this.createExtensionAlarm(id, triggerAt);
-      }
-
-      console.log(`[TaskScheduler] Task scheduled: ${id}, trigger at ${new Date(triggerAt).toLocaleString()}`);
-    } catch (error) {
-      console.error(`[TaskScheduler] Schedule error for task ${id}:`, error);
-      throw error;
+    // 创建调度
+    if (this.isExtension) {
+      await this.createExtensionAlarm(id, triggerAt);
     }
   }
 
@@ -269,7 +242,7 @@ class TaskScheduler {
       try {
         await callback(task.data);
       } catch (error) {
-        console.error(`Task ${taskId} callback error:`, error);
+        // 静默处理错误，避免影响其他任务
       }
     }
 

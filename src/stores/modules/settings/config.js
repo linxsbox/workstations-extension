@@ -129,18 +129,18 @@ export const settingSchema = [
     icon: 'IconExtension',
     sections: [
       {
+        id: 'shortcuts',
+        title: '快捷键',
+        type: SETTING_TYPES.CUSTOM,
+        component: '@/components/dialogs/SettingDialog/components/Children/ShortcutsTable.vue',
+        description: '系统所有可用的快捷键',
+      },
+      {
         id: 'cache',
         title: '缓存管理',
         type: SETTING_TYPES.CUSTOM,
         enabled: false,
         placeholder: '缓存管理功能规划中，将支持查看和清理缓存数据',
-      },
-      {
-        id: 'shortcuts',
-        title: '快捷键',
-        type: SETTING_TYPES.CUSTOM,
-        enabled: false,
-        placeholder: '快捷键配置功能规划中...',
       },
       {
         id: 'apiKey',

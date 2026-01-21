@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { NModal, useMessage } from "naive-ui";
 import { storageManager, WEB_STORAGE_KEYS } from "@/stores/storage";
+import { storeApp } from "@/stores/modules/app";
 import IconAssignment from "@/components/common/Icons/IconAssignment.vue";
 import NoteList from "./NoteList.vue";
 import NoteEditor from "./NoteEditor.vue";
@@ -9,6 +10,7 @@ import ShareCardDialog from "@/components/dialogs/ShareCardDialog/ShareCardDialo
 import { NOTES_CONFIG, SHARE_CARD_CONFIG, SHARE_TYPE } from "./constants";
 
 const message = useMessage();
+const appStore = storeApp();
 
 // 笔记数据
 const notes = ref(storageManager.get(WEB_STORAGE_KEYS.NOTES) || []);
@@ -336,6 +338,19 @@ watch(showShareDialog, async (isOpen) => {
       shareNoteContentRef.value.appendChild(shareContentElement.value);
     }
   }
+});
+
+// 监听 app store 的笔记对话框状态
+watch(() => appStore.showNotesDialog, (show) => {
+  if (show) {
+    handleOpenNotes();
+    appStore.closeNotesDialog();
+  }
+});
+
+// 暴露方法供外部调用
+defineExpose({
+  handleOpenNotes,
 });
 </script>
 

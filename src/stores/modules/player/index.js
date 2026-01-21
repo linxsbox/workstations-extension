@@ -47,7 +47,7 @@ export const storePlayer = defineStore("player", {
 
     // 播放队列和循环模式
     playQueue: new PlayQueue(),
-    playMode: PlayMode.LOOP,
+    playMode: storageManager.get(STORAGE_KEYS.PLAYER_PLAY_MODE, PlayMode.LOOP),
 
     // 视图模式
     viewMode: storageManager.get(STORAGE_KEYS.PLAYER_VIEW_MODE, ViewMode.LIST),
@@ -597,6 +597,7 @@ export const storePlayer = defineStore("player", {
 
       this.playMode = nextMode;
       this.playQueue.mode = nextMode;
+      storageManager.set(STORAGE_KEYS.PLAYER_PLAY_MODE, nextMode);
       return this.playMode;
     },
 
@@ -613,6 +614,7 @@ export const storePlayer = defineStore("player", {
 
       this.playMode = mode;
       this.playQueue.mode = mode;
+      storageManager.set(STORAGE_KEYS.PLAYER_PLAY_MODE, mode);
       return true;
     },
 
@@ -716,39 +718,57 @@ export const storePlayer = defineStore("player", {
      */
     loadPlayQueue() {
       const saved = storageManager.get(STORAGE_KEYS.PLAYER_PLAY_QUEUE);
-      if (saved && saved.tracks) {
-        // 数据迁移：将旧格式的 album 字符串转换为对象格式
-        this.playQueue.tracks = saved.tracks.map((track) => {
-          // 如果 album 是字符串，转换为对象格式
-          if (typeof track.album === "string") {
-            return {
-              ...track,
-              album: track.album
-                ? {
-                    title: track.album,
-                    image: track.cover || "", // 使用 track 的 cover 作为专辑封面
-                  }
-                : null,
-            };
-          }
-          return track;
-        });
 
-        // 通过 currentHash 找到对应的 index
-        if (saved.currentHash) {
-          const index = this.playQueue.tracks.findIndex(
-            (t) => t.id === saved.currentHash,
-          );
-          this.playQueue.currentIndex = index >= 0 ? index : 0;
+      // 如果没有保存的数据或没有 tracks，清空播放器状态
+      if (!saved || !saved.tracks || saved.tracks.length === 0) {
+        this.playQueue.tracks = [];
+        this.playQueue.currentIndex = -1;
+        return;
+      }
+
+      // 数据迁移：将旧格式的 album 字符串转换为对象格式
+      this.playQueue.tracks = saved.tracks.map((track) => {
+        // 如果 album 是字符串，转换为对象格式
+        if (typeof track.album === "string") {
+          return {
+            ...track,
+            album: track.album
+              ? {
+                  title: track.album,
+                  image: track.cover || "", // 使用 track 的 cover 作为专辑封面
+                }
+              : null,
+          };
+        }
+        return track;
+      });
+
+      // 通过 currentHash 找到对应的 index
+      if (saved.currentHash) {
+        const index = this.playQueue.tracks.findIndex(
+          (t) => t.id === saved.currentHash,
+        );
+
+        if (index >= 0) {
+          this.playQueue.currentIndex = index;
+          // 恢复播放器状态（加载歌曲但不自动播放）
+          const currentTrack = this.playQueue.getCurrentTrack();
+          if (currentTrack) {
+            this.loadTrack(currentTrack);
+          }
         } else {
+          // 找不到对应的歌曲，重置索引
           this.playQueue.currentIndex = 0;
         }
+      } else {
+        // 没有 currentHash，不恢复播放状态
+        this.playQueue.currentIndex = -1;
+      }
 
-        // 加载随机播放顺序
-        if (saved.randomOrder && Array.isArray(saved.randomOrder)) {
-          this.playQueue.randomOrder = saved.randomOrder;
-          this.playQueue.currentRandomIndex = saved.currentRandomIndex || 0;
-        }
+      // 加载随机播放顺序
+      if (saved.randomOrder && Array.isArray(saved.randomOrder)) {
+        this.playQueue.randomOrder = saved.randomOrder;
+        this.playQueue.currentRandomIndex = saved.currentRandomIndex || 0;
       }
     },
 

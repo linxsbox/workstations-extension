@@ -1,9 +1,11 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, watch } from "vue";
 import { NInputGroup, NSelect, NInput } from "naive-ui";
 import { defaultStorage } from "@linxs/toolkit";
+import { storeApp } from "@/stores/modules/app";
 
 const { localStorage } = defaultStorage();
+const appStore = storeApp();
 
 // 本地存储 key
 const STORAGE_KEY = "USER_SEARCH_TYPE";
@@ -24,10 +26,19 @@ const handleSelect = (key) => {
 };
 
 const searchText = ref("");
+const searchInputRef = ref(null);
+
 const handleGoSearch = () => {
   const url = `${options[selected.value].url}${searchText.value.trim()}`;
   window.open(url, "_blank").focus();
 };
+
+// 监听 app store 的搜索框聚焦触发器
+watch(() => appStore.searchFocusTrigger, () => {
+  if (searchInputRef.value) {
+    searchInputRef.value.focus();
+  }
+});
 </script>
 
 <template>
@@ -41,6 +52,7 @@ const handleGoSearch = () => {
       >
       </NSelect>
       <NInput
+        ref="searchInputRef"
         v-model:value="searchText"
         :placeholder="placeholder"
         @keyup.enter="handleGoSearch"

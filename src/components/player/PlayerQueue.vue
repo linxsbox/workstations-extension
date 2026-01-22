@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { NPopconfirm, NScrollbar } from "naive-ui";
 import { sec2time } from "@/utils/time";
-import { storePlayer } from "@/stores/modules/player";
+import { storePlayer } from "@/stores/global/player";
 import IconQueueMusic from "@/components/common/Icons/IconQueueMusic.vue";
 import IconPlaylistRemove from "@/components/common/Icons/IconPlaylistRemove.vue";
 import IconDelete from "@/components/common/Icons/IconDelete.vue";

@@ -1,6 +1,6 @@
 <script setup>
 import { storeToRefs } from "pinia";
-import { storeAside } from "@/stores/modules/aside";
+import { storeAside } from "@/stores/global/aside";
 
 const store = storeAside();
 const { getMenuItems, getActiveMenuId } = storeToRefs(store);

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { isObject } from "@linxs/toolkit";
-import { storePlayer } from "@/stores/modules/player";
+import { storePlayer } from "@/stores/global/player";
 import { getCoverImageFormats, tryLoadCoverImage } from "@/utils/image";
 import IconMusicNote from "@/components/common/Icons/IconMusicNote.vue";
 

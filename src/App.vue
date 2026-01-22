@@ -15,14 +15,17 @@ import RssManagementDialog from "./components/dialogs/RssManagementDialog/RssMan
 import PlayerView from "./components/player/PlayerView.vue";
 
 import { storeRss } from "@/stores/modules/rss/index";
-import { storeSettings } from "@/stores/modules/settings/index";
-import { storePlayer } from "@/stores/modules/player/index";
-import { storeTab } from "@/stores/modules/tab/index";
-import { storeAside } from "@/stores/modules/aside/index";
-import { storeApp } from "@/stores/modules/app/index";
+import { storeSettings } from "@/stores/global/settings/index";
+import { storePlayer } from "@/stores/global/player/index";
+import { storeTab } from "@/stores/global/tab/index";
+import { storeAside } from "@/stores/global/aside/index";
+import { storeApp } from "@/stores/global/app/index";
+import { storeTasks } from "@/stores/miniapps/tasks";
+import { storeNotes } from "@/stores/miniapps/notes";
 import { onMounted, nextTick } from "vue";
 import { useKeyboardShortcuts } from "@/composables/shortcuts/useKeyboardShortcuts";
-import { ShortcutAction } from "@/composables/shortcuts/config";
+import { ShortcutAction, getPanelAction } from "@/composables/shortcuts/config";
+import { getPanelKeys } from "@/stores/config/panelConfig";
 
 const storeRssInstance = storeRss();
 const storeSettingsInstance = storeSettings();
@@ -30,9 +33,29 @@ const storePlayerInstance = storePlayer();
 const storeTabInstance = storeTab();
 const storeAsideInstance = storeAside();
 const storeAppInstance = storeApp();
+const storeTasksInstance = storeTasks();
+const storeNotesInstance = storeNotes();
+
+// 动态生成面板切换处理函数
+const generatePanelHandlers = () => {
+  const panelKeys = getPanelKeys();
+  const handlers = {};
+
+  panelKeys.forEach((key, index) => {
+    const action = getPanelAction(index);
+    handlers[action] = () => {
+      storeAsideInstance.switchPanel(key);
+    };
+  });
+
+  return handlers;
+};
 
 // 快捷键处理函数
 const shortcutHandlers = {
+  // 面板切换快捷键（动态生成）
+  ...generatePanelHandlers(),
+
   // 播放器快捷键
   [ShortcutAction.TOGGLE_PLAYER]: () => {
     if (storePlayerInstance.isPlayerVisible) {
@@ -40,23 +63,6 @@ const shortcutHandlers = {
     } else {
       storePlayerInstance.showPlayer();
     }
-  },
-
-  // 面板切换快捷键
-  [ShortcutAction.SWITCH_TO_RSS]: () => {
-    storeAsideInstance.switchPanel("rss");
-  },
-
-  [ShortcutAction.SWITCH_TO_TOOLS]: () => {
-    storeAsideInstance.switchPanel("tools");
-  },
-
-  [ShortcutAction.SWITCH_TO_FAVORITES]: () => {
-    storeAsideInstance.switchPanel("favorites");
-  },
-
-  [ShortcutAction.SWITCH_TO_SHARE]: () => {
-    storeAsideInstance.switchPanel("share");
   },
 
   // 设置快捷键
@@ -101,10 +107,12 @@ onMounted(() => {
   storeSettingsInstance.initializeSettings();
 
   nextTick(async () => {
-    // 先初始化 Tab store 和 RSS store，确保存储数据已加载
+    // 初始化所有 store，确保存储数据已加载
     await Promise.all([
       storeTabInstance.init(),
-      storeRssInstance.init()
+      storeRssInstance.init(),
+      storeTasksInstance.init(),
+      storeNotesInstance.init(),
     ]);
     // 然后批量更新 RSS
     storeRssInstance.batchUpdateRss();

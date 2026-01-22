@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import { storePlayer } from '@/stores/modules/player';
+import { storePlayer } from '@/stores/global/player';
 import { formatPlayTime, PlayerProgressDnD } from './config';
 
 // Store

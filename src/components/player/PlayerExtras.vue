@@ -2,8 +2,8 @@
 import { ref, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { NPopover, NSlider, NPopselect } from "naive-ui";
-import { storePlayer } from "@/stores/modules/player";
-import { PlayMode, PlayModeConfig } from "@/stores/modules/player/types";
+import { storePlayer } from "@/stores/global/player";
+import { PlayMode, PlayModeConfig } from "@/stores/global/player/types";
 import IconVolumeUp from "@/components/common/Icons/IconVolumeUp.vue";
 import IconVolumeDown from "@/components/common/Icons/IconVolumeDown.vue";
 import IconVolumeMute from "@/components/common/Icons/IconVolumeMute.vue";

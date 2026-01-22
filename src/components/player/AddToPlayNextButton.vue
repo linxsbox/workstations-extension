@@ -1,5 +1,5 @@
 <script setup>
-import { storePlayer } from "@/stores/modules/player";
+import { storePlayer } from "@/stores/global/player";
 import IconPlaylistPlay from "@/components/common/Icons/IconPlaylistPlay.vue";
 
 const props = defineProps({

@@ -1,8 +1,8 @@
 {
-  "appNameShort": { "message": "个人工作站" },
-  "manifest_app_name": { "message": "个人工作站" },
+  "appNameShort": { "message": "个人工作台" },
+  "manifest_app_name": { "message": "个人工作台" },
   "manifest_app_description": {
-    "message": "个人工作站"
+    "message": "个人工作台"
   },
   "about_version": {
     "message": "版本 $VERSION$",

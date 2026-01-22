@@ -2,7 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { NInputGroup, NSelect, NInput } from "naive-ui";
 import { defaultStorage } from "@linxs/toolkit";
-import { storeApp } from "@/stores/modules/app";
+import { storeApp } from "@/stores/global/app";
 
 const { localStorage } = defaultStorage();
 const appStore = storeApp();

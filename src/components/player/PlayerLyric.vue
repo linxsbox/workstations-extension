@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
-import { storePlayer } from "@/stores/modules/player";
-import { ViewMode } from "@/stores/modules/player/types";
+import { storePlayer } from "@/stores/global/player";
+import { ViewMode } from "@/stores/global/player/types";
 import { miguMusicService } from "@/services/music";
 import http from "@/utils/http";
 

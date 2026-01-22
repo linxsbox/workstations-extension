@@ -3,8 +3,8 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from "vue"
 import { storeToRefs } from "pinia";
 import { NModal, useDialog } from "naive-ui";
 import { delay } from "@linxs/toolkit";
-import { storePlayer } from "@/stores/modules/player";
-import { ViewMode } from "@/stores/modules/player/types";
+import { storePlayer } from "@/stores/global/player";
+import { ViewMode } from "@/stores/global/player/types";
 import { PlayerDragManager } from "./config";
 import PlayerList from "./modes/PlayerList.vue";
 import PlayerStandard from "./modes/PlayerStandard.vue";

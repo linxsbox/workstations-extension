@@ -210,62 +210,6 @@ const handleUpdateShow = (value) => {
 const isTimeDisabled = (ts) => {
   return ts <= Date.now();
 };
-
-// 测试通知
-const testNotification = () => {
-  const title = "测试通知";
-  const body = "这是一条测试通知消息，用于确认通知功能是否正常工作";
-
-  // 优先使用浏览器原生通知
-  if ("Notification" in window && Notification.permission === "granted") {
-    const notif = new Notification(title, {
-      body,
-      icon: NOTIFICATION_CONFIG.ICON,
-    });
-
-    // 点击通知时聚焦到当前页面
-    notif.onclick = () => {
-      window.focus();
-      notif.close();
-    };
-
-    message.success("测试通知已发送");
-  } else if ("Notification" in window && Notification.permission !== "denied") {
-    // 请求权限
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") {
-        const notif = new Notification(title, {
-          body,
-          icon: NOTIFICATION_CONFIG.ICON,
-        });
-
-        // 点击通知时聚焦到当前页面
-        notif.onclick = () => {
-          window.focus();
-          notif.close();
-        };
-
-        message.success("测试通知已发送");
-      } else {
-        // 降级使用 Naive UI 通知
-        notification.info({
-          title,
-          content: body,
-          duration: NOTIFICATION_CONFIG.DURATION,
-        });
-        message.warning("浏览器通知权限被拒绝，已使用应用内通知");
-      }
-    });
-  } else {
-    // 降级使用 Naive UI 通知
-    notification.info({
-      title,
-      content: body,
-      duration: NOTIFICATION_CONFIG.DURATION,
-    });
-    message.info("浏览器不支持原生通知，已使用应用内通知");
-  }
-};
 </script>
 
 <template>
@@ -387,17 +331,9 @@ const testNotification = () => {
       </NFormItem>
     </NForm>
 
-    <!-- 测试通知按钮 -->
     <template #action>
-      <div class="flex justify-between w-full">
-        <NButton quaternary size="small" @click="testNotification">
-          测试通知
-        </NButton>
-        <div class="flex gap-2">
-          <NButton @click="handleUpdateShow(false)">取消</NButton>
-          <NButton type="primary" @click="handleCreate">创建</NButton>
-        </div>
-      </div>
+      <NButton @click="handleUpdateShow(false)">取消</NButton>
+      <NButton type="primary" @click="handleCreate">创建</NButton>
     </template>
   </NModal>
 </template>

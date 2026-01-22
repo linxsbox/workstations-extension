@@ -7,7 +7,7 @@ import {
 import { storageManager, STORAGE_KEYS } from "../../storage";
 import { RSS_SOURCE_TYPES, RSS_UPDATE_COOLDOWN, RSS_BATCH_UPDATE_INTERVAL } from "./config";
 import { RssProcessorFactory } from "@/services/rss/processor";
-import { storeTab } from "../tab/index";
+import { storeTab } from "../../global/tab/index";
 import { DEFAULT_PANEL } from "@/stores/config";
 
 export const storeRss = defineStore({

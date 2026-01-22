@@ -1,32 +1,21 @@
 <script setup>
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { storeTab } from "@/stores/global/tab";
-
-const props = defineProps({
-  // 当前面板的 key
-  panelKey: {
-    type: String,
-    required: true,
-  },
-});
+import { storeRssTabs } from "@/stores/modules/rss/tabs";
 
 const emit = defineEmits(["change"]);
 
-const store = storeTab();
-// 初始化当前面板的 tabs
-store.initializePanelTabs(props.panelKey);
-
+const store = storeRssTabs();
 const { getTabs, getActiveTabId } = storeToRefs(store);
 
-// 计算属性：当前面板的 tabs
-const tabs = computed(() => getTabs.value(props.panelKey));
+// 计算属性：tabs 列表
+const tabs = computed(() => getTabs.value);
 // 计算属性：当前选中的 tab id
-const activeTabId = computed(() => getActiveTabId.value(props.panelKey));
+const activeTabId = computed(() => getActiveTabId.value);
 
 // 切换 tab
 const handleSwitchTab = (tabId) => {
-  store.switchTab(props.panelKey, tabId);
+  store.switchTab(tabId);
   emit("change", tabId);
 };
 </script>
@@ -34,8 +23,14 @@ const handleSwitchTab = (tabId) => {
 <template>
   <div class="tab-bar inline-flex justify-center items-center gap-2 p-1 rounded-md">
     <!-- Tab 列表 -->
-    <button class="tab-item bg-transparent inline-flex px-3 py-1 rounded" type="button" v-for="tab in tabs"
-      :class="{ active: activeTabId === tab.id }" :key="tab.id" @click="handleSwitchTab(tab.id)">
+    <button
+      class="tab-item bg-transparent inline-flex px-3 py-1 rounded"
+      type="button"
+      v-for="tab in tabs"
+      :class="{ active: activeTabId === tab.id }"
+      :key="tab.id"
+      @click="handleSwitchTab(tab.id)"
+    >
       {{ tab.label }}
     </button>
   </div>
@@ -54,7 +49,7 @@ const handleSwitchTab = (tabId) => {
       background-color: var(--tab-bg-hover);
     }
 
-    &:hover {
+    &:active {
       color: var(--interactive-active);
       background-color: var(--tab-bg-active);
     }

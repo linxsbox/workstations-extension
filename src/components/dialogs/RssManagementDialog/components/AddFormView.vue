@@ -18,9 +18,8 @@ import {
   RSS_SOURCE_TYPES,
   PRESET_RSS_OPTIONS,
 } from "@/stores/modules/rss/config";
+import { storeRssTabs } from "@/stores/modules/rss/tabs";
 import { storeAside } from "@/stores/global/aside";
-import { storeTab } from "@/stores/global/tab";
-import { DEFAULT_PANEL } from "@/stores/config";
 
 const store = storeRss();
 const message = useMessage();
@@ -226,8 +225,17 @@ const handleTypeChange = () => {
 
 // 提交成功后切换 tab
 const submitSuccessSwitchTab = (tabId) => {
-  storeAside().switchPanel(DEFAULT_PANEL);
-  storeTab().switchTab(DEFAULT_PANEL, tabId);
+  const asideStore = storeAside();
+  const currentPanel = asideStore.currentPanel;
+
+  // 如果当前不在 RSS 面板，则切换到 RSS 面板
+  if (currentPanel !== 'rss') {
+    asideStore.switchPanel('rss');
+  }
+
+  // 切换到对应的 RSS tab
+  const tabsStore = storeRssTabs();
+  tabsStore.switchTab(tabId);
   store.switchSourceData(tabId);
 };
 

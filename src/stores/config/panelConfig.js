@@ -29,18 +29,18 @@ export const panelConfig = {
     label: "工具",
     component: markRaw(ToolsPanelView),
   },
-  favorites: {
-    id: "favorites",
-    icon: markRaw(IconMark),
-    label: "收藏",
-    component: null, // 待实现
-  },
-  share: {
-    id: "share",
-    icon: markRaw(IconShare),
-    label: "分享",
-    component: null, // 待实现
-  },
+  // favorites: {
+  //   id: "favorites",
+  //   icon: markRaw(IconMark),
+  //   label: "收藏",
+  //   component: null, // 待实现
+  // },
+  // share: {
+  //   id: "share",
+  //   icon: markRaw(IconShare),
+  //   label: "分享",
+  //   component: null, // 待实现
+  // },
 };
 
 // 默认面板

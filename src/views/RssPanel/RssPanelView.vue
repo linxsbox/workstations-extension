@@ -1,7 +1,7 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import { NScrollbar } from "naive-ui";
-import TabBarView from "@/components/common/TabBar/TabBarView.vue";
+import RssTabBar from "./RssTabBar.vue";
 import RssListView from "./RssListView.vue";
 import IconRss from "@/components/common/Icons/IconRss.vue";
 import { storeRss } from "@/stores/modules/rss";
@@ -23,7 +23,7 @@ const handleRssManageClick = () => {
 <template>
   <div class="flex-1 flex flex-col h-full overflow-hidden">
     <div class="flex-none flex items-center justify-between gap-2 px-4 py-2 border-b">
-      <TabBarView panelKey="rss" @change="handleSwitchTab" />
+      <RssTabBar @change="handleSwitchTab" />
       <button
         class="rss-manage-button flex-none bg-transparent inline-flex justify-center items-center gap-2 py-1 px-3 border rounded-md"
         type="button"

@@ -20,7 +20,7 @@ const lyricContainerRef = ref(null);
 const currentTime = computed(() => store.currentTime);
 
 // 当前播放的歌曲
-const currentTrack = computed(() => store.currentQueueTrack);
+const currentTrack = computed(() => store.playQueue.getCurrentTrack());
 
 // 当前视图模式
 const viewMode = computed(() => store.viewMode);
@@ -49,11 +49,9 @@ const fetchLyric = async (track) => {
   // 如果是同一首歌且已有歌词，跳过
   const trackId = track.copyrightId || track.lyricUrl || track.title;
   if (trackId === lastFetchedTrackId.value && lyrics.value.length > 0) {
-    console.log("歌词已缓存，跳过获取");
     return;
   }
 
-  console.log("开始获取歌词, track:", track);
   isLoading.value = true;
   error.value = null;
 
@@ -62,15 +60,12 @@ const fetchLyric = async (track) => {
 
     // 优先使用 lyricUrl
     if (track.lyricUrl) {
-      console.log("使用 lyricUrl 获取歌词:", track.lyricUrl);
       const response = await http.get(track.lyricUrl);
       // 如果响应是字符串直接使用，否则尝试转换
       lyricText =
         typeof response === "string" ? response : String(await response.text());
     } else if (track.copyrightId) {
-      console.log("使用 API 获取歌词, copyrightId:", track.copyrightId);
       const result = await miguMusicService.getLyric(track.copyrightId);
-      console.log("歌词获取结果:", result);
 
       if (!result.success || !result.data) {
         lyrics.value = [];
@@ -204,6 +199,18 @@ onMounted(() => {
   );
 });
 
+// 监听播放源变化 - 当 src 被清空时（stop 调用），清空歌词
+watch(
+  () => store.playStatus.src,
+  (newSrc) => {
+    if (!newSrc) {
+      lyrics.value = [];
+      currentLyricIndex.value = -1;
+      lastFetchedTrackId.value = null;
+    }
+  }
+);
+
 onUnmounted(() => {
   // 取消所有事件监听
   unsubscribers.forEach(unsub => unsub());
@@ -220,18 +227,14 @@ watch(currentTime, (newTime) => {
 watch(
   currentTrack,
   (newTrack) => {
-    console.log("歌曲变化 - 新:", newTrack);
-
     // 只在标准模式下加载歌词
     if (viewMode.value !== ViewMode.STANDARD) {
-      console.log("非标准模式，跳过加载歌词");
       return;
     }
 
     if (newTrack) {
       fetchLyric(newTrack);
     } else {
-      console.log("没有歌曲，清空歌词");
       lyrics.value = [];
       currentLyricIndex.value = -1;
       lastFetchedTrackId.value = null;

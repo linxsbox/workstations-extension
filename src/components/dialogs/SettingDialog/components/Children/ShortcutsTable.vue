@@ -1,20 +1,26 @@
 <script setup>
-import { ShortcutAction } from "@/composables/shortcuts/config";
+import { computed } from "vue";
+import { ShortcutAction, getPanelAction } from "@/composables/shortcuts/config";
 import { useKeyboardShortcuts } from "@/composables/shortcuts/useKeyboardShortcuts";
+import { getPanelKeys, panelConfig } from "@/stores/config/panelConfig";
 
 // 获取快捷键文本函数
 const { getShortcutText } = useKeyboardShortcuts();
 
+// 动态生成面板切换快捷键列表
+const panelShortcuts = computed(() => {
+  const panelKeys = getPanelKeys();
+  return panelKeys.map((key, index) => ({
+    action: getPanelAction(index),
+    description: `切换到${panelConfig[key].label}面板`,
+  }));
+});
+
 // 快捷键分组（只需要维护 action 和 description）
-const shortcutGroups = [
+const shortcutGroups = computed(() => [
   {
     title: "面板切换",
-    shortcuts: [
-      { action: ShortcutAction.SWITCH_TO_RSS, description: "切换到 RSS 面板" },
-      { action: ShortcutAction.SWITCH_TO_TOOLS, description: "切换到工具面板" },
-      { action: ShortcutAction.SWITCH_TO_FAVORITES, description: "切换到收藏面板" },
-      { action: ShortcutAction.SWITCH_TO_SHARE, description: "切换到分享面板" },
-    ],
+    shortcuts: panelShortcuts.value,
   },
   {
     title: "小应用模块",
@@ -32,7 +38,7 @@ const shortcutGroups = [
       { action: ShortcutAction.OPEN_SETTINGS, description: "打开设置" },
     ],
   },
-];
+]);
 </script>
 
 <template>

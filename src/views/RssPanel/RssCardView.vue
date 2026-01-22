@@ -9,7 +9,7 @@ import AddToQueueButton from "@/components/player/AddToQueueButton.vue";
 import IconFiberNew from "@/components/common/Icons/IconFiberNew.vue";
 import IconShare from "@/components/common/Icons/IconShare.vue";
 import ShareCardDialog from "@/components/dialogs/ShareCardDialog/ShareCardDialog.vue";
-import { storePlayer } from "@/stores/modules/player";
+import { storePlayer } from "@/stores/global/player";
 import { storeRss } from "@/stores/modules/rss";
 
 const props = defineProps({

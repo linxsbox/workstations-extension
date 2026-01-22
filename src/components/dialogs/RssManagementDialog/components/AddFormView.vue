@@ -18,8 +18,8 @@ import {
   RSS_SOURCE_TYPES,
   PRESET_RSS_OPTIONS,
 } from "@/stores/modules/rss/config";
-import { storeAside } from "@/stores/modules/aside";
-import { storeTab } from "@/stores/modules/tab";
+import { storeAside } from "@/stores/global/aside";
+import { storeTab } from "@/stores/global/tab";
 import { DEFAULT_PANEL } from "@/stores/config";
 
 const store = storeRss();

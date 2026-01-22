@@ -5,8 +5,8 @@ import { isEmptyObject } from "@linxs/toolkit";
 import IconClose from "@/components/common/Icons/IconClose.vue";
 import DataImportExport from "@/components/widgets/DataImportExport/DataImportExport.vue";
 import { storeRss } from "@/stores/modules/rss";
-import { storeAside } from "@/stores/modules/aside";
-import { storeTab } from "@/stores/modules/tab";
+import { storeAside } from "@/stores/global/aside";
+import { storeTab } from "@/stores/global/tab";
 import { DEFAULT_PANEL } from "@/stores/config";
 import { RSS_SOURCE_TYPES } from "@/stores/modules/rss/config";
 

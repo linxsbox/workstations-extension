@@ -1,7 +1,7 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import HeaderBarView from "@/components/common/HeaderBar/HeaderBarView.vue";
-import { storeAside } from "@/stores/modules/aside";
+import { storeAside } from "@/stores/global/aside";
 
 const store = storeAside();
 const { getActivePanel } = storeToRefs(store);

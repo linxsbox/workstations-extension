@@ -1,7 +1,7 @@
 <script setup>
 import { computed, defineAsyncComponent } from 'vue'
-import { SETTING_TYPES } from '@/stores/modules/settings/types'
-import { storeSettings } from '@/stores/modules/settings'
+import { SETTING_TYPES } from '@/stores/global/settings/types'
+import { storeSettings } from '@/stores/global/settings'
 import SettingRadio from './SettingRadio.vue'
 import SettingSwitch from './SettingSwitch.vue'
 import SettingSelect from './SettingSelect.vue'

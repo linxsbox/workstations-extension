@@ -1,29 +1,56 @@
 <script setup>
+import { useMessage } from "naive-ui";
 import IconDelete from "@/components/common/Icons/IconDelete.vue";
 import IconPlayArrow from "@/components/common/Icons/IconPlayArrow.vue";
 import IconStop from "@/components/common/Icons/IconStop.vue";
 import IconEditNote from "@/components/common/Icons/IconEditNote.vue";
+import IconRedo from "@/components/common/Icons/IconRedo.vue";
+import { formatDate } from "@linxs/toolkit";
+import { storeTasks } from "@/stores/miniapps/tasks";
 
-import { TASK_STATUS } from "./constants";
+import { TASK_STATUS, EXECUTION_RULE } from "./constants";
 
 const props = defineProps({
   task: { type: Object, required: true },
   type: { type: String, default: TASK_STATUS.PENDING },
 });
 
-const emit = defineEmits(["start", "stop", "complete", "delete", "edit"]);
+const message = useMessage();
+const tasksStore = storeTasks();
+
+const handleStart = (e) => {
+  e.stopPropagation();
+  tasksStore.startTask(props.task.id);
+  message.success("任务已启动");
+};
+
+const handleStop = (e) => {
+  e.stopPropagation();
+  tasksStore.stopTask(props.task.id);
+  message.info("任务已停止");
+};
+
+const handleDelete = (e) => {
+  e.stopPropagation();
+  tasksStore.deleteTask(props.task.id);
+  message.success("任务已删除");
+};
+
+const handleReset = (e) => {
+  e.stopPropagation();
+  tasksStore.resetTask(props.task.id);
+  message.success("任务已重置");
+};
+
+const handleEdit = (e) => {
+  e.stopPropagation();
+  tasksStore.openEditDialog(props.task.id);
+};
 
 // 格式化时间
 const formatTime = (isoString) => {
   if (!isoString) return "-";
-  const date = new Date(isoString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  return formatDate(new Date(isoString));
 };
 
 // 内容不需要截取，使用 CSS 控制显示行数
@@ -42,7 +69,7 @@ const getTimeLabel = () => {
 
 <template>
   <div
-    class="task-card flex flex-col gap-2 p-3 rounded-xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5"
+    class="task-card flex flex-col gap-2 p-3 rounded-md cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5"
     :class="{
       running: type === TASK_STATUS.RUNNING,
       completed: type === TASK_STATUS.COMPLETED,
@@ -59,7 +86,7 @@ const getTimeLabel = () => {
       <button
         class="action-btn size-5 flex justify-center items-center rounded-md"
         v-if="type === TASK_STATUS.PENDING"
-        @click="emit('edit', task.id, $event)"
+        @click="handleEdit"
         title="编辑任务"
       >
         <IconEditNote class="text-xl text-[var(--color-info)]" />
@@ -89,14 +116,14 @@ const getTimeLabel = () => {
         <template v-if="type === TASK_STATUS.PENDING">
           <button
             class="action-btn size-5 flex justify-center items-center rounded-md"
-            @click="emit('start', task.id, $event)"
+            @click="handleStart"
             title="启动"
           >
             <IconPlayArrow class="text-xl text-[var(--color-success)]" />
           </button>
           <button
             class="action-btn size-5 flex justify-center items-center rounded-md"
-            @click="emit('delete', task.id, $event)"
+            @click="handleDelete"
             title="删除"
           >
             <IconDelete class="text-xl text-[var(--color-error)]" />
@@ -107,18 +134,29 @@ const getTimeLabel = () => {
         <template v-else-if="type === TASK_STATUS.RUNNING">
           <button
             class="action-btn size-5 flex justify-center items-center rounded-md"
-            @click="emit('stop', task.id, $event)"
+            @click="handleStop"
             title="停止"
           >
             <IconStop class="text-xl text-[var(--color-warning)]" />
           </button>
         </template>
 
-        <!-- 已完成状态：删除 -->
+        <!-- 已完成状态：重置（仅预期类型）、删除 -->
         <template v-else-if="type === TASK_STATUS.COMPLETED">
           <button
+            v-if="task.executionRule === EXECUTION_RULE.EXPECTED"
             class="action-btn size-5 flex justify-center items-center rounded-md"
-            @click="emit('delete', task.id, $event)"
+            @click="handleReset"
+            title="重置任务"
+          >
+            <IconRedo
+              class="text-xl text-[var(--color-info)]"
+              style="transform: scaleY(-1)"
+            />
+          </button>
+          <button
+            class="action-btn size-5 flex justify-center items-center rounded-md"
+            @click="handleDelete"
             title="删除"
           >
             <IconDelete class="text-xl text-[var(--color-error)]" />

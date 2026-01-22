@@ -1,8 +1,26 @@
 import { ref, onMounted, onUnmounted } from "vue";
-import { isMacOS, ShortcutAction } from "./config";
+import { isMacOS, ShortcutAction, getPanelAction } from "./config";
 import { env } from "@/utils/env";
+import { getPanelKeys } from "@/stores/config/panelConfig";
 
 const isMac = isMacOS();
+
+/**
+ * 动态生成面板切换快捷键配置
+ * 根据 panelConfig 的顺序，自动绑定 Alt+1, Alt+2, Alt+3...
+ */
+const generatePanelShortcuts = () => {
+  const panelKeys = getPanelKeys();
+  const shortcuts = {};
+
+  panelKeys.forEach((key, index) => {
+    const keyCode = 49 + index; // 49 = '1', 50 = '2', etc.
+    const action = getPanelAction(index);
+    shortcuts[action] = { keyCode, alt: true, shift: isMac };
+  });
+
+  return shortcuts;
+};
 
 /**
  * 快捷键配置映射
@@ -13,11 +31,8 @@ const isMac = isMacOS();
  * 参考: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode
  */
 const shortcutMap = {
-  // 面板切换
-  [ShortcutAction.SWITCH_TO_RSS]: { keyCode: 49, alt: true, shift: isMac }, // 1
-  [ShortcutAction.SWITCH_TO_TOOLS]: { keyCode: 50, alt: true, shift: isMac }, // 2
-  [ShortcutAction.SWITCH_TO_FAVORITES]: { keyCode: 51, alt: true, shift: isMac }, // 3
-  [ShortcutAction.SWITCH_TO_SHARE]: { keyCode: 52, alt: true, shift: isMac }, // 4
+  // 面板切换（动态生成）
+  ...generatePanelShortcuts(),
 
   // 核心功能
   [ShortcutAction.TOGGLE_PLAYER]: { keyCode: 80, alt: true, shift: isMac }, // P

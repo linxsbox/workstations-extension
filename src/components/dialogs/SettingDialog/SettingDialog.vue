@@ -2,8 +2,8 @@
 import { ref, watch, nextTick } from "vue";
 import { storeToRefs } from "pinia";
 import { NModal, NScrollbar, NDivider } from "naive-ui";
-import { storeSettings } from "@/stores/modules/settings";
-import { settingSchema } from "@/stores/modules/settings/config";
+import { storeSettings } from "@/stores/global/settings";
+import { settingSchema } from "@/stores/global/settings/config";
 import SettingSection from "./components/SettingSection.vue";
 import { useScrollNavigation } from "@linxs/toolkit-vue";
 

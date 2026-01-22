@@ -10,7 +10,7 @@ const props = defineProps({
   emptyText: { type: String, default: "暂无任务" },
 });
 
-const emit = defineEmits(["start", "stop", "complete", "delete"]);
+
 </script>
 
 <template>
@@ -35,10 +35,6 @@ const emit = defineEmits(["start", "stop", "complete", "delete"]);
           :key="task.id"
           :task="task"
           :type="type"
-          @start="(id, event) => emit('start', id, event)"
-          @stop="(id, event) => emit('stop', id, event)"
-          @complete="(id, event) => emit('complete', id, event)"
-          @delete="(id, event) => emit('delete', id, event)"
         />
 
         <NEmpty

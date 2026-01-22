@@ -1,18 +1,26 @@
 import { markRaw } from "vue";
+import HomePanelView from "@/views/HomePanel/HomePanelView.vue";
 import RssPanelView from "@/views/RssPanel/RssPanelView.vue";
 import ToolsPanelView from "@/views/ToolsPanel/ToolsPanelView.vue";
 
 import IconHome from "@/components/common/Icons/IconHome.vue";
+import IconRss from "@/components/common/Icons/IconRss.vue";
 import IconWork from "@/components/common/Icons/IconWork.vue";
 import IconMark from "@/components/common/Icons/IconMark.vue";
 import IconShare from "@/components/common/Icons/IconShare.vue";
 
 // 面板配置
 export const panelConfig = {
-  rss: {
+  home: {
     id: "home",
     icon: markRaw(IconHome),
     label: "首页",
+    component: markRaw(HomePanelView),
+  },
+  rss: {
+    id: "rss",
+    icon: markRaw(IconRss),
+    label: "RSS",
     component: markRaw(RssPanelView),
   },
   tools: {
@@ -36,7 +44,7 @@ export const panelConfig = {
 };
 
 // 默认面板
-export const DEFAULT_PANEL = "rss";
+export const DEFAULT_PANEL = "home";
 
 // 获取所有可用的面板 keys
 export const getPanelKeys = () => Object.keys(panelConfig);

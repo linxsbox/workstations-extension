@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { storageManager, STORAGE_KEYS } from "../../storage";
 import { createAudioManager } from "@/services/audio/manager";
+import { PubSub } from "@linxs/toolkit";
 import {
   PlayMode,
   PlayModeConfig,
@@ -18,6 +19,12 @@ const PREFERRED_BACKEND = "HTML5Audio"; // 👈 改这里来切换后端
 // 创建音频管理器实例
 const audioManager = createAudioManager({
   preferredBackend: PREFERRED_BACKEND,
+});
+
+// 创建播放器事件总线
+const playerEventBus = new PubSub({
+  maxListeners: 100,
+  logErrors: true,
 });
 
 export const storePlayer = defineStore("player", {
@@ -60,9 +67,6 @@ export const storePlayer = defineStore("player", {
 
     // 音频管理器初始化状态
     isAudioManagerInitialized: false,
-
-    // 事件监听器管理
-    eventListeners: new Map(),
   }),
 
   getters: {
@@ -114,8 +118,11 @@ export const storePlayer = defineStore("player", {
     createTrackWithMeta(track) {
       return {
         ...track,
-        id: this.generateTrackHash(track),
+        id: track.id || track.pid || this.generateTrackHash(track),
         duration: track.duration || 0,
+        playCount: track.playCount || 0,           // 播放次数
+        playStartTime: null,                        // 当前播放开始时间戳
+        lastPlayTime: track.lastPlayTime || null,   // 最后一次播放时间
       };
     },
 
@@ -128,15 +135,7 @@ export const storePlayer = defineStore("player", {
      * @returns {Function} 取消监听的函数
      */
     onPlayerEvent(event, callback) {
-      if (!this.eventListeners.has(event)) {
-        this.eventListeners.set(event, []);
-      }
-      this.eventListeners.get(event).push(callback);
-
-      // 返回取消监听的函数
-      return () => {
-        this.offPlayerEvent(event, callback);
-      };
+      return playerEventBus.on(event, callback);
     },
 
     /**
@@ -146,13 +145,7 @@ export const storePlayer = defineStore("player", {
      * @returns {Function} 取消监听的函数
      */
     oncePlayerEvent(event, callback) {
-      const wrappedCallback = (...args) => {
-        callback(...args);
-        // 执行后立即移除监听
-        this.offPlayerEvent(event, wrappedCallback);
-      };
-
-      return this.onPlayerEvent(event, wrappedCallback);
+      return playerEventBus.once(event, callback);
     },
 
     /**
@@ -161,13 +154,7 @@ export const storePlayer = defineStore("player", {
      * @param {Function} callback - 回调函数
      */
     offPlayerEvent(event, callback) {
-      const listeners = this.eventListeners.get(event);
-      if (listeners) {
-        const index = listeners.indexOf(callback);
-        if (index > -1) {
-          listeners.splice(index, 1);
-        }
-      }
+      playerEventBus.off(event, callback);
     },
 
     /**
@@ -176,16 +163,7 @@ export const storePlayer = defineStore("player", {
      * @param {...any} args - 事件参数
      */
     _emitPlayerEvent(event, ...args) {
-      const listeners = this.eventListeners.get(event);
-      if (listeners && listeners.length > 0) {
-        listeners.forEach((callback) => {
-          try {
-            callback(...args);
-          } catch (error) {
-            console.error(`Error in player event listener for "${event}":`, error);
-          }
-        });
-      }
+      playerEventBus.emit(event, ...args);
     },
 
     /**
@@ -323,6 +301,26 @@ export const storePlayer = defineStore("player", {
     },
 
     /**
+     * 记录播放次数
+     * 当播放时长 >= 10秒时，计入播放次数
+     */
+    recordPlayCount() {
+      const currentTrack = this.playQueue.getCurrentTrack();
+      if (!currentTrack || !currentTrack.playStartTime) {
+        return;
+      }
+
+      const playDuration = Date.now() - currentTrack.playStartTime;
+      const MIN_PLAY_DURATION = 10000; // 10秒
+
+      if (playDuration >= MIN_PLAY_DURATION) {
+        currentTrack.playCount = (currentTrack.playCount || 0) + 1;
+        currentTrack.lastPlayTime = Date.now();
+        currentTrack.playStartTime = null;
+      }
+    },
+
+    /**
      * 播放
      */
     play() {
@@ -335,6 +333,12 @@ export const storePlayer = defineStore("player", {
       if (success) {
         this.playStatus.isPlaying = true;
         this.playStatus.isError = false;
+
+        // 记录播放开始时间（仅在首次播放或切歌后播放时记录）
+        const currentTrack = this.playQueue.getCurrentTrack();
+        if (currentTrack && !currentTrack.playStartTime) {
+          currentTrack.playStartTime = Date.now();
+        }
       }
       return success;
     },
@@ -535,6 +539,9 @@ export const storePlayer = defineStore("player", {
      * 下一首
      */
     async playNext() {
+      // 切歌前记录当前歌曲的播放次数
+      this.recordPlayCount();
+
       const nextTrack = this.playQueue.next();
       if (nextTrack) {
         await this.loadAudio(nextTrack.src, nextTrack);
@@ -548,6 +555,9 @@ export const storePlayer = defineStore("player", {
      * 上一首
      */
     async playPrevious() {
+      // 切歌前记录当前歌曲的播放次数
+      this.recordPlayCount();
+
       const prevTrack = this.playQueue.previous();
       if (prevTrack) {
         await this.loadAudio(prevTrack.src, prevTrack);
@@ -563,6 +573,8 @@ export const storePlayer = defineStore("player", {
     handlePlayEnded() {
       // 如果是单曲循环，重新播放当前曲目
       if (this.playMode === PlayMode.SINGLE) {
+        // 记录播放次数（歌曲完整播放完毕）
+        this.recordPlayCount();
         this.seek(0);
         this.play();
         return;
@@ -572,14 +584,15 @@ export const storePlayer = defineStore("player", {
       if (this.playMode === PlayMode.SEQUENTIAL) {
         const nextIndex = this.playQueue.getNextIndex();
         if (nextIndex === -1) {
-          // 没有下一首了，停止播放并重置进度
+          // 没有下一首了，记录播放次数后停止播放并重置进度
+          this.recordPlayCount();
           this.seek(0);
           this.pause();
           return;
         }
       }
 
-      // 其他模式下播放下一首
+      // 其他模式下播放下一首（playNext 内部会调用 recordPlayCount）
       this.playNext();
     },
 

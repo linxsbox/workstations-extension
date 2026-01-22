@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
-import { storePlayer } from "@/stores/modules/player";
+import { storePlayer } from "@/stores/global/player";
 import IconMusicNote from "@/components/common/Icons/IconMusicNote.vue";
 
 const player = storePlayer();

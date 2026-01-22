@@ -6,7 +6,7 @@ import PlayButton from '@/components/player/PlayButton.vue';
 import IconPlaylistAdd from '@/components/common/Icons/IconPlaylistAdd.vue';
 import IconShare from '@/components/common/Icons/IconShare.vue';
 import ShareCardDialog from '@/components/dialogs/ShareCardDialog/ShareCardDialog.vue';
-import { storePlayer } from '@/stores/modules/player';
+import { storePlayer } from '@/stores/global/player';
 import { miguMusicService } from '@/services/music';
 import { getCoverImageFormats, tryLoadCoverImage } from '@/utils/image';
 

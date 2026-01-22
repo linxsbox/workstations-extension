@@ -6,8 +6,8 @@ import IconSettings from "@/components/common/Icons/IconSettings.vue";
 import IconBrightnessLight from "@/components/common/Icons/IconBrightnessLight.vue";
 import IconBrightnessAuto from "@/components/common/Icons/IconBrightnessAuto.vue";
 import IconBrightnessDark from "@/components/common/Icons/IconBrightnessDark.vue";
-import { storeSettings } from "@/stores/modules/settings";
-import { SettingSectionEnum } from "@/stores/modules/settings/config";
+import { storeSettings } from "@/stores/global/settings";
+import { SettingSectionEnum } from "@/stores/global/settings/config";
 
 const store = storeSettings();
 

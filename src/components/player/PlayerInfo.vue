@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { isObject } from "@linxs/toolkit";
-import { storePlayer } from "@/stores/modules/player";
+import { storePlayer } from "@/stores/global/player";
 import PlayerCover from "./PlayerCover.vue";
 
 const props = defineProps({

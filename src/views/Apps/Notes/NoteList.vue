@@ -1,7 +1,8 @@
 <script setup>
 import { NScrollbar, NButton, NEmpty, NInput } from 'naive-ui';
 import IconAssignmentAdd from '@/components/common/Icons/IconAssignmentAdd.vue';
-import NoteItem from './NoteItem.vue';
+import NoteCard from './NoteCard.vue';
+import { storeNotes } from '@/stores/miniapps/notes';
 
 const props = defineProps({
   notes: {
@@ -12,32 +13,14 @@ const props = defineProps({
     type: String,
     default: null,
   },
-  searchKeyword: {
-    type: String,
-    default: '',
-  },
 });
 
-const emit = defineEmits(['create', 'select', 'delete', 'share', 'update:searchKeyword']);
+const emit = defineEmits(['create']);
+
+const notesStore = storeNotes();
 
 const handleCreate = () => {
   emit('create');
-};
-
-const handleSelect = (noteId) => {
-  emit('select', noteId);
-};
-
-const handleDelete = (noteId) => {
-  emit('delete', noteId);
-};
-
-const handleSearchUpdate = (value) => {
-  emit('update:searchKeyword', value);
-};
-
-const handleShare = (noteId) => {
-  emit('share', noteId);
 };
 </script>
 
@@ -45,11 +28,10 @@ const handleShare = (noteId) => {
   <div class="notes-list flex-none w-80 flex flex-col border-r">
     <div class="p-3 border-b space-y-2">
       <NInput
-        :value="searchKeyword"
+        v-model:value="notesStore.searchKeyword"
         placeholder="搜索笔记..."
         size="small"
         clearable
-        @update:value="handleSearchUpdate"
       />
 
       <NButton
@@ -66,14 +48,11 @@ const handleShare = (noteId) => {
     </div>
     <NScrollbar class="flex-1">
       <div class="p-2">
-        <NoteItem
+        <NoteCard
           v-for="note in notes"
           :key="note.id"
           :note="note"
           :is-active="selectedNoteId === note.id"
-          @select="handleSelect"
-          @delete="handleDelete"
-          @share="handleShare"
         />
 
         <NEmpty

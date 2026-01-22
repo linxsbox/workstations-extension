@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import { storePlayer } from '@/stores/modules/player';
+import { storePlayer } from '@/stores/global/player';
 import PlayButton from './PlayButton.vue';
 import IconSkipPrevious from '@/components/common/Icons/IconSkipPrevious.vue';
 import IconSkipNext from '@/components/common/Icons/IconSkipNext.vue';

@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { NModal, NButton, useMessage, useNotification } from "naive-ui";
-import { storageManager, WEB_STORAGE_KEYS } from "@/stores/storage";
-import { storeApp } from "@/stores/modules/app";
-import IconAddTask from "@/components/common/Icons/IconAddTask.vue";
+import { storeApp } from "@/stores/global/app";
+import { storeTasks } from "@/stores/miniapps/tasks";
 import IconTaskAlt from "@/components/common/Icons/IconTaskAlt.vue";
+import IconAddTask from "@/components/common/Icons/IconAddTask.vue";
 import CreateTaskDialog from "./CreateTaskDialog.vue";
 import TaskList from "./TaskList.vue";
 import TaskScheduler from "@/services/scheduler";
@@ -13,29 +13,15 @@ import { TASK_STATUS, EXECUTION_RULE, NOTIFICATION_CONFIG } from "./constants";
 const message = useMessage();
 const notification = useNotification();
 const appStore = storeApp();
+const tasksStore = storeTasks();
 
-// 任务数据
-const tasks = ref(storageManager.get(WEB_STORAGE_KEYS.TODOS) || []);
+// UI 状态
 const showTaskDialog = ref(false);
-const showCreateDialog = ref(false);
-const editingTaskId = ref(null); // 正在编辑的任务ID
-const showExpiredDialog = ref(false); // 显示过期提示对话框
-const expiredTaskId = ref(null); // 过期的任务ID
 
-// 待启动任务
-const pendingTasks = computed(() => {
-  return tasks.value.filter((t) => t.status === TASK_STATUS.PENDING);
-});
-
-// 运行中任务
-const runningTasks = computed(() => {
-  return tasks.value.filter((t) => t.status === TASK_STATUS.RUNNING);
-});
-
-// 已完成任务
-const completedTasks = computed(() => {
-  return tasks.value.filter((t) => t.status === TASK_STATUS.COMPLETED);
-});
+// 从 store 获取任务数据
+const pendingTasks = computed(() => tasksStore.pendingTasks);
+const runningTasks = computed(() => tasksStore.runningTasks);
+const completedTasks = computed(() => tasksStore.completedTasks);
 
 // 打开任务管理
 const handleOpenTasks = () => {
@@ -44,7 +30,7 @@ const handleOpenTasks = () => {
 
 // 打开创建任务弹窗
 const handleOpenCreateDialog = () => {
-  showCreateDialog.value = true;
+  tasksStore.openCreateDialog();
 };
 
 // 页签闪烁提醒
@@ -177,129 +163,38 @@ const handleCreateTask = async (taskData) => {
     completedAt: null,
   };
 
-  tasks.value.unshift(newTask);
-  saveTasks();
+  tasksStore.addTask(newTask);
 
   // 如果是创建并启动，设置调度
   if (taskData.createAndStart) {
     await setupTaskScheduler(newTask);
   }
 
-  showCreateDialog.value = false;
-  editingTaskId.value = null;
+  tasksStore.closeCreateDialog();
   message.success(
     taskData.createAndStart ? "任务已创建并启动" : "任务创建成功"
   );
 };
 
-// 编辑任务
-const handleEditTask = (taskId, event) => {
-  event.stopPropagation();
-  editingTaskId.value = taskId;
-  showCreateDialog.value = true;
-};
-
 // 更新任务
 const handleUpdateTask = async (taskData) => {
-  const task = tasks.value.find((t) => t.id === editingTaskId.value);
-  if (task) {
-    task.title = taskData.title;
-    task.content = taskData.content;
-    task.executionRule = taskData.executionRule;
-    task.expectedDuration = taskData.expectedDuration || null;
-    task.scheduledTime = taskData.scheduledTime || null;
-    task.updatedAt = new Date().toISOString();
-    saveTasks();
+  tasksStore.updateTask(tasksStore.editingTaskId, {
+    title: taskData.title,
+    content: taskData.content,
+    executionRule: taskData.executionRule,
+    expectedDuration: taskData.expectedDuration || null,
+    scheduledTime: taskData.scheduledTime || null,
+  });
 
-    showCreateDialog.value = false;
-    editingTaskId.value = null;
-    message.success("任务已更新");
-  }
-};
-
-// 启动任务
-const handleStartTask = async (taskId, event) => {
-  event.stopPropagation();
-  const task = tasks.value.find((t) => t.id === taskId);
-  if (task) {
-    // 检查计划时间是否已过期
-    if (task.executionRule === EXECUTION_RULE.SCHEDULED) {
-      if (task.scheduledTime <= Date.now()) {
-        expiredTaskId.value = taskId;
-        showExpiredDialog.value = true;
-        return;
-      }
-    }
-
-    task.status = TASK_STATUS.RUNNING;
-    task.startedAt = new Date().toISOString();
-    task.updatedAt = new Date().toISOString();
-    saveTasks();
-    await setupTaskScheduler(task);
-    message.success("任务已启动");
-  }
-};
-
-// 处理过期任务 - 重新编辑
-const handleExpiredTaskEdit = () => {
-  showExpiredDialog.value = false;
-  handleEditTask(expiredTaskId.value, { stopPropagation: () => {} });
-  expiredTaskId.value = null;
-};
-
-// 处理过期任务 - 稍后处理
-const handleExpiredTaskLater = () => {
-  showExpiredDialog.value = false;
-  expiredTaskId.value = null;
-};
-
-// 停止任务
-const handleStopTask = async (taskId, event) => {
-  event.stopPropagation();
-  const task = tasks.value.find((t) => t.id === taskId);
-  if (task) {
-    task.status = TASK_STATUS.PENDING;
-    task.startedAt = null;
-    task.updatedAt = new Date().toISOString();
-    await TaskScheduler.cancel(taskId);
-    saveTasks();
-    message.info("任务已停止");
-  }
-};
-
-// 完成任务
-const handleCompleteTask = async (taskId, event) => {
-  event.stopPropagation();
-  const task = tasks.value.find((t) => t.id === taskId);
-  if (task && task.status === TASK_STATUS.RUNNING) {
-    task.status = TASK_STATUS.COMPLETED;
-    task.completedAt = new Date().toISOString();
-    task.updatedAt = new Date().toISOString();
-    await TaskScheduler.cancel(taskId);
-    saveTasks();
-    message.success("任务已完成");
-  }
-};
-
-// 删除任务
-const handleDeleteTask = async (taskId, event) => {
-  event.stopPropagation();
-  const index = tasks.value.findIndex((t) => t.id === taskId);
-  if (index > -1) {
-    await TaskScheduler.cancel(taskId);
-    tasks.value.splice(index, 1);
-    saveTasks();
-    message.success("任务已删除");
-  }
-};
-
-// 保存到存储
-const saveTasks = () => {
-  storageManager.set(WEB_STORAGE_KEYS.TODOS, tasks.value);
+  tasksStore.closeCreateDialog();
+  message.success("任务已更新");
 };
 
 // 初始化时恢复所有运行中任务
 onMounted(async () => {
+  // 初始化 tasks store
+  tasksStore.init();
+
   // 初始化调度器
   await TaskScheduler.init();
 
@@ -307,13 +202,7 @@ onMounted(async () => {
   runningTasks.value.forEach((task) => {
     TaskScheduler.on(task.id, async (data) => {
       // 自动完成任务
-      const t = tasks.value.find((item) => item.id === task.id);
-      if (t && t.status === TASK_STATUS.RUNNING) {
-        t.status = TASK_STATUS.COMPLETED;
-        t.completedAt = new Date().toISOString();
-        t.updatedAt = new Date().toISOString();
-        saveTasks();
-      }
+      tasksStore.completeTask(task.id);
 
       // 发送通知
       sendNotification("任务完成", `任务"${data.title}"已完成！`);
@@ -324,12 +213,6 @@ onMounted(async () => {
   if ("Notification" in window && Notification.permission === "default") {
     Notification.requestPermission();
   }
-});
-
-// 组件卸载时不需要手动清理（TaskScheduler 会处理）
-onUnmounted(() => {
-  // TaskScheduler 在 Service Worker 或 Extension 环境中会持续运行
-  // 不需要手动清理
 });
 
 // 监听 app store 的任务对话框状态
@@ -355,7 +238,7 @@ defineExpose({
       @click="handleOpenTasks"
       title="打开任务管理"
     >
-      <IconAddTask class="text-2xl" />
+      <IconTaskAlt class="text-2xl" />
       <!-- 运行中指示器 -->
       <div v-if="runningTasks.length > 0" class="indicator">
         {{ runningTasks.length }}
@@ -366,9 +249,9 @@ defineExpose({
 
     <!-- 创建/编辑任务弹窗 -->
     <CreateTaskDialog
-      v-model:show="showCreateDialog"
-      :editing-task-id="editingTaskId"
-      :tasks="tasks"
+      v-model:show="tasksStore.showCreateDialog"
+      :editing-task-id="tasksStore.editingTaskId"
+      :tasks="tasksStore.allTasks"
       @create="handleCreateTask"
       @update="handleUpdateTask"
     />
@@ -379,6 +262,7 @@ defineExpose({
       preset="card"
       title="任务管理"
       class="task-modal w-[1200px] h-[95vh]"
+      content-class="overflow-hidden"
       :mask-closable="false"
       :close-on-esc="true"
     >
@@ -394,9 +278,6 @@ defineExpose({
           :type="TASK_STATUS.PENDING"
           title="📋 待启动"
           empty-text="暂无待启动任务"
-          @start="handleStartTask"
-          @edit="handleEditTask"
-          @delete="handleDeleteTask"
         >
           <template #header-extra>
             <NButton
@@ -405,7 +286,7 @@ defineExpose({
               @click="handleOpenCreateDialog"
             >
               <template #icon>
-                <IconTaskAlt />
+                <IconAddTask />
               </template>
               新建任务
             </NButton>
@@ -423,8 +304,6 @@ defineExpose({
           :type="TASK_STATUS.RUNNING"
           title="🚀 进行中"
           empty-text="暂无运行中任务"
-          @complete="handleCompleteTask"
-          @stop="handleStopTask"
         />
 
         <!-- 已完成列表 -->
@@ -438,29 +317,8 @@ defineExpose({
           :type="TASK_STATUS.COMPLETED"
           title="✅ 已完成"
           empty-text="暂无已完成任务"
-          @delete="handleDeleteTask"
         />
       </div>
-    </NModal>
-
-    <!-- 计划时间过期提示对话框 -->
-    <NModal
-      v-model:show="showExpiredDialog"
-      preset="dialog"
-      title="计划时间已过期"
-      :show-icon="false"
-      :style="{ width: '400px' }"
-    >
-      <div class="text-center py-4">
-        <p class="text-base mb-2">计划时间已过期</p>
-        <p class="text-sm text-[var(--text-tertiary)]">请编辑任务重新设置时间</p>
-      </div>
-      <template #action>
-        <div class="flex gap-3 justify-end">
-          <NButton @click="handleExpiredTaskLater">稍后处理</NButton>
-          <NButton type="primary" @click="handleExpiredTaskEdit">重新编辑</NButton>
-        </div>
-      </template>
     </NModal>
   </div>
 </template>

@@ -4,6 +4,8 @@ import {
   NMessageProvider,
   NDialogProvider,
   NNotificationProvider,
+  zhCN,
+  dateZhCN,
 } from "naive-ui";
 
 import { themeOverrides } from "./theme/index.js";
@@ -15,6 +17,7 @@ import RssManagementDialog from "./components/dialogs/RssManagementDialog/RssMan
 import PlayerView from "./components/player/PlayerView.vue";
 
 import { storeRss } from "@/stores/modules/rss/index";
+import { storeRssTabs } from "@/stores/modules/rss/tabs";
 import { storeSettings } from "@/stores/global/settings/index";
 import { storePlayer } from "@/stores/global/player/index";
 import { storeTab } from "@/stores/global/tab/index";
@@ -28,6 +31,7 @@ import { ShortcutAction, getPanelAction } from "@/composables/shortcuts/config";
 import { getPanelKeys } from "@/stores/config/panelConfig";
 
 const storeRssInstance = storeRss();
+const storeRssTabsInstance = storeRssTabs();
 const storeSettingsInstance = storeSettings();
 const storePlayerInstance = storePlayer();
 const storeTabInstance = storeTab();
@@ -111,6 +115,7 @@ onMounted(() => {
     await Promise.all([
       storeTabInstance.init(),
       storeRssInstance.init(),
+      storeRssTabsInstance.init(),
       storeTasksInstance.init(),
       storeNotesInstance.init(),
     ]);
@@ -121,7 +126,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <NConfigProvider class="inherit-app" :theme-overrides="themeOverrides">
+  <NConfigProvider
+    class="inherit-app"
+    :theme-overrides="themeOverrides"
+    :locale="zhCN"
+    :date-locale="dateZhCN"
+  >
     <NMessageProvider>
       <NNotificationProvider>
         <NDialogProvider>

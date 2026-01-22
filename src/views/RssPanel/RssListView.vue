@@ -87,7 +87,7 @@ const getThemeColor = (theme) => {
       <header
         class="rss-list-header sticky top-0 flex-none flex gap-2 items-center p-4 z-10"
       >
-        <figure class="flex-none h-12">
+        <figure class="flex-none h-12 rounded-lg bg-[var(--interactive-bg-logo)]">
           <picture class="avater-container">
             <img
               class="size-12 rounded-lg avater"

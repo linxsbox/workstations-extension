@@ -87,7 +87,7 @@ const getTasksStatusStyle = (status) => {
     <main class="home-panel-main flex-1 flex gap-4 min-h-0">
       <section class="recent-section flex flex-col gap-4 w-[420px] flex-none">
         <!-- 近期任务 -->
-        <NCard class="flex-1 min-h-0">
+        <NCard class="home-card flex-1 min-h-0">
           <template #header>
             <div class="flex justify-between items-center">
               <div class="text-sm font-medium">近期任务</div>
@@ -113,7 +113,7 @@ const getTasksStatusStyle = (status) => {
         </NCard>
 
         <!-- 近期笔记 -->
-        <NCard class="flex-1 min-h-0">
+        <NCard class="home-card flex-1 min-h-0">
           <template #header>
             <div class="flex justify-between items-center">
               <div class="text-sm font-medium">近期笔记</div>
@@ -139,7 +139,7 @@ const getTasksStatusStyle = (status) => {
       </section>
 
       <section class="other-section flex-1 min-w-0">
-        <NCard class="h-full">
+        <NCard class="home-card h-full">
           <template #header>
             <div class="flex justify-between items-center">
               <div class="text-sm font-medium">其他信息</div>
@@ -153,6 +153,11 @@ const getTasksStatusStyle = (status) => {
 </template>
 
 <style lang="scss" scoped>
+.home-panel-main {
+  .home-card {
+    border-color: var(--color-white-alpha-5);
+  }
+}
 .recent-section {
   .add-btn {
     .add-btn-icon {

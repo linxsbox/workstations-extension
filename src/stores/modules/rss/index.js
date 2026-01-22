@@ -7,8 +7,7 @@ import {
 import { storageManager, STORAGE_KEYS } from "../../storage";
 import { RSS_SOURCE_TYPES, RSS_UPDATE_COOLDOWN, RSS_BATCH_UPDATE_INTERVAL } from "./config";
 import { RssProcessorFactory } from "@/services/rss/processor";
-import { storeTab } from "../../global/tab/index";
-import { DEFAULT_PANEL } from "@/stores/config";
+import { storeRssTabs } from "./tabs";
 
 export const storeRss = defineStore({
   id: "StoreRss",
@@ -62,15 +61,15 @@ export const storeRss = defineStore({
         }
 
         const rssInfo = getRssTypeInfo(source.type);
-        const tab = storeTab();
+        const tabsStore = storeRssTabs();
 
-        tab.addTab(DEFAULT_PANEL, {
+        tabsStore.addTab({
           label: rssInfo ? rssInfo.label : source.name,
           value: rssInfo ? rssInfo.value : source.type,
         });
 
         // 触发当前列表更新
-        this.switchSourceData(tab.getActiveTabId(DEFAULT_PANEL));
+        this.switchSourceData(tabsStore.getActiveTabId);
 
         return newSource;
       } catch (error) {
@@ -88,8 +87,8 @@ export const storeRss = defineStore({
       this.saveSources();
 
       // 触发当前列表更新
-      const tab = storeTab();
-      this.switchSourceData(tab.getActiveTabId(DEFAULT_PANEL));
+      const tabsStore = storeRssTabs();
+      this.switchSourceData(tabsStore.getActiveTabId);
     },
 
     // 更新 RSS 源
@@ -179,10 +178,10 @@ export const storeRss = defineStore({
         this.sources = savedSources;
       }
 
-      const tab = storeTab();
+      const tabsStore = storeRssTabs();
 
       // 初始化显示数据
-      this.switchSourceData(tab.getActiveTabId("rss"));
+      this.switchSourceData(tabsStore.getActiveTabId);
 
       // 初始化 service worker 消息监听器（只初始化一次）
       if (!this.isListenerInitialized && chrome?.runtime?.onMessage) {

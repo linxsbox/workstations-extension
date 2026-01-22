@@ -237,6 +237,7 @@ defineExpose({
       :class="{ active: showTaskDialog }"
       @click="handleOpenTasks"
       title="打开任务管理"
+      aria-label="打开任务管理"
     >
       <IconTaskAlt class="text-2xl" />
       <!-- 运行中指示器 -->

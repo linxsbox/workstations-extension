@@ -43,26 +43,24 @@ const shortcutGroups = computed(() => [
 
 <template>
   <div class="shortcuts-table">
-    <div class="text-xs mb-4 p-3 rounded" style="background-color: var(--state-hover); color: var(--text-tertiary)">
+    <div class="text-xs mb-4 p-3 rounded text-[var(--text-tertiary)] bg-[var(--state-hover)]">
       <p>💡 提示：快捷键在输入框中不会触发（Esc 除外）</p>
     </div>
     <div v-for="group in shortcutGroups" :key="group.title" class="shortcut-group mb-6">
-      <h3 class="text-sm font-medium mb-3" style="color: var(--text-secondary)">
+      <h3 class="mb-3 text-sm font-medium text-[var(--text-secondary)]">
         {{ group.title }}
       </h3>
       <div class="space-y-2 px-5">
         <div
           v-for="shortcut in group.shortcuts"
           :key="shortcut.action"
-          class="shortcut-item flex items-center justify-between py-2 px-3 rounded"
-          style="background-color: var(--state-hover)"
+          class="shortcut-item flex items-center justify-between py-2 px-3 rounded bg-[var(--state-hover)]"
         >
-          <span class="text-sm" style="color: var(--text-primary)">
+          <span class="text-sm text-[var(--text-primary)]">
             {{ shortcut.description }}
           </span>
           <kbd
-            class="shortcut-key px-2 py-1 text-xs font-mono rounded"
-            style="background-color: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color)"
+            class="shortcut-key px-2 py-1 text-xs font-mono rounded text-[var(--text-primary)] bg-[var(--bg-secondary)] border border-solid border-[var(--border-color)]"
           >
             {{ getShortcutText(shortcut.action) }}
           </kbd>

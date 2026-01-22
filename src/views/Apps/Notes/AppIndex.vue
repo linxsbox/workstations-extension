@@ -114,6 +114,7 @@ defineExpose({
       :class="{ active: showNoteDialog }"
       @click="handleOpenNotes"
       title="打开笔记"
+      aria-label="打开笔记"
     >
       <IconAssignment class="text-2xl" />
     </button>

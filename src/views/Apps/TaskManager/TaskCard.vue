@@ -1,5 +1,5 @@
 <script setup>
-import { useMessage } from "naive-ui";
+import { useMessage, useNotification } from "naive-ui";
 import IconDelete from "@/components/common/Icons/IconDelete.vue";
 import IconPlayArrow from "@/components/common/Icons/IconPlayArrow.vue";
 import IconStop from "@/components/common/Icons/IconStop.vue";
@@ -7,8 +7,9 @@ import IconEditNote from "@/components/common/Icons/IconEditNote.vue";
 import IconRedo from "@/components/common/Icons/IconRedo.vue";
 import { formatDate } from "@linxs/toolkit";
 import { storeTasks } from "@/stores/miniapps/tasks";
+import TaskScheduler from "@/services/scheduler";
 
-import { TASK_STATUS, EXECUTION_RULE } from "./constants";
+import { TASK_STATUS, EXECUTION_RULE, NOTIFICATION_CONFIG } from "./constants";
 
 const props = defineProps({
   task: { type: Object, required: true },
@@ -16,16 +17,80 @@ const props = defineProps({
 });
 
 const message = useMessage();
+const notification = useNotification();
 const tasksStore = storeTasks();
 
-const handleStart = (e) => {
+// 发送通知
+const sendNotification = (title, body) => {
+  // 优先使用浏览器原生通知
+  if ("Notification" in window && Notification.permission === "granted") {
+    const notif = new Notification(title, {
+      body,
+      icon: NOTIFICATION_CONFIG.ICON,
+    });
+    notif.onclick = () => {
+      window.focus();
+      notif.close();
+    };
+  } else {
+    // 降级使用 Naive UI 通知
+    notification.info({
+      title,
+      content: body,
+      duration: NOTIFICATION_CONFIG.DURATION,
+    });
+  }
+};
+
+// 设置任务调度
+const setupTaskScheduler = async (task) => {
+  let triggerAt;
+  if (task.executionRule === EXECUTION_RULE.EXPECTED) {
+    // 预期时间：从启动时间开始计算
+    triggerAt = new Date(task.startedAt).getTime() + task.expectedDuration * 60000;
+  } else {
+    // 计划时间：到指定时间点
+    triggerAt = task.scheduledTime;
+  }
+
+  // 创建调度
+  await TaskScheduler.schedule({
+    id: task.id,
+    triggerAt,
+    data: {
+      title: task.title,
+      content: task.content,
+    },
+  });
+
+  // 监听任务触发
+  TaskScheduler.on(task.id, async (data) => {
+    // 自动完成任务
+    tasksStore.completeTask(task.id);
+    // 发送通知
+    sendNotification("任务完成", `任务"${data.title}"已完成！`);
+  });
+};
+
+const handleStart = async (e) => {
   e.stopPropagation();
   tasksStore.startTask(props.task.id);
+
+  // 获取更新后的任务数据
+  const task = tasksStore.getTaskById(props.task.id);
+  if (task) {
+    await setupTaskScheduler(task);
+  }
+
   message.success("任务已启动");
 };
 
-const handleStop = (e) => {
+const handleStop = async (e) => {
   e.stopPropagation();
+
+  // 取消调度器
+  await TaskScheduler.cancel(props.task.id);
+
   tasksStore.stopTask(props.task.id);
   message.info("任务已停止");
 };
@@ -88,6 +153,7 @@ const getTimeLabel = () => {
         v-if="type === TASK_STATUS.PENDING"
         @click="handleEdit"
         title="编辑任务"
+        aria-label="编辑任务"
       >
         <IconEditNote class="text-xl text-[var(--color-info)]" />
       </button>
@@ -118,6 +184,7 @@ const getTimeLabel = () => {
             class="action-btn size-5 flex justify-center items-center rounded-md"
             @click="handleStart"
             title="启动"
+            aria-label="启动任务"
           >
             <IconPlayArrow class="text-xl text-[var(--color-success)]" />
           </button>
@@ -125,6 +192,7 @@ const getTimeLabel = () => {
             class="action-btn size-5 flex justify-center items-center rounded-md"
             @click="handleDelete"
             title="删除"
+            aria-label="删除任务"
           >
             <IconDelete class="text-xl text-[var(--color-error)]" />
           </button>
@@ -136,6 +204,7 @@ const getTimeLabel = () => {
             class="action-btn size-5 flex justify-center items-center rounded-md"
             @click="handleStop"
             title="停止"
+            aria-label="停止任务"
           >
             <IconStop class="text-xl text-[var(--color-warning)]" />
           </button>
@@ -148,16 +217,17 @@ const getTimeLabel = () => {
             class="action-btn size-5 flex justify-center items-center rounded-md"
             @click="handleReset"
             title="重置任务"
+            aria-label="重置任务"
           >
             <IconRedo
-              class="text-xl text-[var(--color-info)]"
-              style="transform: scaleY(-1)"
+              class="text-xl text-[var(--color-warning)] [transform:scaleX(-1)]"
             />
           </button>
           <button
             class="action-btn size-5 flex justify-center items-center rounded-md"
             @click="handleDelete"
             title="删除"
+            aria-label="删除任务"
           >
             <IconDelete class="text-xl text-[var(--color-error)]" />
           </button>

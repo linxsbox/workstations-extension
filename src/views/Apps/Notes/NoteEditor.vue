@@ -275,6 +275,7 @@ const handleShareSelectedContent = () => {
             size="small"
             @click="handleShare"
             title="分享笔记"
+            aria-label="分享笔记"
           >
             <template #icon>
               <IconShare class="hover:text-[var(--color-info)]" />
@@ -292,6 +293,7 @@ const handleShareSelectedContent = () => {
                 text
                 size="small"
                 title="删除笔记"
+                aria-label="删除笔记"
               >
                 <template #icon>
                   <IconDelete class="hover:text-[var(--color-error)]" />

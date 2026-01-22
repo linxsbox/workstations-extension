@@ -92,10 +92,7 @@ const thumbBackgroundStyle = computed(() => {
               class="theme-thumb flex items-center justify-center w-5 h-5 rounded-full shadow-md cursor-pointer transition-all duration-200"
               :style="thumbBackgroundStyle"
             >
-              <component
-                :is="currentThemeIcon"
-                style="font-size: 16px"
-              />
+              <component :is="currentThemeIcon"/>
             </div>
           </template>
         </NSlider>

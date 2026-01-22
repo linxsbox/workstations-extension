@@ -120,6 +120,7 @@ const handleShare = (e) => {
               class="action-btn flex-none opacity-0 hover:opacity-100 transition-opacity"
               @click.stop
               title="删除"
+              aria-label="删除笔记"
             >
               <IconDelete class="text-base text-[var(--color-error)]" />
             </button>
@@ -132,6 +133,7 @@ const handleShare = (e) => {
           class="action-btn flex-none opacity-0 hover:opacity-100 transition-opacity"
           @click.stop="handleShare"
           title="分享"
+          aria-label="分享笔记"
         >
           <IconShare class="text-base text-[var(--color-info)]" />
         </button>

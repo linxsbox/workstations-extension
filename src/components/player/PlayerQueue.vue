@@ -106,24 +106,17 @@ const getTrackStyle = (track) => {
       >
         <!-- 歌曲信息 -->
         <div class="flex-1 min-w-0 overflow-hidden">
-          <div
-            class="album-title text-[13px] font-medium whitespace-nowrap overflow-hidden text-ellipsis mb-1"
-          >
+          <div class="album-title text-[13px] font-medium whitespace-nowrap overflow-hidden text-ellipsis mb-1">
             {{ track.title || "未知歌曲" }}
           </div>
-          <div
-            class="album-artist text-[11px] whitespace-nowrap overflow-hidden text-ellipsis"
-          >
+          <div class="album-artist text-[11px] whitespace-nowrap overflow-hidden text-ellipsis">
             {{ track.artist || "未知艺术家" }}
           </div>
         </div>
 
         <!-- 右侧：时长和删除按钮 -->
         <div class="flex-none flex items-center gap-2">
-          <span
-            class="text-xs tabular-nums min-w-[40px] text-right"
-            :style="{ color: 'var(--text-secondary)' }"
-          >
+          <span class="text-xs tabular-nums min-w-[40px] text-right text-[var(--text-secondary)]">
             {{ sec2time(getTrackDuration(track, index)) }}
           </span>
           <button

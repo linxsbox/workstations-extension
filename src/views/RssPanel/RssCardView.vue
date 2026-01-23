@@ -212,7 +212,7 @@ const handleCloseShare = () => {
           </div>
           <div class="right-bar inline-flex gap-2">
             <!-- 预留操作扩展栏 -->
-            <button class="share-btn p-1 rounded-md" @click="handleShare" title="分享">
+            <button class="share-btn p-1 rounded-md" @click="handleShare" title="分享" aria-label="分享">
               <IconShare />
             </button>
           </div>

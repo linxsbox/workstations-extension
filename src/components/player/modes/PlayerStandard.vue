@@ -72,12 +72,7 @@ const handleTogglePlaylist = () => {
             aria-label="播放列表"
             title="播放列表"
           >
-            <IconQueueMusic
-              class="text-2xl"
-              :style="{
-                color: 'var(--player-color, var(--player-color-default))',
-              }"
-            />
+            <IconQueueMusic class="text-2xl text-[var(--player-color,var(--player-color-default))]"/>
           </button>
         </PlayerExtras>
       </div>

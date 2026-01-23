@@ -54,10 +54,10 @@ export const storePlayer = defineStore("player", {
 
     // 播放队列和循环模式
     playQueue: new PlayQueue(),
-    playMode: storageManager.get(STORAGE_KEYS.PLAYER_PLAY_MODE, PlayMode.LOOP),
+    playMode: PlayMode.LOOP, // 默认值，将在 initAudioManager 中加载
 
     // 视图模式
-    viewMode: storageManager.get(STORAGE_KEYS.PLAYER_VIEW_MODE, ViewMode.LIST),
+    viewMode: ViewMode.LIST, // 默认值，将在 initAudioManager 中加载
 
     // 播放器显示状态
     isPlayerVisible: false,
@@ -177,6 +177,13 @@ export const storePlayer = defineStore("player", {
 
       try {
         await audioManager.waitForInit();
+
+        // 等待存储初始化完成
+        await storageManager.waitForInit();
+
+        // 加载保存的配置
+        this.playMode = storageManager.get(STORAGE_KEYS.PLAYER_PLAY_MODE, PlayMode.LOOP);
+        this.viewMode = storageManager.get(STORAGE_KEYS.PLAYER_VIEW_MODE, ViewMode.LIST);
 
         // 加载保存的队列
         this.loadPlayQueue();

@@ -67,9 +67,12 @@ const handleNext = () => {
 <template>
   <div class="player-controls flex justify-center items-center gap-2">
     <button
-      class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
+      :class="[
+        'control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70',
+        'hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed',
+        'text-[var(--player-color,var(--player-color-default))]'
+      ]"
       :disabled="!getIsPlayerEnable || !getCanSkip"
-      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
       @click="handlePrevious"
       aria-label="上一曲"
       title="上一曲"
@@ -78,7 +81,8 @@ const handleNext = () => {
     </button>
 
     <PlayButton
-      :style="{ fontSize: `${playButtonSize}px`, color: 'var(--player-color, var(--player-color-default))' }"
+      class="text-[var(--player-color,var(--player-color-default))]"
+      :style="{ fontSize: `${playButtonSize}px`}"
       @play="handleChangePlayState(true)"
       @pause="handleChangePlayState(false)"
       :isPlay="getIsPlaying"
@@ -86,9 +90,12 @@ const handleNext = () => {
     />
 
     <button
-      class="control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70 hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
+      :class="[
+        'control-btn flex items-center justify-center p-2 bg-transparent border-none cursor-pointer transition-all duration-200 opacity-70',
+        'hover:opacity-100 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed',
+        'text-[var(--player-color,var(--player-color-default))]'
+      ]"
       :disabled="!getIsPlayerEnable || !getCanSkip"
-      :style="{ color: 'var(--player-color, var(--player-color-default))' }"
       @click="handleNext"
       aria-label="下一曲"
       title="下一曲"

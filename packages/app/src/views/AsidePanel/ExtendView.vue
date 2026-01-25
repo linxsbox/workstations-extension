@@ -2,9 +2,10 @@
 import PlayerApp from "@/components/player/PlayerApp.vue";
 import NotesApp from "@/views/Apps/Notes/AppIndex.vue";
 import TaskManagerApp from "@/views/Apps/TaskManager/AppIndex.vue";
+import MobileSyncApp from "@/views/Apps/MobileSync/AppIndex.vue";
 
 // 扩展区域：应用快捷入口
-// 包括：播放器、笔记、任务管理、其他便捷应用等
+// 包括：播放器、笔记、任务管理、手机同步、其他便捷应用等
 </script>
 
 <template>
@@ -17,6 +18,9 @@ import TaskManagerApp from "@/views/Apps/TaskManager/AppIndex.vue";
 
     <!-- 任务管理应用 -->
     <TaskManagerApp />
+1772251
+    <!-- 手机同步应用 -->
+    <MobileSyncApp />
 
     <!-- 其他应用快捷入口可在此添加 -->
   </div>

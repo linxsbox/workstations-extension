@@ -12,6 +12,7 @@ class WebRTCOffscreen {
     this.connection = null;
     this.peerId = null;
     this.localIP = null;
+    this.isResetting = false; // 标志：是否正在重置
   }
 
   // 生成随机 Peer ID
@@ -153,13 +154,18 @@ class WebRTCOffscreen {
       console.log('[WebRTC Offscreen] 连接已关闭');
       this.connection = null;
 
-      // 通知 service worker 更新状态
-      chrome.runtime.sendMessage({
-        type: 'WEBRTC_DISCONNECTED',
-        status: 'disconnected'
-      }).catch(err => {
-        console.error('[WebRTC Offscreen] 发送断开消息失败:', err);
-      });
+      // 只有在非重置状态下才发送 DISCONNECTED 消息
+      if (!this.isResetting) {
+        // 通知 service worker 更新状态
+        chrome.runtime.sendMessage({
+          type: 'WEBRTC_DISCONNECTED',
+          status: 'disconnected'
+        }).catch(err => {
+          console.error('[WebRTC Offscreen] 发送断开消息失败:', err);
+        });
+      } else {
+        console.log('[WebRTC Offscreen] 重置中，跳过发送 DISCONNECTED 消息');
+      }
     });
 
     conn.on('error', (err) => {
@@ -231,6 +237,70 @@ class WebRTCOffscreen {
       console.error('[WebRTC Offscreen] 发送失败:', error);
     }
   }
+
+  /**
+   * 内部清理方法（不发送消息）
+   */
+  cleanup() {
+    console.log('[WebRTC Offscreen] 清理资源...');
+
+    if (this.connection) {
+      // 移除所有事件监听器，避免触发 close 事件发送消息
+      this.connection.removeAllListeners();
+      this.connection.close();
+      this.connection = null;
+    }
+
+    if (this.peer) {
+      // 移除所有事件监听器
+      this.peer.removeAllListeners();
+      this.peer.destroy();
+      this.peer = null;
+    }
+
+    this.peerId = null;
+
+    console.log('[WebRTC Offscreen] 资源已清理');
+  }
+
+  /**
+   * 断开连接
+   */
+  disconnect() {
+    console.log('[WebRTC Offscreen] 断开连接...');
+
+    // 清理资源
+    this.cleanup();
+
+    // 通知 Service Worker
+    chrome.runtime.sendMessage({
+      type: 'WEBRTC_DISCONNECTED',
+      status: 'disconnected'
+    }).catch(err => {
+      console.error('[WebRTC Offscreen] 发送断开消息失败:', err);
+    });
+  }
+
+  /**
+   * 重置并重新初始化
+   */
+  async reset() {
+    console.log('[WebRTC Offscreen] 重置连接...');
+
+    // 设置重置标志，避免发送 DISCONNECTED 消息
+    this.isResetting = true;
+
+    // 清理资源（不发送 DISCONNECTED 消息）
+    this.cleanup();
+
+    // 重新初始化
+    await this.init();
+
+    // 清除重置标志
+    this.isResetting = false;
+
+    console.log('[WebRTC Offscreen] 重置完成');
+  }
 }
 
 // 创建实例并初始化
@@ -242,6 +312,42 @@ webrtcOffscreen.init().then((result) => {
   console.log('[WebRTC Offscreen] 初始化完成，结果:', result);
 }).catch((error) => {
   console.error('[WebRTC Offscreen] 初始化失败:', error);
+});
+
+// 监听来自 Service Worker 的消息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // 只处理发给 Offscreen 的消息
+  const offscreenMessages = ['WEBRTC_DISCONNECT', 'WEBRTC_RESET', 'WEBRTC_SEND_DATA'];
+
+  if (!offscreenMessages.includes(message.type)) {
+    // 不是发给 Offscreen 的消息，忽略
+    return false;
+  }
+
+  console.log('[WebRTC Offscreen] 收到消息:', message.type);
+
+  switch (message.type) {
+    case 'WEBRTC_DISCONNECT':
+      webrtcOffscreen.disconnect();
+      sendResponse({ success: true });
+      break;
+
+    case 'WEBRTC_RESET':
+      webrtcOffscreen.reset().then(() => {
+        sendResponse({ success: true });
+      }).catch((error) => {
+        console.error('[WebRTC Offscreen] 重置失败:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // 异步响应
+
+    case 'WEBRTC_SEND_DATA':
+      webrtcOffscreen.sendResponse(message.data);
+      sendResponse({ success: true });
+      break;
+  }
+
+  return false;
 });
 
 console.log('[WebRTC Offscreen] 脚本已加载完成');

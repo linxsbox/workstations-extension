@@ -20,6 +20,20 @@ messagingManager.registerHandlers({
   // WebRTC 初始化
   'INIT_WEBRTC': async (message) => {
     console.log('[Service Worker] 收到 INIT_WEBRTC 请求');
+
+    // 检查 Offscreen Document 是否已存在
+    const existingContexts = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT']
+    });
+
+    if (existingContexts.length > 0) {
+      console.log('[Service Worker] Offscreen Document 已存在，发送重置请求');
+      // 如果已存在，发送重置消息让它重新初始化
+      const response = await forwardToOffscreen({ type: 'WEBRTC_RESET' });
+      return response;
+    }
+
+    // 如果不存在，创建新的 Offscreen Document
     const success = await createWebRTCOffscreen();
     return { success };
   },

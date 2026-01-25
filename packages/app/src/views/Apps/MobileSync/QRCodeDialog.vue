@@ -136,9 +136,9 @@ const handleCopyLink = async () => {
     :mask-closable="true"
     @update:show="handleClose"
   >
-    <div class="flex flex-col items-center gap-5 py-5">
+    <div class="flex flex-col items-center gap-5">
       <!-- 未初始化状态：显示开启同步按钮 -->
-      <div v-if="status === CONNECTION_STATUS.IDLE" class="flex flex-col items-center gap-4 py-10 px-5 w-full">
+      <div v-if="status === CONNECTION_STATUS.IDLE" class="flex flex-col items-center gap-4 p-4 w-full">
         <div class="text-5xl">📱</div>
         <div class="text-lg font-semibold text-[var(--text-primary)]">手机同步</div>
         <div class="text-sm text-[var(--text-secondary)] text-center leading-relaxed">
@@ -165,34 +165,43 @@ const handleCopyLink = async () => {
       <!-- 已初始化状态：显示二维码和连接信息 -->
       <div v-else class="flex flex-col items-center gap-4 w-full">
         <!-- 二维码显示区域 -->
-        <div class="relative w-64 h-64 flex items-center justify-center bg-[var(--bg-primary)] rounded-lg border border-[var(--border-color)]">
+        <div class="relative w-64 h-64 flex items-center justify-center rounded-lg overflow-hidden bg-[var(--bg-primary)] border border-[var(--border-color)]">
           <NSpin :show="isGenerating">
             <canvas ref="qrcodeCanvas" class="block max-w-full max-h-full"></canvas>
           </NSpin>
         </div>
 
-        <!-- 连接状态 -->
-        <div class="flex items-center gap-2 px-4 py-2 bg-[var(--bg-secondary)] rounded">
-          <div
-            class="w-2 h-2 rounded-full animate-pulse"
-            :style="{ backgroundColor: statusColorMap[status] }"
-          ></div>
-          <span class="text-sm font-medium" :style="{ color: statusColorMap[status] }">
-            {{ statusTextMap[status] }}
-          </span>
-        </div>
-
-        <!-- 服务信息 -->
-        <div class="w-full px-3 py-3 bg-[var(--bg-secondary)] rounded flex flex-col gap-2">
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-[var(--text-secondary)]">服务状态：</span>
-            <span class="text-[var(--text-primary)] font-medium">
-              {{ status === CONNECTION_STATUS.CONNECTED ? '运行中' : '待连接' }}
+        <!-- 连接状态信息（两行布局） -->
+        <div class="w-full px-4 py-3 bg-[var(--bg-secondary)] rounded flex flex-col gap-2.5">
+          <!-- 第一行：连接状态 -->
+          <div class="flex items-center justify-center gap-2">
+            <div
+              class="w-2 h-2 rounded-full animate-pulse"
+              :style="{ backgroundColor: statusColorMap[status] }"
+            ></div>
+            <span class="text-sm font-medium" :style="{ color: statusColorMap[status] }">
+              {{ statusTextMap[status] }}
             </span>
           </div>
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-[var(--text-secondary)]">已连接设备：</span>
-            <span class="text-[var(--text-primary)] font-medium">{{ connectedDevices }} 台</span>
+
+          <!-- 第二行：服务状态 | 已连接设备 -->
+          <div class="flex items-center justify-center gap-3 text-xs">
+            <!-- 服务状态 -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-[var(--text-secondary)]">服务：</span>
+              <span class="text-[var(--text-primary)] font-medium">
+                {{ status === CONNECTION_STATUS.CONNECTED ? '运行中' : '待连接' }}
+              </span>
+            </div>
+
+            <!-- 分隔符 -->
+            <div class="w-px h-3 bg-[var(--border-color)]"></div>
+
+            <!-- 已连接设备 -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-[var(--text-secondary)]">设备：</span>
+              <span class="text-[var(--text-primary)] font-medium">{{ connectedDevices }} 台</span>
+            </div>
           </div>
         </div>
 

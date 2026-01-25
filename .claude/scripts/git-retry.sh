@@ -31,35 +31,29 @@ if [ -z "$GIT_COMMAND" ]; then
   exit 1
 fi
 
-echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}Git 命令重试脚本${NC}"
-echo -e "${GREEN}========================================${NC}"
-echo -e "执行命令: ${YELLOW}git $GIT_COMMAND${NC}"
-echo -e "最大重试次数: ${YELLOW}${MAX_RETRIES}${NC}"
-echo -e "重试间隔: ${YELLOW}${RETRY_INTERVAL}s${NC}"
-echo -e "${GREEN}========================================${NC}\n"
+# 静默执行，只在需要时输出
 
 # 重试逻辑
 attempt=1
 
 while [ $attempt -le $MAX_RETRIES ]; do
-  echo -e "${YELLOW}[尝试 $attempt/$MAX_RETRIES]${NC} 执行 git $GIT_COMMAND"
+  # 只在重试时显示提示
+  if [ $attempt -gt 1 ]; then
+    echo -e "${YELLOW}[重试 $attempt/$MAX_RETRIES]${NC}"
+  fi
 
   # 执行 git 命令
   git $GIT_COMMAND
 
   # 检查退出状态
   if [ $? -eq 0 ]; then
-    echo -e "\n${GREEN}✓ 命令执行成功！${NC}\n"
     exit 0
   else
-    echo -e "${RED}✗ 命令执行失败${NC}"
-
     if [ $attempt -lt $MAX_RETRIES ]; then
-      echo -e "${YELLOW}等待 ${RETRY_INTERVAL}s 后重试...${NC}\n"
+      echo -e "${YELLOW}等待 ${RETRY_INTERVAL}s 后重试...${NC}"
       sleep $RETRY_INTERVAL
     else
-      echo -e "\n${RED}已达到最大重试次数 (${MAX_RETRIES})，命令执行失败${NC}\n"
+      echo -e "${RED}已达到最大重试次数 (${MAX_RETRIES})${NC}"
       exit 1
     fi
   fi

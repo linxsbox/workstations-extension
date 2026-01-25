@@ -28,4 +28,4 @@ stats.html
 
 # Shell scripts (local tools)
 *.sh
-!.claude/skills/**.sh
+!.claude/scripts/**.sh

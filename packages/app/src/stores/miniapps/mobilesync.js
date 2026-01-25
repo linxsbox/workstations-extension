@@ -7,6 +7,7 @@ import { defineStore } from 'pinia';
 import webrtcService from '@/services/webrtc';
 import { CONNECTION_STATUS } from '@/services/webrtc/constants';
 import { storeNotes } from '@/stores/miniapps/notes';
+import { storeApp } from '@/stores/global/app';
 
 export const storeMobileSync = defineStore('mobileSync', {
   state: () => ({
@@ -31,6 +32,9 @@ export const storeMobileSync = defineStore('mobileSync', {
     // 状态监听器
     statusUnsubscribe: null,
     dataUnsubscribe: null,
+
+    // Service Worker 事件取消订阅函数列表
+    swEventUnsubscribers: [],
   }),
 
   getters: {
@@ -75,6 +79,23 @@ export const storeMobileSync = defineStore('mobileSync', {
         this.status = CONNECTION_STATUS.INITIALIZING;
         this.error = null;
 
+        // 清理旧的订阅（避免重复订阅）
+        this.swEventUnsubscribers.forEach(unsub => unsub());
+        this.swEventUnsubscribers = [];
+
+        if (this.statusUnsubscribe) {
+          this.statusUnsubscribe();
+          this.statusUnsubscribe = null;
+        }
+
+        if (this.dataUnsubscribe) {
+          this.dataUnsubscribe();
+          this.dataUnsubscribe = null;
+        }
+
+        // 初始化事件总线订阅
+        this.setupServiceWorkerEventListeners();
+
         // 初始化 WebRTC 服务
         const success = await webrtcService.init();
 
@@ -82,16 +103,10 @@ export const storeMobileSync = defineStore('mobileSync', {
           throw new Error('WebRTC 初始化失败');
         }
 
-        // 获取 Peer ID
-        this.peerId = webrtcService.getPeerId();
-
-        // 获取当前状态
-        this.status = await webrtcService.getStatus();
-
         // 监听状态变化
         this.setupListeners();
 
-        console.log('[Mobile Sync Store] 初始化成功, Peer ID:', this.peerId);
+        console.log('[Mobile Sync Store] 初始化成功');
         return true;
       } catch (error) {
         console.error('[Mobile Sync Store] 初始化失败:', error);
@@ -99,6 +114,64 @@ export const storeMobileSync = defineStore('mobileSync', {
         this.error = error.message;
         return false;
       }
+    },
+
+    /**
+     * 设置 Service Worker 事件监听器
+     */
+    setupServiceWorkerEventListeners() {
+      const appStore = storeApp();
+
+      // 确保事件总线已初始化
+      appStore.initServiceWorkerEventBus();
+
+      // 订阅 WEBRTC_READY 事件
+      const unsubReady = appStore.onServiceWorkerEvent('WEBRTC_READY', (message) => {
+        console.log('[Mobile Sync Store] 收到 WEBRTC_READY:', message.peerId);
+        this.peerId = message.peerId;
+        this.status = message.status || CONNECTION_STATUS.READY;
+
+        // 通知 WebRTC Service 设置 Peer ID
+        webrtcService.setPeerId(message.peerId);
+      });
+
+      // 订阅 WEBRTC_CONNECTED 事件
+      const unsubConnected = appStore.onServiceWorkerEvent('WEBRTC_CONNECTED', (message) => {
+        console.log('[Mobile Sync Store] 收到 WEBRTC_CONNECTED');
+        this.status = CONNECTION_STATUS.CONNECTED;
+        this.connectedDevices = message.connectedDevices || 1;
+      });
+
+      // 订阅 WEBRTC_DISCONNECTED 事件
+      const unsubDisconnected = appStore.onServiceWorkerEvent('WEBRTC_DISCONNECTED', (message) => {
+        console.log('[Mobile Sync Store] 收到 WEBRTC_DISCONNECTED');
+        this.status = CONNECTION_STATUS.DISCONNECTED;
+        this.connectedDevices = 0;
+      });
+
+      // 订阅 WEBRTC_ERROR 事件
+      const unsubError = appStore.onServiceWorkerEvent('WEBRTC_ERROR', (message) => {
+        console.error('[Mobile Sync Store] 收到 WEBRTC_ERROR:', message.error);
+        this.status = CONNECTION_STATUS.ERROR;
+        this.error = message.error;
+      });
+
+      // 订阅 WEBRTC_DATA_RECEIVED 事件
+      const unsubData = appStore.onServiceWorkerEvent('WEBRTC_DATA_RECEIVED', (message) => {
+        console.log('[Mobile Sync Store] 收到 WEBRTC_DATA_RECEIVED:', message.data);
+        this.handleReceivedData(message.data);
+      });
+
+      // 保存所有取消订阅函数
+      this.swEventUnsubscribers.push(
+        unsubReady,
+        unsubConnected,
+        unsubDisconnected,
+        unsubError,
+        unsubData
+      );
+
+      console.log('[Mobile Sync Store] 已订阅所有 Service Worker 事件');
     },
 
     /**
@@ -204,6 +277,21 @@ export const storeMobileSync = defineStore('mobileSync', {
         // 断开连接
         await webrtcService.disconnect();
 
+        // 取消所有 Service Worker 事件订阅
+        this.swEventUnsubscribers.forEach(unsub => unsub());
+        this.swEventUnsubscribers = [];
+
+        // 取消 WebRTC Service 监听器
+        if (this.statusUnsubscribe) {
+          this.statusUnsubscribe();
+          this.statusUnsubscribe = null;
+        }
+
+        if (this.dataUnsubscribe) {
+          this.dataUnsubscribe();
+          this.dataUnsubscribe = null;
+        }
+
         // 重置状态
         this.status = CONNECTION_STATUS.IDLE;
         this.peerId = null;
@@ -254,6 +342,11 @@ export const storeMobileSync = defineStore('mobileSync', {
      * 清理资源
      */
     cleanup() {
+      // 取消所有 Service Worker 事件订阅
+      this.swEventUnsubscribers.forEach(unsub => unsub());
+      this.swEventUnsubscribers = [];
+
+      // 取消 WebRTC Service 监听器
       if (this.statusUnsubscribe) {
         this.statusUnsubscribe();
         this.statusUnsubscribe = null;
@@ -265,6 +358,8 @@ export const storeMobileSync = defineStore('mobileSync', {
       }
 
       webrtcService.destroy();
+
+      console.log('[Mobile Sync Store] 已清理所有资源');
     },
   },
 });

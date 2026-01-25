@@ -18,7 +18,7 @@ import MobileSyncApp from "@/views/Apps/MobileSync/AppIndex.vue";
 
     <!-- 任务管理应用 -->
     <TaskManagerApp />
-1772251
+
     <!-- 手机同步应用 -->
     <MobileSyncApp />
 

@@ -14,6 +14,7 @@ class WebRTCService {
   /**
    * 初始化 WebRTC
    * 创建 Offscreen Document 并启动 PeerJS
+   * 注意：Peer ID 将通过 Store 的事件总线接收
    */
   async init() {
     if (this.isInitialized) {
@@ -22,19 +23,7 @@ class WebRTCService {
     }
 
     try {
-      // 检查是否已有 Peer ID（从 sessionStorage）
-      const existingPeerId = sessionStorage.getItem(SESSION_KEYS.PEER_ID);
-
-      if (existingPeerId) {
-        console.log('[WebRTC Service] 使用已有的 Peer ID:', existingPeerId);
-        this.isInitialized = true;
-        return true;
-      }
-
       console.log('[WebRTC Service] 开始初始化...');
-
-      // 设置消息监听器（在发送初始化请求之前）
-      const peerIdPromise = this.waitForPeerIdMessage();
 
       // 通知 Service Worker 初始化 WebRTC
       const response = await chrome.runtime.sendMessage({
@@ -44,11 +33,8 @@ class WebRTCService {
       console.log('[WebRTC Service] Service Worker 响应:', response);
 
       if (response?.success) {
-        console.log('[WebRTC Service] Offscreen Document 创建成功，等待 Peer ID...');
-
-        // 等待 WEBRTC_READY 消息
-        await peerIdPromise;
-
+        console.log('[WebRTC Service] Offscreen Document 创建成功');
+        // 注意：Peer ID 将通过 Store 的事件总线接收，并调用 setPeerId()
         this.isInitialized = true;
         return true;
       }
@@ -61,36 +47,16 @@ class WebRTCService {
   }
 
   /**
-   * 等待 Peer ID 消息（事件驱动）
+   * 设置 Peer ID（由 Store 调用）
    */
-  waitForPeerIdMessage(timeout = 30000) {
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        chrome.runtime.onMessage.removeListener(messageListener);
-        reject(new Error('等待 Peer ID 超时'));
-      }, timeout);
+  setPeerId(peerId) {
+    if (!peerId) {
+      console.warn('[WebRTC Service] 尝试设置空的 Peer ID');
+      return;
+    }
 
-      const messageListener = (message, sender, sendResponse) => {
-        if (message.type === 'WEBRTC_READY' && message.peerId) {
-          clearTimeout(timeoutId);
-          chrome.runtime.onMessage.removeListener(messageListener);
-
-          // 保存 Peer ID 到 sessionStorage
-          sessionStorage.setItem(SESSION_KEYS.PEER_ID, message.peerId);
-
-          console.log('[WebRTC Service] 收到 Peer ID:', message.peerId);
-
-          // 保存状态到 sessionStorage
-          if (message.status) {
-            sessionStorage.setItem('webrtc_status', message.status);
-          }
-
-          resolve(message.peerId);
-        }
-      };
-
-      chrome.runtime.onMessage.addListener(messageListener);
-    });
+    sessionStorage.setItem(SESSION_KEYS.PEER_ID, peerId);
+    console.log('[WebRTC Service] Peer ID 已设置:', peerId);
   }
 
   /**
@@ -213,7 +179,16 @@ class WebRTCService {
         type: 'WEBRTC_DISCONNECT'
       });
 
-      console.log('[WebRTC Service] 已断开连接');
+      // 清理 sessionStorage
+      sessionStorage.removeItem(SESSION_KEYS.PEER_ID);
+      sessionStorage.removeItem(SESSION_KEYS.QR_DATA);
+      sessionStorage.removeItem(SESSION_KEYS.CREATED_AT);
+      sessionStorage.removeItem('webrtc_status');
+
+      // 重置初始化标志，允许重新初始化
+      this.isInitialized = false;
+
+      console.log('[WebRTC Service] 已断开连接并清理缓存');
       return true;
     } catch (error) {
       console.error('[WebRTC Service] 断开连接失败:', error);

@@ -27,7 +27,8 @@ class WebRTCService {
 
       // 通知 Service Worker 初始化 WebRTC
       const response = await chrome.runtime.sendMessage({
-        type: 'INIT_WEBRTC'
+        type: 'WEBRTC',
+        action: 'INIT'
       });
 
       console.log('[WebRTC Service] Service Worker 响应:', response);
@@ -158,8 +159,9 @@ class WebRTCService {
   async sendToMobile(data) {
     try {
       const response = await chrome.runtime.sendMessage({
-        type: 'WEBRTC_SEND_DATA',
-        data: data
+        type: 'WEBRTC',
+        action: 'SEND_DATA',
+        data: { data }
       });
 
       return response?.success || false;
@@ -170,28 +172,55 @@ class WebRTCService {
   }
 
   /**
-   * 断开连接
+   * 断开连接（保持 Peer 监听）
    */
   async disconnect() {
     try {
       // 通知 Service Worker 断开连接
       await chrome.runtime.sendMessage({
-        type: 'WEBRTC_DISCONNECT'
+        type: 'WEBRTC',
+        action: 'DISCONNECT'
       });
 
       // 清理 sessionStorage
+      sessionStorage.removeItem(SESSION_KEYS.QR_DATA);
+      sessionStorage.removeItem(SESSION_KEYS.CREATED_AT);
+      sessionStorage.removeItem('webrtc_status');
+
+      // 注意：不清除 Peer ID，保持可重连
+
+      console.log('[WebRTC Service] 已断开连接（Peer 保持监听）');
+      return true;
+    } catch (error) {
+      console.error('[WebRTC Service] 断开连接失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 完全关闭（销毁所有资源）
+   */
+  async shutdown() {
+    try {
+      // 通知 Service Worker 完全关闭
+      await chrome.runtime.sendMessage({
+        type: 'WEBRTC',
+        action: 'SHUTDOWN'
+      });
+
+      // 清理所有 sessionStorage
       sessionStorage.removeItem(SESSION_KEYS.PEER_ID);
       sessionStorage.removeItem(SESSION_KEYS.QR_DATA);
       sessionStorage.removeItem(SESSION_KEYS.CREATED_AT);
       sessionStorage.removeItem('webrtc_status');
 
-      // 重置初始化标志，允许重新初始化
+      // 重置初始化标志
       this.isInitialized = false;
 
-      console.log('[WebRTC Service] 已断开连接并清理缓存');
+      console.log('[WebRTC Service] 已完全关闭');
       return true;
     } catch (error) {
-      console.error('[WebRTC Service] 断开连接失败:', error);
+      console.error('[WebRTC Service] 完全关闭失败:', error);
       return false;
     }
   }
@@ -209,7 +238,8 @@ class WebRTCService {
 
       // 通知 Service Worker 重置
       await chrome.runtime.sendMessage({
-        type: 'WEBRTC_RESET'
+        type: 'WEBRTC',
+        action: 'RESET'
       });
 
       this.isInitialized = false;

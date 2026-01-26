@@ -3,12 +3,15 @@ import ChromeStorage from '../modules/storage.js';
 import MessagingManager from '../modules/messaging.js';
 import { initRssScheduler, setupSchedulerListener } from '../modules/scheduler.js';
 import {
-  createWebRTCOffscreen,
-  savePeerId,
-  updateWebRTCStatus,
-  forwardToOffscreen,
-  broadcastWebRTCData
+  createOffscreenDocument,
+  waitForOffscreenReady,
+  shouldAutoRestore,
+  forwardToOffscreen
 } from '../modules/webrtc.js';
+
+// 导入模块处理器
+import OffscreenHandler from './handlers/offscreen.js';
+import WebRTCHandler from './handlers/webrtc.js';
 
 console.log('[Service Worker] 启动');
 
@@ -17,130 +20,15 @@ const messagingManager = new MessagingManager();
 
 // ==================== 注册消息处理器 ====================
 messagingManager.registerHandlers({
-  // WebRTC 初始化
-  'INIT_WEBRTC': async (message) => {
-    console.log('[Service Worker] 收到 INIT_WEBRTC 请求');
-
-    // 检查 Offscreen Document 是否已存在
-    const existingContexts = await chrome.runtime.getContexts({
-      contextTypes: ['OFFSCREEN_DOCUMENT']
-    });
-
-    if (existingContexts.length > 0) {
-      console.log('[Service Worker] Offscreen Document 已存在，发送重置请求');
-      // 如果已存在，发送重置消息让它重新初始化
-      const response = await forwardToOffscreen({ type: 'WEBRTC_RESET' });
-      return response;
-    }
-
-    // 如果不存在，创建新的 Offscreen Document
-    const success = await createWebRTCOffscreen();
-    return { success };
+  // Offscreen 模块的消息总线
+  'OFFSCREEN': async (message) => {
+    return await OffscreenHandler.handle(message);
   },
 
-  // 保存 Peer ID
-  'WEBRTC_SAVE_PEER_ID': async (message) => {
-    console.log('[Service Worker] 保存 Peer ID:', message.peerId);
-    await savePeerId(message.peerId, message.status);
-    return { success: true };
+  // WebRTC 模块的消息总线
+  'WEBRTC': async (message) => {
+    return await WebRTCHandler.handle(message);
   },
-
-  // 更新 WebRTC 状态
-  'WEBRTC_UPDATE_STATUS': async (message) => {
-    console.log('[Service Worker] 更新 WebRTC 状态:', message.status);
-    await updateWebRTCStatus(message.status, message.error);
-    return { success: true };
-  },
-
-  // WebRTC 就绪通知
-  'WEBRTC_READY': async (message) => {
-    console.log('[Service Worker] WebRTC 已就绪, Peer ID:', message.peerId);
-    // 只保存 Peer ID 和状态到 session storage
-    await ChromeStorage.set('webrtc_peer_id', message.peerId);
-    await ChromeStorage.set('webrtc_status', message.status || 'ready');
-
-    // 广播给所有扩展页面
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'WEBRTC_READY',
-        peerId: message.peerId,
-        status: message.status || 'ready'
-      });
-    } catch (error) {
-      console.log('[Service Worker] 广播 WEBRTC_READY 失败（可能没有活动页面）:', error.message);
-    }
-
-    return { success: true };
-  },
-
-  // WebRTC 连接建立
-  'WEBRTC_CONNECTED': async (message) => {
-    console.log('[Service Worker] WebRTC 连接已建立');
-    await ChromeStorage.set('webrtc_status', message.status);
-    return { success: true };
-  },
-
-  // WebRTC 连接断开
-  'WEBRTC_DISCONNECTED': async (message) => {
-    console.log('[Service Worker] WebRTC 连接已断开');
-    await ChromeStorage.set('webrtc_status', message.status);
-    return { success: true };
-  },
-
-  // WebRTC 错误
-  'WEBRTC_ERROR': async (message) => {
-    console.error('[Service Worker] WebRTC 错误:', message.error);
-    await ChromeStorage.set('webrtc_status', message.status);
-    await ChromeStorage.set('webrtc_error', message.error);
-    return { success: true };
-  },
-
-  // 保存笔记
-  'WEBRTC_SAVE_NOTE': async (message) => {
-    console.log('[Service Worker] 保存来自手机的笔记');
-    try {
-      // 获取现有笔记
-      const notes = await ChromeStorage.get('notes', []);
-      // 添加新笔记
-      notes.push(message.note);
-      // 保存回存储
-      await ChromeStorage.set('notes', notes);
-      console.log('[Service Worker] 笔记已保存');
-      return { success: true };
-    } catch (error) {
-      console.error('[Service Worker] 保存笔记失败:', error);
-      return { success: false, error: error.message };
-    }
-  },
-
-  // 接收到数据
-  'WEBRTC_DATA_RECEIVED': async (message) => {
-    console.log('[Service Worker] 收到 WebRTC 数据:', message.data);
-    // 广播给所有扩展页面
-    await broadcastWebRTCData(message.data);
-    return { success: true };
-  },
-
-  // 发送数据到手机
-  'WEBRTC_SEND_DATA': async (message) => {
-    console.log('[Service Worker] 转发数据到 Offscreen');
-    const response = await forwardToOffscreen(message);
-    return response;
-  },
-
-  // 重置 WebRTC
-  'WEBRTC_RESET': async (message) => {
-    console.log('[Service Worker] 重置 WebRTC');
-    const response = await forwardToOffscreen(message);
-    return response;
-  },
-
-  // 断开 WebRTC 连接
-  'WEBRTC_DISCONNECT': async (message) => {
-    console.log('[Service Worker] 断开 WebRTC 连接');
-    const response = await forwardToOffscreen(message);
-    return response;
-  }
 });
 
 // 设置消息监听器
@@ -166,6 +54,18 @@ chrome.runtime.onInstalled.addListener(async () => {
 
     // 初始化 RSS 定时器
     await initRssScheduler();
+
+    // 预创建 Offscreen Document（作为基础设施）
+    console.log('[Service Worker] 预创建 Offscreen Document...');
+    const offscreenSuccess = await createOffscreenDocument();
+    if (offscreenSuccess) {
+      const ready = await waitForOffscreenReady();
+      if (ready) {
+        console.log('[Service Worker] Offscreen Document 就绪');
+      } else {
+        console.warn('[Service Worker] Offscreen Document 就绪超时');
+      }
+    }
   } catch (error) {
     console.error('[Service Worker] 初始化失败:', error);
   }
@@ -215,4 +115,95 @@ chrome.tabs.onCreated.addListener(async (tab) => {
 // ==================== RSS 定时器监听 ====================
 setupSchedulerListener((updateInfo) => {
   console.log('[Service Worker] RSS 定时更新触发:', updateInfo);
+});
+
+// ==================== 浏览器启动时自动恢复 WebRTC ====================
+chrome.runtime.onStartup.addListener(async () => {
+  console.log('[Service Worker] 浏览器启动');
+
+  try {
+    // 检查 Offscreen 是否存在
+    const existingContexts = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT']
+    });
+
+    if (existingContexts.length === 0) {
+      // 预创建 Offscreen Document（作为基础设施）
+      console.log('[Service Worker] 预创建 Offscreen Document...');
+      const success = await createOffscreenDocument();
+      if (success) {
+        const ready = await waitForOffscreenReady();
+        if (ready) {
+          console.log('[Service Worker] Offscreen Document 就绪');
+
+          // 检查是否需要自动恢复 WebRTC
+          const needRestore = await shouldAutoRestore();
+          if (needRestore) {
+            console.log('[Service Worker] 检测到需要自动恢复 WebRTC');
+            await forwardToOffscreen({ type: 'WEBRTC_INIT' });
+            console.log('[Service Worker] WebRTC 已自动恢复');
+          }
+        } else {
+          console.warn('[Service Worker] Offscreen 就绪超时');
+        }
+      }
+    } else {
+      console.log('[Service Worker] Offscreen Document 已存在');
+
+      // 检查是否需要自动恢复 WebRTC
+      const needRestore = await shouldAutoRestore();
+      if (needRestore) {
+        console.log('[Service Worker] 检测到需要自动恢复 WebRTC');
+        await forwardToOffscreen({ type: 'WEBRTC_INIT' });
+        console.log('[Service Worker] WebRTC 已自动恢复');
+      }
+    }
+  } catch (error) {
+    console.error('[Service Worker] 启动处理失败:', error);
+  }
+});
+
+// ==================== 定期心跳检查 ====================
+// 创建定时器（每 5 分钟检查一次）
+chrome.alarms.create('webrtc_heartbeat', {
+  periodInMinutes: 5
+});
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'webrtc_heartbeat') {
+    console.log('[Service Worker] WebRTC 心跳检查');
+
+    try {
+      const needRestore = await shouldAutoRestore();
+
+      if (needRestore) {
+        // 检查 Offscreen 是否还在运行
+        const existingContexts = await chrome.runtime.getContexts({
+          contextTypes: ['OFFSCREEN_DOCUMENT']
+        });
+
+        if (existingContexts.length === 0) {
+          console.log('[Service Worker] 检测到 Offscreen 已关闭，重新创建');
+          const success = await createOffscreenDocument();
+          if (success) {
+            // 等待就绪通知
+            const ready = await waitForOffscreenReady();
+            if (ready) {
+              // 发送初始化消息
+              await forwardToOffscreen({ type: 'WEBRTC_INIT' });
+              console.log('[Service Worker] Offscreen 已恢复');
+            } else {
+              console.error('[Service Worker] Offscreen 就绪超时');
+            }
+          } else {
+            console.error('[Service Worker] Offscreen 恢复失败');
+          }
+        } else {
+          console.log('[Service Worker] Offscreen 运行正常');
+        }
+      }
+    } catch (error) {
+      console.error('[Service Worker] 心跳检查失败:', error);
+    }
+  }
 });

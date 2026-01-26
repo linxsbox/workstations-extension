@@ -103,10 +103,16 @@ export const storeMobileSync = defineStore('mobileSync', {
           throw new Error('WebRTC 初始化失败');
         }
 
+        // 启用自动恢复
+        await chrome.runtime.sendMessage({
+          type: 'WEBRTC',
+          action: 'ENABLE_AUTO_RESTORE'
+        });
+
         // 监听状态变化
         this.setupListeners();
 
-        console.log('[Mobile Sync Store] 初始化成功');
+        console.log('[Mobile Sync Store] 初始化成功，已启用自动恢复');
         return true;
       } catch (error) {
         console.error('[Mobile Sync Store] 初始化失败:', error);
@@ -270,11 +276,11 @@ export const storeMobileSync = defineStore('mobileSync', {
     },
 
     /**
-     * 停止同步
+     * 停止同步（断开连接，但保持 Peer 监听）
      */
     async stopSync() {
       try {
-        // 断开连接
+        // 断开连接（不销毁 Peer）
         await webrtcService.disconnect();
 
         // 取消所有 Service Worker 事件订阅
@@ -292,15 +298,49 @@ export const storeMobileSync = defineStore('mobileSync', {
           this.dataUnsubscribe = null;
         }
 
-        // 重置状态
+        // 重置状态（但保留 peerId）
+        this.status = CONNECTION_STATUS.READY;
+        this.connectedDevices = 0;
+        this.error = null;
+
+        console.log('[Mobile Sync Store] 同步已停止（Peer 保持监听，可重新连接）');
+      } catch (error) {
+        console.error('[Mobile Sync Store] 停止同步失败:', error);
+        this.error = error.message;
+      }
+    },
+
+    /**
+     * 完全关闭同步（销毁所有资源）
+     */
+    async completeShutdown() {
+      try {
+        // 完全关闭
+        await webrtcService.shutdown();
+
+        // 取消所有事件订阅
+        this.swEventUnsubscribers.forEach(unsub => unsub());
+        this.swEventUnsubscribers = [];
+
+        if (this.statusUnsubscribe) {
+          this.statusUnsubscribe();
+          this.statusUnsubscribe = null;
+        }
+
+        if (this.dataUnsubscribe) {
+          this.dataUnsubscribe();
+          this.dataUnsubscribe = null;
+        }
+
+        // 重置所有状态
         this.status = CONNECTION_STATUS.IDLE;
         this.peerId = null;
         this.connectedDevices = 0;
         this.error = null;
 
-        console.log('[Mobile Sync Store] 同步已停止');
+        console.log('[Mobile Sync Store] 已完全关闭同步');
       } catch (error) {
-        console.error('[Mobile Sync Store] 停止同步失败:', error);
+        console.error('[Mobile Sync Store] 完全关闭失败:', error);
         this.error = error.message;
       }
     },
@@ -321,6 +361,35 @@ export const storeMobileSync = defineStore('mobileSync', {
         console.log('[Mobile Sync Store] 二维码已刷新');
       } catch (error) {
         console.error('[Mobile Sync Store] 刷新失败:', error);
+        this.status = CONNECTION_STATUS.ERROR;
+        this.error = error.message;
+      }
+    },
+
+    /**
+     * 完全重置（清除 Peer ID，生成新二维码）
+     */
+    async completeReset() {
+      try {
+        this.status = CONNECTION_STATUS.INITIALIZING;
+
+        // 完全重置
+        await chrome.runtime.sendMessage({
+          type: 'WEBRTC',
+          action: 'COMPLETE_RESET'
+        });
+
+        // 清除本地状态
+        this.peerId = null;
+        this.connectedDevices = 0;
+        this.error = null;
+
+        // 重新初始化
+        await this.initWebRTC();
+
+        console.log('[Mobile Sync Store] 已完全重置，生成新 Peer ID');
+      } catch (error) {
+        console.error('[Mobile Sync Store] 完全重置失败:', error);
         this.status = CONNECTION_STATUS.ERROR;
         this.error = error.message;
       }

@@ -1,3 +1,8 @@
+---
+name: commit-and-push
+description: 自动化 Git 提交和推送流程，确保代码安全地提交到新分支并推送到远程仓库。当用户说"提交代码"、"commit"、"推送代码"、"我要提交"时使用此技能。
+---
+
 # Commit and Push
 
 自动化 Git 提交和推送流程，确保代码安全地提交到新分支并推送到远程仓库。
@@ -33,15 +38,15 @@ git branch --show-current
 
 ### 步骤 3: 创建新分支
 
-询问用户输入新分支名称，建议格式：
+根据本次变更自动生成分支名称，格式：
 - `feat/功能描述` - 新功能
 - `fix/问题描述` - Bug 修复
 - `refactor/重构描述` - 代码重构
 - `docs/文档描述` - 文档更新
 
-```bash
-git checkout -b <分支名>
-```
+输出本次变更摘要，等待用户确认：
+- 确认 → 执行 `git checkout -b <分支名>`
+- 修改 → 用户提供新的分支名
 
 ### 步骤 4: 确认待提交文件
 
@@ -57,7 +62,7 @@ git diff --cached --stat
 
 ### 步骤 5: 编写提交信息
 
-询问用户提交内容描述，格式：
+根据代码变更自动生成提交信息，格式：
 
 ```
 <type>: <简短描述>
@@ -70,6 +75,10 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
 Type 类型：feat, fix, refactor, docs, style, perf, test, chore
+
+输出生成的提交信息，等待用户确认：
+- 确认 → 执行提交
+- 修改 → 用户提供修改意见，重新生成
 
 执行提交：
 

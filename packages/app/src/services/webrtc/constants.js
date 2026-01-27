@@ -46,15 +46,29 @@ export const CONNECTION_STATUS = {
 
 // 消息类型
 export const MESSAGE_TYPE = {
-  // 手机端 → 扩展端
-  NOTE: 'NOTE',           // 笔记内容
-  PING: 'PING',           // 心跳检测
+  // ==================== 手机端 → 扩展端 ====================
 
-  // 扩展端 → 手机端
-  WELCOME: 'WELCOME',     // 欢迎消息
-  SUCCESS: 'SUCCESS',     // 操作成功
-  ERROR: 'ERROR',         // 操作失败
-  PONG: 'PONG',           // 心跳响应
+  // 内容相关
+  NOTE: 'NOTE',                   // 笔记内容
+
+  // 标签页控制
+  OPEN_TAB: 'OPEN_TAB',          // 打开新标签页
+  CLOSE_TAB: 'CLOSE_TAB',        // 关闭标签页
+  GET_TABS: 'GET_TABS',          // 获取标签页列表
+  SWITCH_TAB: 'SWITCH_TAB',      // 切换到指定标签页
+
+  // 剪贴板
+  CLIPBOARD: 'CLIPBOARD',         // 剪贴板操作
+
+  // 系统相关
+  PING: 'PING',                   // 心跳检测
+
+  // ==================== 扩展端 → 手机端 ====================
+
+  WELCOME: 'WELCOME',             // 欢迎消息
+  SUCCESS: 'SUCCESS',             // 操作成功
+  ERROR: 'ERROR',                 // 操作失败
+  PONG: 'PONG',                   // 心跳响应
 };
 
 // Storage Keys

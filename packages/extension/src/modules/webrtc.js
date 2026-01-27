@@ -1,14 +1,17 @@
 // ==================== WebRTC P2P 通信模块 ====================
 // 使用 Offscreen Document 来运行 WebRTC（因为 Service Worker 没有 window 对象）
 
-let webrtcOffscreenCreated = false;
+let offscreenDocumentCreated = false;
+
+// Offscreen 就绪事件监听器
+let offscreenReadyResolve = null;
 
 /**
- * 创建 WebRTC Offscreen Document
+ * 创建 Offscreen Document
  * @returns {Promise<boolean>}
  */
-export const createWebRTCOffscreen = async () => {
-  if (webrtcOffscreenCreated) {
+export const createOffscreenDocument = async () => {
+  if (offscreenDocumentCreated) {
     return true;
   }
 
@@ -19,12 +22,12 @@ export const createWebRTCOffscreen = async () => {
     });
 
     if (existingContexts.length > 0) {
-      webrtcOffscreenCreated = true;
-      console.log('[WebRTC] Offscreen Document 已存在');
+      offscreenDocumentCreated = true;
+      console.log('[Offscreen] Document 已存在');
       return true;
     }
 
-    console.log('[WebRTC] 开始创建 Offscreen Document...');
+    console.log('[Offscreen] 开始创建 Document...');
 
     // 创建 offscreen document
     await chrome.offscreen.createDocument({
@@ -33,26 +36,51 @@ export const createWebRTCOffscreen = async () => {
       justification: 'WebRTC P2P communication requires DOM environment'
     });
 
-    webrtcOffscreenCreated = true;
-    console.log('[WebRTC] Offscreen Document 已创建（等待脚本加载）');
+    offscreenDocumentCreated = true;
+    console.log('[Offscreen] Document 已创建（等待脚本加载）');
     return true;
   } catch (error) {
-    console.error('[WebRTC] 创建 Offscreen Document 失败:', error);
+    console.error('[Offscreen] 创建 Document 失败:', error);
     return false;
   }
 };
 
 /**
- * 检查 WebRTC Offscreen 是否已创建
- * @returns {boolean}
+ * 处理 Offscreen 就绪通知（由 Service Worker 的消息处理器调用）
  */
-export const isWebRTCOffscreenCreated = () => webrtcOffscreenCreated;
+export const handleOffscreenReady = () => {
+  console.log('[Offscreen] 收到就绪通知');
+  if (offscreenReadyResolve) {
+    offscreenReadyResolve(true);
+    offscreenReadyResolve = null;
+  }
+};
 
 /**
- * 重置 WebRTC Offscreen 状态
+ * 等待 Offscreen Document 就绪
+ * @param {number} timeout - 超时时间（毫秒）
+ * @returns {Promise<boolean>}
  */
-export const resetWebRTCOffscreen = () => {
-  webrtcOffscreenCreated = false;
+export const waitForOffscreenReady = (timeout = 5000) => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      console.warn('[Offscreen] 等待就绪超时');
+      offscreenReadyResolve = null;
+      resolve(false);
+    }, timeout);
+
+    offscreenReadyResolve = (result) => {
+      clearTimeout(timer);
+      resolve(result);
+    };
+  });
+};
+
+/**
+ * 重置 Offscreen Document 状态
+ */
+export const resetOffscreenDocument = () => {
+  offscreenDocumentCreated = false;
 };
 
 /**
@@ -121,6 +149,46 @@ export const getWebRTCStatus = async () => {
 export const clearWebRTCData = async () => {
   return new Promise((resolve) => {
     chrome.storage.local.remove(['webrtc_peer_id', 'webrtc_status', 'webrtc_error'], resolve);
+  });
+};
+
+/**
+ * 检查是否需要自动恢复 WebRTC
+ * @returns {Promise<boolean>}
+ */
+export const shouldAutoRestore = async () => {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['webrtc_auto_restore', 'webrtc_peer_id'], (result) => {
+      const autoRestore = result.webrtc_auto_restore || false;
+      const peerId = result.webrtc_peer_id || null;
+      resolve(autoRestore && peerId !== null);
+    });
+  });
+};
+
+/**
+ * 启用自动恢复
+ * @returns {Promise<void>}
+ */
+export const enableAutoRestore = async () => {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ webrtc_auto_restore: true }, () => {
+      console.log('[WebRTC] 已启用自动恢复');
+      resolve();
+    });
+  });
+};
+
+/**
+ * 禁用自动恢复
+ * @returns {Promise<void>}
+ */
+export const disableAutoRestore = async () => {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ webrtc_auto_restore: false }, () => {
+      console.log('[WebRTC] 已禁用自动恢复');
+      resolve();
+    });
   });
 };
 

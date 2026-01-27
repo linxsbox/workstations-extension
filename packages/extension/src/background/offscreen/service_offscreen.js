@@ -21,6 +21,49 @@ class WebRTCOffscreen {
            Math.random().toString(36).substring(2, 15);
   }
 
+  /**
+   * 从 storage 获取已保存的 Peer ID（通过 Service Worker）
+   * @returns {Promise<string|null>}
+   */
+  async getSavedPeerId() {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({
+        type: 'WEBRTC',
+        action: 'GET_PEER_ID'
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('[WebRTC Offscreen] 获取 Peer ID 失败:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(response?.data?.peerId || null);
+        }
+      });
+    });
+  }
+
+  /**
+   * 保存 Peer ID 到 storage（通过 Service Worker）
+   * @param {string} peerId
+   * @returns {Promise<void>}
+   */
+  async savePeerIdToStorage(peerId) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({
+        type: 'WEBRTC',
+        action: 'SAVE_PEER_ID',
+        data: { peerId }
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('[WebRTC Offscreen] 保存 Peer ID 失败:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
+        } else {
+          console.log('[WebRTC Offscreen] Peer ID 已保存到 storage');
+          resolve();
+        }
+      });
+    });
+  }
+
   // 通过 WebRTC 获取本地 IP
   async getLocalIP() {
     return new Promise((resolve, reject) => {
@@ -63,11 +106,23 @@ class WebRTCOffscreen {
     try {
       console.log('[WebRTC Offscreen] 初始化...');
 
-      // 生成一个随机的 Peer ID
-      const peerId = this.generatePeerId();
-      console.log('[WebRTC Offscreen] 生成 Peer ID:', peerId);
+      // 通过 Service Worker 获取已保存的 Peer ID
+      const savedPeerId = await this.getSavedPeerId();
 
-      // 创建 Peer 实例，使用自定义 ID
+      let peerId;
+      if (savedPeerId) {
+        console.log('[WebRTC Offscreen] 复用已保存的 Peer ID:', savedPeerId);
+        peerId = savedPeerId;
+      } else {
+        // 生成新的 Peer ID
+        peerId = this.generatePeerId();
+        console.log('[WebRTC Offscreen] 生成新 Peer ID:', peerId);
+
+        // 通过 Service Worker 保存到 storage
+        await this.savePeerIdToStorage(peerId);
+      }
+
+      // 创建 Peer 实例，使用指定的 ID
       this.peer = new Peer(peerId, {
         host: '0.peerjs.com',
         port: 443,
@@ -179,45 +234,54 @@ class WebRTCOffscreen {
       return;
     }
 
-    switch (data.type) {
-      case 'NOTE':
-        await this.saveNote(data);
+    // 心跳检测（通信层功能）
+    if (data.type === 'PING') {
+      this.sendResponse({
+        type: 'PONG',
+        timestamp: Date.now()
+      });
+      return;
+    }
+
+    // 其他消息转发到 Service Worker 处理
+    try {
+      const result = await this.forwardToServiceWorker(data);
+
+      // 将结果返回给手机
+      if (result && result.success) {
         this.sendResponse({
           type: 'SUCCESS',
-          message: '笔记已保存',
+          message: result.message || '操作成功',
+          data: result.data,
           timestamp: Date.now()
         });
-        break;
-
-      case 'PING':
+      } else {
         this.sendResponse({
-          type: 'PONG',
+          type: 'ERROR',
+          message: result?.error || '操作失败',
           timestamp: Date.now()
         });
-        break;
-
-      default:
-        console.warn('[WebRTC Offscreen] 未知的数据类型:', data.type);
+      }
+    } catch (error) {
+      console.error('[WebRTC Offscreen] 转发消息失败:', error);
+      this.sendResponse({
+        type: 'ERROR',
+        message: error.message,
+        timestamp: Date.now()
+      });
     }
   }
 
-  async saveNote(data) {
-    // 通过消息通知 service worker 保存笔记
+  async forwardToServiceWorker(data) {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage({
-        type: 'WEBRTC_SAVE_NOTE',
-        note: {
-          content: data.content,
-          timestamp: data.timestamp || Date.now(),
-          source: 'mobile',
-          synced: true
-        }
+        type: 'WEBRTC_MESSAGE',
+        data: data,
+        timestamp: Date.now()
       }, (response) => {
         if (chrome.runtime.lastError) {
-          console.error('[WebRTC Offscreen] 保存笔记失败:', chrome.runtime.lastError);
           reject(chrome.runtime.lastError);
         } else {
-          console.log('[WebRTC Offscreen] 笔记已保存');
           resolve(response);
         }
       });
@@ -264,20 +328,43 @@ class WebRTCOffscreen {
   }
 
   /**
-   * 断开连接
+   * 断开当前连接（但保持 Peer 监听）
    */
   disconnect() {
-    console.log('[WebRTC Offscreen] 断开连接...');
+    console.log('[WebRTC Offscreen] 断开当前连接（保持 Peer 监听）...');
 
-    // 清理资源
+    // 只关闭当前连接，不销毁 Peer
+    if (this.connection) {
+      this.connection.removeAllListeners();
+      this.connection.close();
+      this.connection = null;
+      console.log('[WebRTC Offscreen] 连接已关闭');
+    }
+
+    // 通知 Service Worker（状态改为 ready，表示可以重新连接）
+    chrome.runtime.sendMessage({
+      type: 'WEBRTC_DISCONNECTED',
+      status: 'ready'
+    }).catch(err => {
+      console.error('[WebRTC Offscreen] 发送断开消息失败:', err);
+    });
+  }
+
+  /**
+   * 完全关闭（销毁 Peer 实例）
+   */
+  shutdown() {
+    console.log('[WebRTC Offscreen] 完全关闭...');
+
+    // 清理所有资源
     this.cleanup();
 
     // 通知 Service Worker
     chrome.runtime.sendMessage({
-      type: 'WEBRTC_DISCONNECTED',
-      status: 'disconnected'
+      type: 'WEBRTC_SHUTDOWN',
+      status: 'idle'
     }).catch(err => {
-      console.error('[WebRTC Offscreen] 发送断开消息失败:', err);
+      console.error('[WebRTC Offscreen] 发送关闭消息失败:', err);
     });
   }
 
@@ -303,21 +390,27 @@ class WebRTCOffscreen {
   }
 }
 
-// 创建实例并初始化
+// 创建实例（不自动初始化）
 console.log('[WebRTC Offscreen] 准备创建实例...');
 const webrtcOffscreen = new WebRTCOffscreen();
-console.log('[WebRTC Offscreen] 实例已创建，准备初始化...');
+console.log('[WebRTC Offscreen] 实例已创建，等待初始化指令...');
 
-webrtcOffscreen.init().then((result) => {
-  console.log('[WebRTC Offscreen] 初始化完成，结果:', result);
+// 不再自动初始化，等待 Service Worker 的 WEBRTC_INIT 消息
+
+// 通知 Service Worker：Offscreen Document 已就绪
+chrome.runtime.sendMessage({
+  type: 'OFFSCREEN',
+  action: 'READY'
+}).then(() => {
+  console.log('[WebRTC Offscreen] 已通知 Service Worker 就绪');
 }).catch((error) => {
-  console.error('[WebRTC Offscreen] 初始化失败:', error);
+  console.error('[WebRTC Offscreen] 通知就绪失败:', error);
 });
 
 // 监听来自 Service Worker 的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // 只处理发给 Offscreen 的消息
-  const offscreenMessages = ['WEBRTC_DISCONNECT', 'WEBRTC_RESET', 'WEBRTC_SEND_DATA'];
+  const offscreenMessages = ['WEBRTC_INIT', 'WEBRTC_DISCONNECT', 'WEBRTC_SHUTDOWN', 'WEBRTC_RESET', 'WEBRTC_SEND_DATA'];
 
   if (!offscreenMessages.includes(message.type)) {
     // 不是发给 Offscreen 的消息，忽略
@@ -327,8 +420,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[WebRTC Offscreen] 收到消息:', message.type);
 
   switch (message.type) {
+    case 'WEBRTC_INIT':
+      webrtcOffscreen.init().then(() => {
+        sendResponse({ success: true });
+      }).catch((error) => {
+        console.error('[WebRTC Offscreen] 初始化失败:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // 异步响应
+
     case 'WEBRTC_DISCONNECT':
       webrtcOffscreen.disconnect();
+      sendResponse({ success: true });
+      break;
+
+    case 'WEBRTC_SHUTDOWN':
+      webrtcOffscreen.shutdown();
       sendResponse({ success: true });
       break;
 

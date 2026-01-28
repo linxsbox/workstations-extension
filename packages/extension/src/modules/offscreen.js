@@ -16,7 +16,8 @@ export const createOffscreenDocument = async () => {
     await chrome.offscreen.createDocument({
       url: chrome.runtime.getURL("background/offscreen/service_offscreen.html"),
       reasons: ["WORKERS"],
-      justification: "",
+      justification:
+        "Maintain WebRTC connections to support audio processing, ONNX model inference, and peer communication services",
     });
 
     console.log("[Offscreen] 创建 Document 完成");

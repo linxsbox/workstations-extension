@@ -2,7 +2,7 @@ import {
   WEBRTC_ACTIONS,
   AUDIO_ACTIONS,
   ONNX_ACTIONS,
-} from "../config/index.js";
+} from "pkg-utils/constants";
 import { WebRTCManager, WebRTCActionHandler } from "../modules/webrtc.js";
 
 const offscreenManager = new Map();

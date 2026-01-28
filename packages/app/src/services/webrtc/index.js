@@ -1,267 +1,343 @@
 /**
- * WebRTC 服务
- * 负责管理 WebRTC 连接和数据传输
+ * WebRTC Service - App 端
+ *
+ * 职责：
+ * 1. 监听来自 Extension WebRTC 模块的 chrome.runtime.sendMessage 通知
+ * 2. 当 WebRTC 就绪时，初始化 SharedWorker 客户端
+ * 3. 提供 API 供 UI 层调用，通过 SharedWorker 与 Extension WebRTC 模块通信
  */
 
-import { WEBRTC_CONFIG, CONNECTION_STATUS, SESSION_KEYS, STORAGE_KEYS } from './constants.js';
+import { initSharedClient, sendTo, onMessage } from '../shared';
+import { WEBRTC_ACTIONS } from 'pkg-utils/constants';
 
-class WebRTCService {
+/**
+ * WebRTC 服务类
+ *
+ * 注意：这个类不直接管理 WebRTC 连接
+ * WebRTC 连接由 Extension 端管理，这里只是通信桥接
+ */
+export class WebRTCService {
   constructor() {
-    this.isInitialized = false;
-    this.listeners = new Map();
+    this.peerId = null;
+    this.isReady = false;
+    this.sharedClientInitialized = false;
+
+    this.listeners = {
+      ready: [],
+      data: [],
+      error: [],
+      connectionChange: []
+    };
+
+    // 监听来自 Extension 的消息
+    this.setupChromeMessageListener();
   }
 
   /**
-   * 初始化 WebRTC
-   * 创建 Offscreen Document 并启动 PeerJS
-   * 注意：Peer ID 将通过 Store 的事件总线接收
+   * 设置 chrome.runtime.onMessage 监听器
+   * 接收来自 Extension WebRTC 模块的通知
    */
-  async init() {
-    if (this.isInitialized) {
-      console.log('[WebRTC Service] 已经初始化');
-      return true;
+  setupChromeMessageListener() {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      // 只处理 WEBRTC 模块的消息
+      if (message.module !== WEBRTC_ACTIONS.MODULE_NAME) {
+        return;
+      }
+
+      console.log('[WebRTC Service] 收到 Extension 消息:', message);
+
+      const { action, data } = message;
+
+      switch (action) {
+        case WEBRTC_ACTIONS.READY:
+          this.handleReady(data);
+          break;
+
+        case WEBRTC_ACTIONS.ERROR:
+          this.handleError(data);
+          break;
+
+        default:
+          console.warn('[WebRTC Service] 未知的 action:', action);
+      }
+
+      // 返回响应
+      sendResponse({ received: true });
+    });
+
+    console.log('[WebRTC Service] chrome.runtime.onMessage 监听器已设置');
+  }
+
+  /**
+   * 处理 WebRTC 就绪事件
+   *
+   * 流程：
+   * 1. Extension WebRTC 初始化完成
+   * 2. 通过 chrome.runtime.sendMessage 通知 App
+   * 3. App 初始化 SharedWorker 客户端
+   * 4. 开始监听来自 Extension 的 SharedWorker 消息
+   */
+  async handleReady(data) {
+    console.log('[WebRTC Service] WebRTC 已就绪:', data);
+
+    this.peerId = data.peerId;
+    this.isReady = true;
+
+    // 初始化 SharedWorker 客户端（如果还没初始化）
+    if (!this.sharedClientInitialized) {
+      await this.initializeSharedClient();
+    }
+
+    // 触发就绪监听器
+    this.listeners.ready.forEach(listener => {
+      try {
+        listener(data);
+      } catch (error) {
+        console.error('[WebRTC Service] Ready 监听器错误:', error);
+      }
+    });
+  }
+
+  /**
+   * 初始化 SharedWorker 客户端
+   */
+  async initializeSharedClient() {
+    try {
+      console.log('[WebRTC Service] 初始化 SharedWorker 客户端...');
+
+      // 初始化 SharedClient（如果还没初始化）
+      await initSharedClient('SHARED_APP');
+
+      // 注册消息处理器，监听来自 Extension WebRTC 模块的消息
+      this.setupSharedWorkerMessageHandlers();
+
+      this.sharedClientInitialized = true;
+
+      console.log('[WebRTC Service] SharedWorker 客户端初始化完成');
+    } catch (error) {
+      console.error('[WebRTC Service] SharedWorker 初始化失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 设置 SharedWorker 消息处理器
+   * 监听来自 Extension WebRTC 模块通过 SharedWorker 发送的消息
+   */
+  setupSharedWorkerMessageHandlers() {
+    // 监听来自 Extension WebRTC 模块的消息
+    // Extension 在收到 P2P 数据后，通过 SharedWorker 转发给 App
+    onMessage(WEBRTC_ACTIONS.MODULE_NAME, (data, from) => {
+      console.log('[WebRTC Service] 收到 SharedWorker 消息:', data, '来自:', from);
+
+      // data 是从其他设备通过 WebRTC P2P 传来的数据
+      this.handleData(data);
+
+      return { received: true };
+    });
+  }
+
+  /**
+   * 处理接收到的 P2P 数据
+   * 这些数据是从其他设备通过 WebRTC 传来的
+   */
+  handleData(data) {
+    console.log('[WebRTC Service] 收到 P2P 数据:', data);
+
+    // 触发数据监听器
+    this.listeners.data.forEach(listener => {
+      try {
+        listener(data);
+      } catch (error) {
+        console.error('[WebRTC Service] Data 监听器错误:', error);
+      }
+    });
+  }
+
+  /**
+   * 处理错误
+   */
+  handleError(error) {
+    console.error('[WebRTC Service] 错误:', error);
+
+    this.listeners.error.forEach(listener => {
+      try {
+        listener(error);
+      } catch (error) {
+        console.error('[WebRTC Service] Error 监听器错误:', error);
+      }
+    });
+  }
+
+  /**
+   * 获取 Peer ID
+   *
+   * 通过 SharedWorker 向 Extension WebRTC 模块请求
+   */
+  async getPeerId() {
+    if (!this.sharedClientInitialized) {
+      throw new Error('SharedWorker 客户端未初始化');
     }
 
     try {
-      console.log('[WebRTC Service] 开始初始化...');
-
-      // 通知 Service Worker 初始化 WebRTC
-      const response = await chrome.runtime.sendMessage({
-        type: 'WEBRTC',
-        action: 'INIT'
+      const response = await sendTo(WEBRTC_ACTIONS.MODULE_NAME, {
+        action: WEBRTC_ACTIONS.GET_PEER_ID
       });
 
-      console.log('[WebRTC Service] Service Worker 响应:', response);
-
-      if (response?.success) {
-        console.log('[WebRTC Service] Offscreen Document 创建成功');
-        // 注意：Peer ID 将通过 Store 的事件总线接收，并调用 setPeerId()
-        this.isInitialized = true;
-        return true;
+      if (response.success) {
+        this.peerId = response.peerId;
+        return response.peerId;
       }
 
-      throw new Error('初始化失败: ' + (response?.error || '未知错误'));
-    } catch (error) {
-      console.error('[WebRTC Service] 初始化失败:', error);
-      return false;
-    }
-  }
-
-  /**
-   * 设置 Peer ID（由 Store 调用）
-   */
-  setPeerId(peerId) {
-    if (!peerId) {
-      console.warn('[WebRTC Service] 尝试设置空的 Peer ID');
-      return;
-    }
-
-    sessionStorage.setItem(SESSION_KEYS.PEER_ID, peerId);
-    console.log('[WebRTC Service] Peer ID 已设置:', peerId);
-  }
-
-  /**
-   * 获取当前 Peer ID
-   */
-  getPeerId() {
-    return sessionStorage.getItem(SESSION_KEYS.PEER_ID);
-  }
-
-  /**
-   * 生成二维码数据
-   * 在页面端拼接 URL
-   */
-  generateQRData() {
-    const peerId = this.getPeerId();
-
-    if (!peerId) {
-      console.warn('[WebRTC Service] Peer ID 不存在');
       return null;
+    } catch (error) {
+      console.error('[WebRTC Service] 获取 Peer ID 失败:', error);
+      throw error;
     }
-
-    // 硬编码本地 IP 用于测试
-    const qrData = `http://172.17.4.102:5500/mobile-demo.html?peer=${peerId}`;
-
-    console.log('[WebRTC Service] 生成 QR Data:', qrData);
-
-    return qrData;
   }
 
   /**
-   * 获取连接状态
+   * 获取 WebRTC 状态
+   *
+   * 通过 SharedWorker 向 Extension WebRTC 模块请求
    */
   async getStatus() {
+    if (!this.sharedClientInitialized) {
+      throw new Error('SharedWorker 客户端未初始化');
+    }
+
     try {
-      // 优先从 sessionStorage 读取（避免竞态条件）
-      const sessionStatus = sessionStorage.getItem('webrtc_status');
-      if (sessionStatus) {
-        return sessionStatus;
+      const response = await sendTo(WEBRTC_ACTIONS.MODULE_NAME, {
+        action: WEBRTC_ACTIONS.GET_STATUS
+      });
+
+      if (response.success) {
+        const { status } = response;
+        this.peerId = status.peerId;
+        this.isReady = status.connected;
+
+        // 触发连接变化监听器
+        this.listeners.connectionChange.forEach(listener => {
+          try {
+            listener(status);
+          } catch (error) {
+            console.error('[WebRTC Service] ConnectionChange 监听器错误:', error);
+          }
+        });
+
+        return status;
       }
 
-      // 回退到 chrome.storage
-      const result = await chrome.storage.local.get([STORAGE_KEYS.WEBRTC_STATUS]);
-      return result[STORAGE_KEYS.WEBRTC_STATUS] || CONNECTION_STATUS.IDLE;
+      return null;
     } catch (error) {
       console.error('[WebRTC Service] 获取状态失败:', error);
-      return CONNECTION_STATUS.ERROR;
+      throw error;
     }
   }
 
   /**
-   * 监听状态变化
+   * 发送数据到指定 Peer
+   *
+   * 通过 SharedWorker 发送给 Extension WebRTC 模块
+   * Extension WebRTC 模块再通过 P2P 发送给目标设备
    */
-  onStatusChange(callback) {
-    const listener = (changes, areaName) => {
-      if (areaName === 'local' && changes[STORAGE_KEYS.WEBRTC_STATUS]) {
-        const newStatus = changes[STORAGE_KEYS.WEBRTC_STATUS].newValue;
-        // 同步更新 sessionStorage
-        if (newStatus) {
-          sessionStorage.setItem('webrtc_status', newStatus);
-        }
-        callback(newStatus);
-      }
-    };
+  async sendData(targetPeerId, data) {
+    if (!this.sharedClientInitialized) {
+      throw new Error('SharedWorker 客户端未初始化');
+    }
 
-    chrome.storage.onChanged.addListener(listener);
-
-    // 返回取消监听的函数
-    return () => {
-      chrome.storage.onChanged.removeListener(listener);
-    };
-  }
-
-  /**
-   * 监听数据接收
-   */
-  onDataReceived(callback) {
-    const listenerId = `data_${Date.now()}`;
-    this.listeners.set(listenerId, callback);
-
-    // 监听来自 Service Worker 的消息
-    const messageListener = (message, sender, sendResponse) => {
-      if (message.type === 'WEBRTC_DATA_RECEIVED') {
-        callback(message.data);
-      }
-    };
-
-    chrome.runtime.onMessage.addListener(messageListener);
-
-    // 返回取消监听的函数
-    return () => {
-      this.listeners.delete(listenerId);
-      chrome.runtime.onMessage.removeListener(messageListener);
-    };
-  }
-
-  /**
-   * 发送数据到手机
-   */
-  async sendToMobile(data) {
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'WEBRTC',
-        action: 'SEND_DATA',
-        data: { data }
+      const response = await sendTo(WEBRTC_ACTIONS.MODULE_NAME, {
+        action: WEBRTC_ACTIONS.SEND_DATA,
+        data: {
+          targetPeerId,
+          data
+        }
       });
 
-      return response?.success || false;
+      return response;
     } catch (error) {
       console.error('[WebRTC Service] 发送数据失败:', error);
-      return false;
+      throw error;
     }
   }
 
   /**
-   * 断开连接（保持 Peer 监听）
+   * 断开 WebRTC 连接
+   *
+   * 通过 SharedWorker 通知 Extension WebRTC 模块断开
    */
   async disconnect() {
+    if (!this.sharedClientInitialized) {
+      throw new Error('SharedWorker 客户端未初始化');
+    }
+
     try {
-      // 通知 Service Worker 断开连接
-      await chrome.runtime.sendMessage({
-        type: 'WEBRTC',
-        action: 'DISCONNECT'
+      const response = await sendTo(WEBRTC_ACTIONS.MODULE_NAME, {
+        action: WEBRTC_ACTIONS.DISCONNECT
       });
 
-      // 清理 sessionStorage
-      sessionStorage.removeItem(SESSION_KEYS.QR_DATA);
-      sessionStorage.removeItem(SESSION_KEYS.CREATED_AT);
-      sessionStorage.removeItem('webrtc_status');
+      if (response.success) {
+        this.isReady = false;
+      }
 
-      // 注意：不清除 Peer ID，保持可重连
-
-      console.log('[WebRTC Service] 已断开连接（Peer 保持监听）');
-      return true;
+      return response;
     } catch (error) {
       console.error('[WebRTC Service] 断开连接失败:', error);
-      return false;
+      throw error;
     }
   }
 
   /**
-   * 完全关闭（销毁所有资源）
+   * 注册事件监听器
    */
-  async shutdown() {
-    try {
-      // 通知 Service Worker 完全关闭
-      await chrome.runtime.sendMessage({
-        type: 'WEBRTC',
-        action: 'SHUTDOWN'
-      });
-
-      // 清理所有 sessionStorage
-      sessionStorage.removeItem(SESSION_KEYS.PEER_ID);
-      sessionStorage.removeItem(SESSION_KEYS.QR_DATA);
-      sessionStorage.removeItem(SESSION_KEYS.CREATED_AT);
-      sessionStorage.removeItem('webrtc_status');
-
-      // 重置初始化标志
-      this.isInitialized = false;
-
-      console.log('[WebRTC Service] 已完全关闭');
-      return true;
-    } catch (error) {
-      console.error('[WebRTC Service] 完全关闭失败:', error);
-      return false;
+  on(event, listener) {
+    if (this.listeners[event]) {
+      this.listeners[event].push(listener);
+    } else {
+      console.warn(`[WebRTC Service] 未知的事件类型: ${event}`);
     }
   }
 
   /**
-   * 重置连接
+   * 移除事件监听器
    */
-  async reset() {
-    try {
-      // 清除 sessionStorage
-      sessionStorage.removeItem(SESSION_KEYS.PEER_ID);
-      sessionStorage.removeItem(SESSION_KEYS.QR_DATA);
-      sessionStorage.removeItem(SESSION_KEYS.CREATED_AT);
-      sessionStorage.removeItem('webrtc_status');
-
-      // 通知 Service Worker 重置
-      await chrome.runtime.sendMessage({
-        type: 'WEBRTC',
-        action: 'RESET'
-      });
-
-      this.isInitialized = false;
-
-      console.log('[WebRTC Service] 已重置');
-      return true;
-    } catch (error) {
-      console.error('[WebRTC Service] 重置失败:', error);
-      return false;
+  off(event, listener) {
+    if (this.listeners[event]) {
+      const index = this.listeners[event].indexOf(listener);
+      if (index > -1) {
+        this.listeners[event].splice(index, 1);
+      }
     }
   }
 
   /**
-   * 清理资源
+   * 获取服务状态
    */
-  destroy() {
-    this.listeners.clear();
-    this.isInitialized = false;
+  getServiceStatus() {
+    return {
+      peerId: this.peerId,
+      isReady: this.isReady,
+      sharedClientInitialized: this.sharedClientInitialized,
+      listenerCounts: {
+        ready: this.listeners.ready.length,
+        data: this.listeners.data.length,
+        error: this.listeners.error.length,
+        connectionChange: this.listeners.connectionChange.length
+      }
+    };
   }
 }
 
-// 创建单例
-const webrtcService = new WebRTCService();
+// 创建单例实例
+export const webrtcService = new WebRTCService();
 
-export default webrtcService;
+// 导出便捷方法
+export const getPeerId = () => webrtcService.getPeerId();
+export const getStatus = () => webrtcService.getStatus();
+export const sendData = (targetPeerId, data) => webrtcService.sendData(targetPeerId, data);
+export const disconnect = () => webrtcService.disconnect();
+export const onWebRTCReady = (listener) => webrtcService.on('ready', listener);
+export const onWebRTCData = (listener) => webrtcService.on('data', listener);
+export const onWebRTCError = (listener) => webrtcService.on('error', listener);
+export const onWebRTCConnectionChange = (listener) => webrtcService.on('connectionChange', listener);

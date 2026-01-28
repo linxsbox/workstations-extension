@@ -44,6 +44,9 @@ importers:
       pinia:
         specifier: 2.2.6
         version: 2.2.6(vue@3.5.13)
+      pkg-utils:
+        specifier: workspace:*
+        version: link:../utils
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -96,6 +99,9 @@ importers:
       '@linxs/toolkit':
         specifier: ^0.5.2
         version: 0.5.2
+      pkg-utils:
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@types/chrome':
         specifier: ^0.0.268
@@ -115,6 +121,8 @@ importers:
       vite:
         specifier: 5.4.11
         version: 5.4.11(@types/node@25.0.10)(sass@1.71.0)(terser@5.46.0)
+
+  packages/utils: {}
 
 packages:
 

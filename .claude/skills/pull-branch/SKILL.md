@@ -1,3 +1,8 @@
+---
+name: pull-branch
+description: 拉取并更新分支代码，使用 git-retry.sh 处理网络不稳定问题。当用户说"拉取代码"、"更新分支"、"pull"、"同步代码"时使用此技能。
+---
+
 # Pull Branch
 
 拉取并更新分支代码，使用 git-retry.sh 处理网络不稳定问题。

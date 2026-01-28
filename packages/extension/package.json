@@ -9,7 +9,8 @@
     "build:ext": "vite build --mode production"
   },
   "dependencies": {
-    "@linxs/toolkit": "^0.5.2"
+    "@linxs/toolkit": "^0.5.2",
+    "pkg-utils": "workspace:*"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.268",

@@ -4,6 +4,6 @@
  */
 export const APP_ACTIONS = {
   /** 模块名称 */
-  MODULE_NAME: "APP",
-  SHARED_NAME: "SHARED_APP",
+  MODULE_NAME: 'APP',
+  SHARED_NAME: 'SHARED_APP',
 };

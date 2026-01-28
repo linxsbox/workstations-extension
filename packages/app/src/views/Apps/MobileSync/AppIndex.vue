@@ -1,15 +1,13 @@
 <script setup>
-import { computed, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 import { storeMobileSync } from '@/stores/miniapps/mobilesync';
 import IconPhonelink from '@/components/common/Icons/IconPhonelink.vue';
 import QRCodeDialog from './QRCodeDialog.vue';
 
 const mobileSyncStore = storeMobileSync();
 
-// 是否已连接
+// 计算属性
 const isConnected = computed(() => mobileSyncStore.isConnected);
-
-// 动态计算 QR URL
 const qrUrl = computed(() => mobileSyncStore.qrUrl);
 
 // 打开二维码弹窗
@@ -17,8 +15,14 @@ const handleOpenSync = () => {
   mobileSyncStore.openQRDialog();
 };
 
-// 组件卸载时清理
+// 生命周期
+onMounted(() => {
+  // 初始化 Store（注册事件监听器）
+  mobileSyncStore.initialize();
+});
+
 onUnmounted(() => {
+  // 清理（关闭弹窗等）
   mobileSyncStore.cleanup();
 });
 </script>
@@ -45,10 +49,8 @@ onUnmounted(() => {
     <QRCodeDialog
       v-model:show="mobileSyncStore.showQRDialog"
       :qr-url="qrUrl"
-      :status="mobileSyncStore.status"
+      :status="mobileSyncStore.statusText"
       :connected-devices="mobileSyncStore.connectedDevices"
-      @start-sync="mobileSyncStore.initWebRTC"
-      @stop-sync="mobileSyncStore.stopSync"
       @refresh="mobileSyncStore.refreshQRCode"
     />
   </div>

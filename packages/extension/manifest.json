@@ -33,19 +33,11 @@
     "activeTab",
     "offscreen"
   ],
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "web_accessible_resources": [
     {
-      "resources": [
-        "background/shared_worker.js",
-        "background/shared_worker_client.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ],
+      "resources": ["background/shared_worker.js"],
+      "matches": ["<all_urls>"],
       "use_dynamic_url": false
     }
   ]

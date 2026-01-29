@@ -1,104 +1,64 @@
+import { Logger } from '@linxs/toolkit';
 import {
   WEBRTC_ACTIONS,
   AUDIO_ACTIONS,
   ONNX_ACTIONS,
-} from "pkg-utils/constants";
-import { WebRTCManager, WebRTCActionHandler } from "../modules/webrtc.js";
+  SERVICE_NAME,
+} from 'pkg-utils/constants';
+import MessagingManager from '../modules/messaging.js';
+import { WebRTCManager, WebRTCActionHandler } from '../modules/webrtc.js';
 
-const offscreenManager = new Map();
+const logger = new Logger('Service Offscreen', { showTimestamp: false });
 
-const ALLOWED_MODULES = [
-  WEBRTC_ACTIONS.MODULE_NAME,
-  AUDIO_ACTIONS.MODULE_NAME,
-  ONNX_ACTIONS.MODULE_NAME,
-];
+const moduleHandler = new Map();
 
 /**
- * 初始化模块并保存到 offscreenManager
+ * 初始化消息管理器
  */
-function initModule(moduleName) {
-  if (offscreenManager.has(moduleName)) {
-    return offscreenManager.get(moduleName);
-  }
-
-  let handler;
-
-  switch (moduleName) {
-    case WEBRTC_ACTIONS.MODULE_NAME:
-      const webrtcManager = new WebRTCManager();
-      handler = new WebRTCActionHandler(webrtcManager);
-      break;
-
-    case AUDIO_ACTIONS.MODULE_NAME:
-      // TODO: 实现 Audio 模块
-      break;
-
-    case ONNX_ACTIONS.MODULE_NAME:
-      // TODO: 实现 Onnx 模块
-      break;
-
-    default:
-      return null;
-  }
-
-  if (handler) {
-    offscreenManager.set(moduleName, handler);
-  }
-
-  return handler;
-}
+const messagingManager = new MessagingManager();
 
 /**
- * 监听来自 Service Worker 的消息
- * 只接受运行在 Offscreen Document 环境下的模块消息：WebRTC、Audio、Onnx
+ * 注册消息处理器
  */
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  const { module, action, data } = message;
+messagingManager.registerHandlers({
+  [SERVICE_NAME.OFFSCREEN]: async (message, sender) => {
+    // 解析消息格式
+    const { from, to, action, data, timestamp, service } = message;
+    logger.info(`Service ${service} 收到消息 ID：`, sender.id);
+    logger.info(`from ${from} to ${to}, Action: ${action}`, timestamp);
 
-  // 检查消息是否来自允许的模块
-  if (!module || !ALLOWED_MODULES.includes(module)) {
-    console.warn("[Offscreen] 拒绝未知模块的消息:", module);
-    sendResponse({ success: false, error: "未知的模块" });
-    return false;
-  }
+    let webrtcManager = null;
 
-  // 检查是否有 action
-  if (!action) {
-    console.warn("[Offscreen] 消息缺少 action 字段");
-    sendResponse({ success: false, error: "缺少 action 字段" });
-    return false;
-  }
+    switch (to) {
+      case WEBRTC_ACTIONS.MODULE_NAME:
+        const module = moduleHandler.get(WEBRTC_ACTIONS.MODULE_NAME);
+        if (!moduleHandler.get(WEBRTC_ACTIONS.MODULE_NAME)) {
+          const webrtcManager = new WebRTCManager();
+          moduleHandler.set(
+            WEBRTC_ACTIONS.MODULE_NAME,
+            new WebRTCActionHandler(webrtcManager)
+          );
+        }
 
-  console.log(`[Offscreen] 接收到消息 - 模块: ${module}, 动作: ${action}`);
+        return module.handle(message);
 
-  // 处理 INIT 动作：初始化模块
-  if (action === 'INIT') {
-    const handler = initModule(module);
-    if (handler && handler.manager && handler.manager.init) {
-      handler.manager.init().then((result) => {
-        sendResponse(result);
-      }).catch((error) => {
-        sendResponse({ success: false, error: error.message });
-      });
-      return true;
-    } else {
-      sendResponse({ success: false, error: "模块初始化失败" });
-      return false;
+      case AUDIO_ACTIONS.MODULE_NAME:
+        // TODO: 实现 Audio 模块
+        logger.info('收到', from, to, action);
+
+        break;
+      case ONNX_ACTIONS.MODULE_NAME:
+        // TODO: 实现 Onnx 模块
+        logger.info('收到', from, to, action);
+
+        break;
+      default:
+        break;
     }
-  }
-
-  // 处理其他动作：分发到对应的处理器
-  const handler = offscreenManager.get(module);
-  if (!handler) {
-    sendResponse({ success: false, error: "模块未初始化" });
-    return false;
-  }
-
-  handler.handle({ action, data }).then((result) => {
-    sendResponse(result);
-  }).catch((error) => {
-    sendResponse({ success: false, error: error.message });
-  });
-
-  return true;
+  },
 });
+
+/**
+ * 设置消息监听器
+ */
+messagingManager.setupListener();

@@ -14,17 +14,6 @@ const qrUrl = computed(() => mobileSyncStore.qrUrl);
 const handleOpenSync = () => {
   mobileSyncStore.openQRDialog();
 };
-
-// 生命周期
-onMounted(() => {
-  // 初始化 Store（注册事件监听器）
-  mobileSyncStore.initialize();
-});
-
-onUnmounted(() => {
-  // 清理（关闭弹窗等）
-  mobileSyncStore.cleanup();
-});
 </script>
 
 <template>
@@ -43,16 +32,10 @@ onUnmounted(() => {
     </button>
 
     <!-- APP标签 -->
-    <div class="app-label">手机同步</div>
+    <div class="app-label">手机同步 {{ mobileSyncStore.showQRDialog }}</div>
 
     <!-- 二维码弹窗 -->
-    <QRCodeDialog
-      v-model:show="mobileSyncStore.showQRDialog"
-      :qr-url="qrUrl"
-      :status="mobileSyncStore.statusText"
-      :connected-devices="mobileSyncStore.connectedDevices"
-      @refresh="mobileSyncStore.refreshQRCode"
-    />
+    <QRCodeDialog v-model:show="mobileSyncStore.showQRDialog" />
   </div>
 </template>
 
@@ -70,7 +53,8 @@ onUnmounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }

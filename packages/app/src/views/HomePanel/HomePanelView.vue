@@ -1,17 +1,20 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { NEmpty, NCard } from "naive-ui";
 import { storeTasks } from "@/stores/miniapps/tasks";
 import { storeNotes } from "@/stores/miniapps/notes";
+import { storeHome } from "@/stores/modules/home";
 import { storeApp } from "@/stores/global/app";
 import { formatDate } from "@linxs/toolkit";
 import TaskCard from "@/views/Apps/TaskManager/TaskCard.vue";
 import NoteCard from "@/views/Apps/Notes/NoteCard.vue";
+import RecentSitesList from "./RecentSitesList.vue";
 import IconAddTask from "@/components/common/Icons/IconAddTask.vue";
 import IconAssignmentAdd from "@/components/common/Icons/IconAssignmentAdd.vue";
 
 const tasksStore = storeTasks();
 const notesStore = storeNotes();
+const homeStore = storeHome();
 const appStore = storeApp();
 
 // 获取任务数据（从 store，自动响应变化）
@@ -71,6 +74,11 @@ const getTasksStatusStyle = (status) => {
     };
   }
 };
+
+// 初始化 Home Store 数据
+onMounted(() => {
+  homeStore.init();
+});
 </script>
 
 <template>
@@ -138,15 +146,8 @@ const getTasksStatusStyle = (status) => {
         </NCard>
       </section>
 
-      <section class="other-section flex-1 min-w-0">
-        <NCard class="home-card h-full">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <div class="text-sm font-medium">其他信息</div>
-            </div>
-          </template>
-          <NEmpty description="内容待规划" />
-        </NCard>
+      <section class="other-section h-full flex-1 min-w-0">
+        <RecentSitesList />
       </section>
     </main>
   </div>
@@ -173,10 +174,5 @@ const getTasksStatusStyle = (status) => {
 }
 
 .other-section {
-  :deep(.n-card__content) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
 }
 </style>

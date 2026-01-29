@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": false,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "pkg-utils": ["../utils/src/index.js"],
+      "pkg-utils/*": ["../utils/src/*"]
+    }
+  },
+  "include": ["src/**/*", "../utils/src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

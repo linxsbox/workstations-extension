@@ -4,18 +4,27 @@
  */
 
 import { defineStore } from 'pinia';
-import {
-  webrtcService,
-  onWebRTCReady,
-  onWebRTCData,
-  getPeerId,
-  getStatus
-} from '@/services/webrtc';
+import { initialize } from '@/services/webrtc';
+
+/**
+ * MobileSync 连接状态常量
+ */
+export const SYNC_STATUS = {
+  IDLE: 'IDLE', // 未初始化
+  INITIALIZING: 'INITIALIZING', // 初始化中
+  READY: 'READY', // 就绪，等待连接
+  CONNECTED: 'CONNECTED', // 已连接
+  ERROR: 'ERROR', // 错误
+};
 
 export const storeMobileSync = defineStore('mobileSync', {
   state: () => ({
     // UI 状态
     showQRDialog: false,
+
+    // 连接状态
+    status: SYNC_STATUS.IDLE,
+    currentStatus: SYNC_STATUS.IDLE,
 
     // WebRTC 状态（从 webrtcService 同步）
     peerId: null,
@@ -42,20 +51,11 @@ export const storeMobileSync = defineStore('mobileSync', {
      * 已连接的设备列表
      */
     connectedDevices: (state) => {
-      return state.connections.map(peerId => ({
+      return state.connections.map((peerId) => ({
         id: peerId,
-        name: `设备 ${peerId.slice(-4)}`
+        name: `设备 ${peerId.slice(-4)}`,
       }));
     },
-
-    /**
-     * 连接状态文本
-     */
-    statusText: (state) => {
-      if (!state.isReady) return '未初始化';
-      if (state.connections.length === 0) return '等待连接';
-      return `已连接 ${state.connections.length} 台设备`;
-    }
   },
 
   actions: {
@@ -64,32 +64,7 @@ export const storeMobileSync = defineStore('mobileSync', {
      * 在应用启动时调用
      */
     async initialize() {
-      console.log('[MobileSync Store] 初始化...');
-
-      // 监听 WebRTC 就绪事件
-      onWebRTCReady((data) => {
-        console.log('[MobileSync Store] WebRTC 就绪:', data);
-        this.peerId = data.peerId;
-        this.isReady = true;
-      });
-
-      // 监听接收到的数据
-      onWebRTCData((data) => {
-        console.log('[MobileSync Store] 收到 P2P 数据:', data);
-        this.handleReceivedData(data);
-      });
-
-      // 获取当前状态（如果 WebRTC 已经就绪）
-      try {
-        const status = await getStatus();
-        if (status) {
-          this.peerId = status.peerId;
-          this.isReady = status.connected;
-          this.connections = status.connections || [];
-        }
-      } catch (error) {
-        console.log('[MobileSync Store] WebRTC 尚未就绪:', error.message);
-      }
+      initialize();
     },
 
     /**
@@ -147,9 +122,6 @@ export const storeMobileSync = defineStore('mobileSync', {
      */
     openQRDialog() {
       this.showQRDialog = true;
-
-      // 刷新状态
-      this.refreshStatus();
     },
 
     /**
@@ -158,46 +130,5 @@ export const storeMobileSync = defineStore('mobileSync', {
     closeQRDialog() {
       this.showQRDialog = false;
     },
-
-    /**
-     * 刷新 WebRTC 状态
-     */
-    async refreshStatus() {
-      try {
-        const status = await getStatus();
-        if (status) {
-          this.peerId = status.peerId;
-          this.isReady = status.connected;
-          this.connections = status.connections || [];
-        }
-      } catch (error) {
-        console.error('[MobileSync Store] 刷新状态失败:', error);
-      }
-    },
-
-    /**
-     * 刷新二维码（重新获取 Peer ID）
-     */
-    async refreshQRCode() {
-      try {
-        const peerId = await getPeerId();
-        this.peerId = peerId;
-        console.log('[MobileSync Store] 二维码已刷新:', peerId);
-      } catch (error) {
-        console.error('[MobileSync Store] 刷新二维码失败:', error);
-      }
-    },
-
-    /**
-     * 清理资源
-     */
-    cleanup() {
-      // 关闭弹窗
-      this.showQRDialog = false;
-
-      // 注意：不要断开 WebRTC 连接
-      // WebRTC 连接应该在整个应用生命周期中保持
-      console.log('[MobileSync Store] 清理完成');
-    }
-  }
+  },
 });

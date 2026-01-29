@@ -1,3 +1,5 @@
+import { Logger } from "@linxs/toolkit";
+const logger = new Logger('Shared Worker', { showTimestamp: false });
 /**
  * SharedWorker 长连接服务中心
  * 功能：
@@ -20,7 +22,7 @@ class SharedWorkerHub {
       startTime: Date.now()
     };
 
-    console.log('[SharedWorker] 服务中心已启动');
+    logger.info('服务中心已启动');
   }
 
   /**
@@ -39,13 +41,13 @@ class SharedWorkerHub {
       try {
         this.handleMessage(e.data, port, clientName, clientInfo);
       } catch (error) {
-        console.error('[SharedWorker] 消息处理错误:', error);
+        logger.error('消息处理错误:', error);
         this.sendError(port, null, error.message);
       }
     };
 
     port.onmessageerror = (e) => {
-      console.error('[SharedWorker] 消息解析错误:', e);
+      logger.error('消息解析错误:', e);
     };
 
     port.start();
@@ -122,7 +124,7 @@ class SharedWorkerHub {
     }
 
     // 未知的消息类型
-    console.warn('[SharedWorker] 未知的消息类型:', type);
+    logger.warn('未知的消息类型:', type);
   }
 
   /**
@@ -136,7 +138,7 @@ class SharedWorkerHub {
 
     // 检查名称是否已被占用
     if (this.clients.has(name)) {
-      console.warn(`[SharedWorker] 客户端 ${name} 已存在，将覆盖旧连接`);
+      logger.warn(`客户端 ${name} 已存在，将覆盖旧连接`);
       // 通知旧连接被踢出
       const oldClient = this.clients.get(name);
       oldClient.port.postMessage({
@@ -150,7 +152,7 @@ class SharedWorkerHub {
     this.clients.set(name, clientInfo);
     this.stats.totalClients++;
 
-    console.log(`[SharedWorker] 客户端 ${name} 已注册，当前在线: ${this.clients.size}`);
+    logger.info(`客户端 ${name} 已注册，当前在线: ${this.clients.size}`);
 
     // 发送注册成功响应
     port.postMessage({
@@ -186,7 +188,7 @@ class SharedWorkerHub {
   unregisterClient(name) {
     if (this.clients.has(name)) {
       this.clients.delete(name);
-      console.log(`[SharedWorker] 客户端 ${name} 已断开，当前在线: ${this.clients.size}`);
+      logger.info(`客户端 ${name} 已断开，当前在线: ${this.clients.size}`);
 
       // 通知其他客户端
       this.broadcastMessage('system', {
@@ -209,7 +211,7 @@ class SharedWorkerHub {
       if (senderClient) {
         this.sendError(senderClient.port, requestId, `Target client '${toName}' not found`);
       }
-      console.warn(`[SharedWorker] 目标客户端 ${toName} 不存在`);
+      logger.warn(`目标客户端 ${toName} 不存在`);
       return;
     }
 
@@ -221,9 +223,9 @@ class SharedWorkerHub {
         data: data,
         timestamp: Date.now()
       });
-      console.log(`[SharedWorker] 消息转发: ${fromName} -> ${toName}`);
+      logger.info(`消息转发: ${fromName} -> ${toName}`);
     } catch (error) {
-      console.error(`[SharedWorker] 发送消息失败:`, error);
+      logger.error(`发送消息失败:`, error);
       // 可能端口已关闭，移除客户端
       this.unregisterClient(toName);
 
@@ -256,7 +258,7 @@ class SharedWorkerHub {
         });
         successCount++;
       } catch (error) {
-        console.error(`[SharedWorker] 广播到 ${name} 失败:`, error);
+        logger.error(`广播到 ${name} 失败:`, error);
         failedClients.push(name);
       }
     });
@@ -264,7 +266,7 @@ class SharedWorkerHub {
     // 清理失败的客户端
     failedClients.forEach(name => this.unregisterClient(name));
 
-    console.log(`[SharedWorker] 广播消息: ${fromName} -> ${successCount} 个客户端`);
+    logger.info(`广播消息: ${fromName} -> ${successCount} 个客户端`);
 
     // 如果发送者还在线，通知广播结果
     if (fromName !== 'system') {
@@ -325,7 +327,7 @@ class SharedWorkerHub {
         timestamp: Date.now()
       });
     } catch (error) {
-      console.error('[SharedWorker] 发送错误消息失败:', error);
+      logger.error('发送错误消息失败:', error);
     }
   }
 
@@ -342,7 +344,7 @@ const hub = new SharedWorkerHub();
 
 // 监听新连接
 self.onconnect = (event) => {
-  console.log('[SharedWorker] 收到新连接');
+  logger.info('收到新连接');
   const updateClientName = hub.handleConnect(event);
 
   // 处理注册消息以获取客户端名称
@@ -361,7 +363,7 @@ self.onconnect = (event) => {
 
 // 全局错误处理
 self.onerror = (error) => {
-  console.error('[SharedWorker] 全局错误:', error);
+  logger.error('全局错误:', error);
 };
 
-console.log('[SharedWorker] shared_worker.js 已加载完成');
+logger.info('shared_worker.js 已加载完成');

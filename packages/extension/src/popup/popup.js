@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
     } catch (error) {
-      console.error("更新新标签页设置失败:", error);
+      logger.error("更新新标签页设置失败:", error);
     }
   });
 

@@ -1,10 +1,10 @@
-import { fileURLToPath, URL } from "url";
-import { defineConfig } from "vite";
-import copy from "rollup-plugin-copy";
+import { fileURLToPath, URL } from 'url';
+import { defineConfig } from 'vite';
+import copy from 'rollup-plugin-copy';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const isDevMode = mode === "development";
+  const isDevMode = mode === 'development';
 
   const terserOptions = isDevMode
     ? undefined
@@ -20,42 +20,42 @@ export default defineConfig(({ mode }) => {
 
   return {
     build: {
-      minify: isDevMode ? false : "terser",
-      sourcemap: isDevMode ? "inline" : false,
-      outDir: "dist",
+      minify: isDevMode ? false : 'terser',
+      sourcemap: isDevMode ? 'inline' : false,
+      outDir: 'dist',
       emptyOutDir: !isDevMode,
       terserOptions: terserOptions,
       rollupOptions: {
         input: {
           service_worker: fileURLToPath(
-            new URL("./src/background/service_worker.js", import.meta.url)
+            new URL('./src/background/service_worker.js', import.meta.url)
           ),
           service_offscreen: fileURLToPath(
-            new URL("./src/offscreen/service_offscreen.js", import.meta.url)
+            new URL('./src/offscreen/service_offscreen.html', import.meta.url)
           ),
           popup: fileURLToPath(
-            new URL("./src/popup/index.html", import.meta.url)
+            new URL('./src/popup/index.html', import.meta.url)
           ),
         },
         output: {
-          dir: "dist",
+          dir: 'dist',
           entryFileNames: (chunkInfo) => {
             // service_worker 输出到 background 目录
-            if (chunkInfo.name === "service_worker") {
-              return "background/service_worker.js";
+            if (chunkInfo.name === 'service_worker') {
+              return 'background/service_worker.js';
             }
             // service_offscreen 输出到 background 目录
-            if (chunkInfo.name === "service_offscreen") {
-              return "background/offscreen/service_offscreen.js";
+            if (chunkInfo.name === 'service_offscreen') {
+              return 'background/offscreen/service_offscreen.js';
             }
             // popup 输出到 popup 目录
-            if (chunkInfo.name === "popup") {
-              return "popup/popup.js";
+            if (chunkInfo.name === 'popup') {
+              return 'popup/popup.js';
             }
-            return "[name]/[name].js";
+            return '[name]/[name].js';
           },
-          chunkFileNames: "chunks/[name]-[hash].js",
-          assetFileNames: "assets/[name]-[hash][extname]",
+          chunkFileNames: 'chunks/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash][extname]',
         },
       },
     },
@@ -63,38 +63,34 @@ export default defineConfig(({ mode }) => {
       copy({
         verbose: true,
         copyOnce: !isDevMode,
-        hook: "closeBundle",
+        hook: 'closeBundle',
         targets: [
-          { src: "manifest.json", dest: "dist" },
-          { src: "assets/icons", dest: "dist" },
-          { src: "assets/_locales", dest: "dist" },
-          { src: "src/popup/index.html", dest: "dist/popup" },
+          { src: 'manifest.json', dest: 'dist' },
+          { src: 'assets/icons', dest: 'dist' },
+          { src: 'assets/_locales', dest: 'dist' },
+          { src: 'src/popup/index.html', dest: 'dist/popup' },
           {
-            src: "src/modules/peerjs.min.js",
-            dest: "dist/background/offscreen",
+            src: 'src/modules/peerjs.min.js',
+            dest: 'dist/background/offscreen',
           },
           {
-            src: "src/offscreen/service_offscreen.js",
-            dest: "dist/background/offscreen",
+            src: 'src/offscreen/service_offscreen.html',
+            dest: 'dist/background/offscreen',
           },
           {
-            src: "src/offscreen/service_offscreen.html",
-            dest: "dist/background/offscreen",
+            src: 'src/shared/shared_worker.js',
+            dest: 'dist/background/shared',
           },
           {
-            src: "src/shared/shared_worker.js",
-            dest: "dist/background/shared",
-          },
-          {
-            src: "src/shared/shared_worker_client.js",
-            dest: "dist/background/shared",
+            src: 'src/shared/shared_worker_client.js',
+            dest: 'dist/background/shared',
           },
         ],
       }),
     ],
     resolve: {
       alias: {
-        "@": fileURLToPath(new URL("./src", import.meta.url)),
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
   };

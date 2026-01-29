@@ -1,5 +1,7 @@
 {
   "name": "pkg-utils",
+  "author": "Lin.xs",
+  "private": true,
   "version": "0.1.0",
   "description": "Shared utilities for workstations extension",
   "type": "module",
@@ -9,13 +11,5 @@
     "./shared-worker-client": "./src/shared-worker/client.js",
     "./constants": "./src/constants/index.js"
   },
-  "scripts": {
-  },
-  "keywords": [
-    "utils",
-    "shared",
-    "worker"
-  ],
-  "author": "Lin.xs",
-  "license": "MIT"
+  "scripts": {}
 }

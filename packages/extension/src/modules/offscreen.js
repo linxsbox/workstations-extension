@@ -1,3 +1,6 @@
+import { Logger } from "@linxs/toolkit";
+const logger = new Logger('Offscreen', { showTimestamp: false });
+
 /**
  * 创建 Offscreen Document
  * @returns {Promise<boolean>}
@@ -8,7 +11,7 @@ export const createOffscreenDocument = async () => {
     const existingContexts = await checkOffscreenExists();
 
     if (existingContexts) {
-      console.log("[Offscreen] 检查状态：", existingContexts);
+      logger.info("检查状态：", existingContexts);
       return existingContexts;
     }
 
@@ -20,10 +23,10 @@ export const createOffscreenDocument = async () => {
         "Maintain WebRTC connections to support audio processing, ONNX model inference, and peer communication services",
     });
 
-    console.log("[Offscreen] 创建 Document 完成");
+    logger.info("创建 Document 完成");
     return true;
   } catch (error) {
-    console.error("[Offscreen] 创建 Document 失败:", error);
+    logger.error("创建 Document 失败:", error);
     return false;
   }
 };

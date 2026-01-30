@@ -1,16 +1,25 @@
 {
-  "include": ["src/**/*", "src/**/*.vue", "src/utils/**/*", "src/hooks/**/*"],
+  "include": [
+    "src/**/*",
+    "src/**/*.vue",
+    "src/utils/**/*",
+    "src/hooks/**/*",
+    "../utils/src/**/*"
+  ],
   "exclude": ["src/**/__tests__/*", "node_modules", "dist", "public"],
   "compilerOptions": {
     "baseUrl": ".",
     "composite": true,
     "target": "ESNext",
     "module": "ESNext",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./src/*"],
       "utils/*": ["./src/utils/*"],
       "hooks/*": ["./src/hooks/*"],
-      "assets/*": ["./src/assets/*"]
+      "assets/*": ["./src/assets/*"],
+      "pkg-utils": ["../utils/src/index.js"],
+      "pkg-utils/*": ["../utils/src/*"]
     },
     "allowSyntheticDefaultImports": true
   }

@@ -47,13 +47,14 @@ while [ $attempt -le $MAX_RETRIES ]; do
 
   # 检查退出状态
   if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Git 命令执行成功: git $GIT_COMMAND${NC}"
     exit 0
   else
     if [ $attempt -lt $MAX_RETRIES ]; then
       echo -e "${YELLOW}等待 ${RETRY_INTERVAL}s 后重试...${NC}"
       sleep $RETRY_INTERVAL
     else
-      echo -e "${RED}已达到最大重试次数 (${MAX_RETRIES})${NC}"
+      echo -e "${RED}✗ Git 命令执行失败: 已达到最大重试次数 (${MAX_RETRIES})${NC}"
       exit 1
     fi
   fi

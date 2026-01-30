@@ -1,6 +1,12 @@
-// ==================== RSS 定时调度模块 ====================
-// 使用 chrome.alarms API 实现定时任务
 
+
+import { Logger } from "@linxs/toolkit";
+
+const logger = new Logger('RSS Scheduler', { showTimestamp: false });
+
+
+
+// 使用 chrome.alarms API 实现定时任务
 const RSS_UPDATE_HOURS = [7, 8, 9, 10, 14, 18, 20, 22];
 const RSS_SCHEDULER_ALARM = 'rss-scheduler';
 
@@ -17,10 +23,10 @@ export const initRssScheduler = async () => {
         delayInMinutes: 1,
         periodInMinutes: 10
       });
-      console.log('[RSS Scheduler] 定时器已创建');
+      logger.info('定时器已创建');
     }
   } catch (error) {
-    console.error('[RSS Scheduler] 初始化失败:', error);
+    logger.error('初始化失败:', error);
   }
 };
 
@@ -40,7 +46,7 @@ export const setupSchedulerListener = (onUpdate) => {
         const lastUpdateHour = result.lastRssUpdateHour;
 
         if (lastUpdateHour !== currentHour) {
-          console.log(`[RSS Scheduler] 触发更新 - 当前时间: ${currentHour}:00`);
+          logger.info(`触发更新 - 当前时间: ${currentHour}:00`);
 
           // 记录本次更新的小时
           await chrome.storage.local.set({ lastRssUpdateHour: currentHour });
@@ -62,7 +68,7 @@ export const setupSchedulerListener = (onUpdate) => {
             });
           } catch (err) {
             // 如果没有页面监听，忽略错误
-            console.log('[RSS Scheduler] 没有活动页面监听更新消息');
+            logger.info('没有活动页面监听更新消息');
           }
         }
       }
@@ -81,8 +87,8 @@ export const getRssUpdateHours = () => RSS_UPDATE_HOURS;
 export const clearRssScheduler = async () => {
   try {
     await chrome.alarms.clear(RSS_SCHEDULER_ALARM);
-    console.log('[RSS Scheduler] 定时器已清除');
+    logger.info('定时器已清除');
   } catch (error) {
-    console.error('[RSS Scheduler] 清除失败:', error);
+    logger.error('清除失败:', error);
   }
 };

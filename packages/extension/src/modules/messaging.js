@@ -1,4 +1,5 @@
-// ==================== 消息通信模块 ====================
+import { Logger } from '@linxs/toolkit';
+const logger = new Logger('Messaging ', { showTimestamp: false });
 
 /**
  * 消息通信管理器
@@ -12,56 +13,72 @@ class MessagingManager {
 
   /**
    * 注册消息处理器
-   * @param {string} type - 消息类型
+   * @param {string} service - 服务类型
    * @param {Function} handler - 处理函数 (message, sender) => response
    */
-  registerHandler(type, handler) {
-    this.handlers.set(type, handler);
+  registerHandler(service, handler) {
+    this.handlers.set(service, handler);
   }
 
   /**
    * 注册多个消息处理器
-   * @param {Object} handlers - 处理器对象 { type: handler }
+   * @param {Object} handlers - 处理器对象 { service: handler }
    */
   registerHandlers(handlers) {
-    Object.entries(handlers).forEach(([type, handler]) => {
-      this.registerHandler(type, handler);
+    Object.entries(handlers).forEach(([service, handler]) => {
+      this.registerHandler(service, handler);
     });
   }
 
   /**
    * 移除消息处理器
-   * @param {string} type - 消息类型
+   * @param {string} service - 服务类型
    */
-  unregisterHandler(type) {
-    this.handlers.delete(type);
+  unregisterHandler(service) {
+    this.handlers.delete(service);
   }
 
   /**
    * 设置全局消息监听器
    * 自动路由到对应的处理器
+   * 消息格式：{ from, to, action, data, timestamp }
    */
   setupListener() {
     const listener = (message, sender, sendResponse) => {
-      const { type } = message;
+      // 解析消息格式
+      const { from, to, action, data, timestamp, service } = message;
 
-      if (!type) {
-        console.warn('[Messaging] 收到无类型的消息:', message);
+      if (!action && !service) {
+        logger.warn('收到无动作的消息:', message);
         return false;
       }
 
-      const handler = this.handlers.get(type);
+      const messageInfo = {
+        from,
+        to,
+        action,
+        data,
+        timestamp,
+        service,
+        sender: sender.id,
+      };
+
+      // 记录消息信息
+      logger.info('收到消息:', messageInfo);
+
+      const handler = this.handlers.get(service);
 
       if (handler) {
         try {
-          const response = handler(message, sender);
+          // 传递完整的消息信息给处理器
+          const response = handler(messageInfo, sender);
 
           // 支持异步处理器
           if (response instanceof Promise) {
             response
               .then((result) => sendResponse({ success: true, data: result }))
               .catch((error) => {
-                console.error(`[Messaging] 处理 ${type} 失败:`, error);
+                logger.error(`处理 ${action} 失败:`, error);
                 sendResponse({ success: false, error: error.message });
               });
             return true; // 异步响应
@@ -70,12 +87,12 @@ class MessagingManager {
             return false;
           }
         } catch (error) {
-          console.error(`[Messaging] 处理 ${type} 异常:`, error);
+          logger.error(`处理 ${action} 异常:`, error);
           sendResponse({ success: false, error: error.message });
           return false;
         }
       } else {
-        console.warn(`[Messaging] 未找到处理器: ${type}`);
+        logger.warn(`未找到处理器: ${action}`);
         return false;
       }
     };
@@ -93,7 +110,10 @@ class MessagingManager {
     try {
       await chrome.runtime.sendMessage(message);
     } catch (error) {
-      console.log('[Messaging] 广播消息失败（可能没有活动页面）:', error.message);
+      logger.info(
+        '广播消息失败（可能没有活动页面）:',
+        error.message
+      );
     }
   }
 

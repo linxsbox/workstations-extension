@@ -7,7 +7,8 @@
   "scripts": {
     "dev:ext": "node build/clean-dist.js && concurrently \"pnpm -F pkg-app dev:ext\" \"pnpm -F pkg-extension dev:ext\" \"node build/watch-merge.js\"",
     "build:ext": "node build/clean-dist.js && pnpm sync-version && pnpm -F pkg-app build:ext && pnpm -F pkg-extension build:ext && node build/merge-dist.js",
-    "sync-version": "node build/sync-version.js"
+    "sync-version": "node build/sync-version.js",
+    "clear": "node build/clean-dist.js"
   },
   "devDependencies": {
     "chokidar": "^3.6.0",

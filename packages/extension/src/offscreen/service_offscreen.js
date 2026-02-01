@@ -34,10 +34,11 @@ messagingManager.registerHandlers({
         const module = moduleHandler.get(WEBRTC_ACTIONS.MODULE_NAME);
         if (!moduleHandler.get(WEBRTC_ACTIONS.MODULE_NAME)) {
           const webrtcManager = new WebRTCManager();
-          moduleHandler.set(
-            WEBRTC_ACTIONS.MODULE_NAME,
-            new WebRTCActionHandler(webrtcManager)
-          );
+
+          const newModule = new WebRTCActionHandler(webrtcManager);
+          moduleHandler.set(WEBRTC_ACTIONS.MODULE_NAME, newModule);
+
+          return newModule.handle(message);
         }
 
         return module.handle(message);

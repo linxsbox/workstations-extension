@@ -1,5 +1,7 @@
 import { Logger } from "@linxs/toolkit";
-const logger = new Logger('Shared Worker', { showTimestamp: false });
+import { SHARED_WORKER_ACTIONS as SWA } from 'pkg-utils/constants';
+
+const logger = new Logger('Shared Worker');
 /**
  * SharedWorker 长连接服务中心
  * 功能：
@@ -76,7 +78,7 @@ class SharedWorkerHub {
     const { type, name, to, data, requestId, broadcast } = msg;
 
     // 1. 注册客户端
-    if (type === 'REGISTER') {
+    if (type === SWA.REGISTER) {
       this.registerClient(name, port, clientInfo);
       return;
     }
@@ -90,21 +92,21 @@ class SharedWorkerHub {
     clientInfo.messageCount++;
 
     // 2. 获取客户端列表
-    if (type === 'GET_CLIENTS') {
+    if (type === SWA.GET_CLIENTS) {
       this.sendClientList(port, requestId);
       return;
     }
 
     // 3. 获取统计信息
-    if (type === 'GET_STATS') {
+    if (type === SWA.GET_STATS) {
       this.sendStats(port, requestId);
       return;
     }
 
     // 4. Ping/Pong 心跳
-    if (type === 'PING') {
+    if (type === SWA.PING) {
       port.postMessage({
-        type: 'PONG',
+        type: SWA.PONG,
         requestId,
         timestamp: Date.now()
       });
@@ -142,7 +144,7 @@ class SharedWorkerHub {
       // 通知旧连接被踢出
       const oldClient = this.clients.get(name);
       oldClient.port.postMessage({
-        type: 'DISCONNECTED',
+        type: SWA.DISCONNECTED,
         reason: 'Duplicate connection'
       });
     }
@@ -156,7 +158,7 @@ class SharedWorkerHub {
 
     // 发送注册成功响应
     port.postMessage({
-      type: 'REGISTERED',
+      type: SWA.REGISTERED,
       name: name,
       clients: this.getClientNames(),
       timestamp: Date.now()
@@ -164,7 +166,7 @@ class SharedWorkerHub {
 
     // 通知其他客户端有新成员加入
     this.broadcastMessage('system', {
-      type: 'CLIENT_JOINED',
+      type: SWA.CLIENT_JOINED,
       name: name,
       totalClients: this.clients.size
     });
@@ -192,7 +194,7 @@ class SharedWorkerHub {
 
       // 通知其他客户端
       this.broadcastMessage('system', {
-        type: 'CLIENT_LEFT',
+        type: SWA.CLIENT_LEFT,
         name: name,
         totalClients: this.clients.size
       });
@@ -273,7 +275,7 @@ class SharedWorkerHub {
       const senderClient = this.clients.get(fromName);
       if (senderClient && requestId) {
         senderClient.port.postMessage({
-          type: 'BROADCAST_ACK',
+          type: SWA.BROADCAST_ACK,
           requestId: requestId,
           delivered: successCount,
           failed: failedClients.length
@@ -293,7 +295,7 @@ class SharedWorkerHub {
     }));
 
     port.postMessage({
-      type: 'CLIENT_LIST',
+      type: SWA.CLIENT_LIST,
       requestId: requestId,
       clients: clientList,
       total: this.clients.size
@@ -305,7 +307,7 @@ class SharedWorkerHub {
    */
   sendStats(port, requestId) {
     port.postMessage({
-      type: 'STATS',
+      type: SWA.STATS,
       requestId: requestId,
       stats: {
         ...this.stats,
@@ -321,7 +323,7 @@ class SharedWorkerHub {
   sendError(port, requestId, message) {
     try {
       port.postMessage({
-        type: 'ERROR',
+        type: SWA.ERROR,
         requestId: requestId,
         error: message,
         timestamp: Date.now()
@@ -352,7 +354,7 @@ self.onconnect = (event) => {
   const originalOnMessage = port.onmessage;
 
   port.onmessage = (e) => {
-    if (e.data && e.data.type === 'REGISTER' && e.data.name) {
+    if (e.data && e.data.type === SWA.REGISTER && e.data.name) {
       updateClientName(e.data.name);
     }
     if (originalOnMessage) {

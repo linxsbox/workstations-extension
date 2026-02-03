@@ -11,5 +11,8 @@
     "./shared-worker-client": "./src/shared-worker/client.js",
     "./constants": "./src/constants/index.js"
   },
-  "scripts": {}
+  "scripts": {},
+  "dependencies": {
+    "@linxs/toolkit": "catalog:"
+  }
 }

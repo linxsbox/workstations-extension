@@ -3,10 +3,36 @@
  * 提供简单易用的 API 来与 SharedWorker 通信
  */
 
+import { Logger } from '@linxs/toolkit';
+import { SHARED_WORKER_ACTIONS as SWA } from '../constants/shared-worker.js';
+
+const logger = new Logger('SharedWorkerClient');
+
+/**
+ * 自动检测并获取 SharedWorker 路径
+ * @param {string} customPath - 自定义路径（可选）
+ * @returns {string} SharedWorker 的完整路径
+ */
+function resolveWorkerPath(customPath) {
+  // 如果提供了自定义路径，直接使用
+  if (customPath) {
+    return customPath;
+  }
+
+  // 检测是否在 Chrome Extension 环境
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+    // Extension 环境：使用 chrome.runtime.getURL 获取绝对路径
+    return chrome.runtime.getURL('background/shared/shared_worker.js');
+  }
+
+  // 普通 Web 环境：使用相对路径
+  return '/shared_worker.js';
+}
+
 export class SharedWorkerClient {
-  constructor(clientName, workerPath = 'shared_worker.js') {
+  constructor(clientName, workerPath) {
     this.clientName = clientName;
-    this.workerPath = workerPath;
+    this.workerPath = resolveWorkerPath(workerPath);
     this.worker = null;
     this.port = null;
 
@@ -41,14 +67,17 @@ export class SharedWorkerClient {
   async connect() {
     return new Promise((resolve, reject) => {
       try {
-        // 创建 SharedWorker 连接
-        this.worker = new SharedWorker(this.workerPath);
+        // 创建 SharedWorker 连接，指定 type: 'module' 以支持 ES modules
+        this.worker = new SharedWorker(this.workerPath, {
+          type: 'module',
+          name: this.clientName
+        });
         this.port = this.worker.port;
 
         // 设置消息监听
         this.port.onmessage = (e) => this._handleMessage(e.data);
         this.port.onmessageerror = (e) => {
-          console.error('[SharedWorkerClient] 消息错误:', e);
+          logger.error('消息错误:', e);
           this._emit('error', { type: 'message_error', error: e });
         };
 
@@ -59,7 +88,7 @@ export class SharedWorkerClient {
         // 注册客户端
         this._register()
           .then(() => {
-            console.log(`[SharedWorkerClient] ${this.clientName} 已连接并注册`);
+            logger.info(`${this.clientName} 已连接并注册`);
             this._emit('connected', { clientName: this.clientName });
             this._startHeartbeat();
             resolve(this);
@@ -67,7 +96,7 @@ export class SharedWorkerClient {
           .catch(reject);
 
       } catch (error) {
-        console.error('[SharedWorkerClient] 连接失败:', error);
+        logger.error('连接失败:', error);
         this._emit('error', { type: 'connection_error', error });
         reject(error);
       }
@@ -85,7 +114,7 @@ export class SharedWorkerClient {
 
       // 监听注册响应
       const onRegistered = (msg) => {
-        if (msg.type === 'REGISTERED') {
+        if (msg.type === SWA.REGISTERED) {
           clearTimeout(timeout);
           this.isRegistered = true;
           resolve(msg);
@@ -101,7 +130,7 @@ export class SharedWorkerClient {
 
       // 发送注册消息
       this.port.postMessage({
-        type: 'REGISTER',
+        type: SWA.REGISTER,
         name: this.clientName
       });
     });
@@ -117,10 +146,10 @@ export class SharedWorkerClient {
       // 发送注销消息（可选）
       try {
         this.port.postMessage({
-          type: 'UNREGISTER'
+          type: SWA.UNREGISTER
         });
       } catch (error) {
-        console.warn('[SharedWorkerClient] 发送注销消息失败:', error);
+        logger.warn('发送注销消息失败:', error);
       }
 
       this.port.close();
@@ -132,7 +161,7 @@ export class SharedWorkerClient {
     this.isRegistered = false;
 
     this._emit('disconnected', { clientName: this.clientName });
-    console.log(`[SharedWorkerClient] ${this.clientName} 已断开连接`);
+    logger.info(`${this.clientName} 已断开连接`);
   }
 
   /**
@@ -215,7 +244,7 @@ export class SharedWorkerClient {
       this.pendingRequests.set(reqId, { resolve, reject, timer });
 
       this.port.postMessage({
-        type: 'GET_CLIENTS',
+        type: SWA.GET_CLIENTS,
         requestId: reqId
       });
     });
@@ -236,7 +265,7 @@ export class SharedWorkerClient {
       this.pendingRequests.set(reqId, { resolve, reject, timer });
 
       this.port.postMessage({
-        type: 'GET_STATS',
+        type: SWA.GET_STATS,
         requestId: reqId
       });
     });
@@ -265,7 +294,7 @@ export class SharedWorkerClient {
       });
 
       this.port.postMessage({
-        type: 'PING',
+        type: SWA.PING,
         requestId: reqId
       });
     });
@@ -301,7 +330,7 @@ export class SharedWorkerClient {
         try {
           listener(data);
         } catch (error) {
-          console.error(`[SharedWorkerClient] 事件监听器错误 (${event}):`, error);
+          logger.error(`事件监听器错误 (${event}):`, error);
         }
       });
     }
@@ -312,17 +341,20 @@ export class SharedWorkerClient {
    */
   _handleMessage(msg) {
     // 处理系统消息
-    if (msg.type === 'CLIENT_JOINED') {
+    if (msg.type === SWA.CLIENT_JOINED) {
+      logger.info('客户端加入:', msg.name);
       this._emit('clientJoined', msg);
       return;
     }
 
-    if (msg.type === 'CLIENT_LEFT') {
+    if (msg.type === SWA.CLIENT_LEFT) {
+      logger.info('客户端离开:', msg.name);
       this._emit('clientLeft', msg);
       return;
     }
 
-    if (msg.type === 'DISCONNECTED') {
+    if (msg.type === SWA.DISCONNECTED) {
+      logger.warn('连接已断开:', msg.reason);
       this._emit('disconnected', msg);
       this.disconnect();
       return;
@@ -334,15 +366,15 @@ export class SharedWorkerClient {
       clearTimeout(timer);
       this.pendingRequests.delete(msg.requestId);
 
-      if (msg.type === 'ERROR') {
+      if (msg.type === SWA.ERROR) {
         reject(new Error(msg.error));
-      } else if (msg.type === 'CLIENT_LIST') {
+      } else if (msg.type === SWA.CLIENT_LIST) {
         resolve(msg.clients);
-      } else if (msg.type === 'STATS') {
+      } else if (msg.type === SWA.STATS) {
         resolve(msg.stats);
-      } else if (msg.type === 'PONG') {
+      } else if (msg.type === SWA.PONG) {
         resolve(msg);
-      } else if (msg.type === 'BROADCAST_ACK') {
+      } else if (msg.type === SWA.BROADCAST_ACK) {
         resolve(msg);
       } else {
         resolve(msg.data);
@@ -368,19 +400,23 @@ export class SharedWorkerClient {
             }
           })
           .catch(error => {
-            console.error(`[SharedWorkerClient] 处理器错误 (${messageType}):`, error);
+            logger.error(`处理器错误 (${messageType}):`, error);
             // 发送错误响应
             if (msg.requestId !== undefined) {
               this.port.postMessage({
                 to: msg.from,
                 requestId: msg.requestId,
-                type: 'ERROR',
+                type: SWA.ERROR,
                 error: error.message
               });
             }
           });
       } else {
-        console.warn(`[SharedWorkerClient] 未处理的消息类型: ${messageType}`);
+        // 忽略系统广播消息（CLIENT_JOINED/CLIENT_LEFT 等已在上面处理）
+        // 只对业务消息发出警告
+        if (messageType && !Object.values(SWA).includes(messageType)) {
+          logger.warn('未处理的消息类型:', messageType);
+        }
       }
     }
   }
@@ -395,7 +431,7 @@ export class SharedWorkerClient {
       try {
         await this.ping();
       } catch (error) {
-        console.error('[SharedWorkerClient] 心跳失败:', error);
+        logger.error('心跳失败:', error);
         this._emit('error', { type: 'heartbeat_failed', error });
       }
     }, this.heartbeatTimeout);

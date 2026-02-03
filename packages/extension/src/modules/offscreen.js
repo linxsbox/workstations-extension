@@ -1,5 +1,5 @@
-import { Logger } from "@linxs/toolkit";
-const logger = new Logger('Offscreen', { showTimestamp: false });
+import { Logger } from '@linxs/toolkit';
+const logger = new Logger('Offscreen Document');
 
 /**
  * 创建 Offscreen Document
@@ -11,22 +11,22 @@ export const createOffscreenDocument = async () => {
     const existingContexts = await checkOffscreenExists();
 
     if (existingContexts) {
-      logger.info("检查状态：", existingContexts);
+      logger.info('检查状态：', existingContexts);
       return existingContexts;
     }
 
     // 创建 Document
     await chrome.offscreen.createDocument({
-      url: chrome.runtime.getURL("background/offscreen/service_offscreen.html"),
-      reasons: ["WORKERS"],
+      url: chrome.runtime.getURL('background/offscreen/service_offscreen.html'),
+      reasons: ['WORKERS'],
       justification:
-        "Maintain WebRTC connections to support audio processing, ONNX model inference, and peer communication services",
+        'Maintain WebRTC connections to support audio processing, ONNX model inference, and peer communication services',
     });
 
-    logger.info("创建 Document 完成");
+    logger.info('创建 Offscreen Document 完成');
     return true;
   } catch (error) {
-    logger.error("创建 Document 失败:", error);
+    logger.error('创建 Offscreen Document 失败:', error);
     return false;
   }
 };
@@ -38,7 +38,7 @@ export const createOffscreenDocument = async () => {
 export const checkOffscreenExists = async () => {
   try {
     const existingContexts = await chrome.runtime.getContexts({
-      contextTypes: ["OFFSCREEN_DOCUMENT"],
+      contextTypes: ['OFFSCREEN_DOCUMENT'],
     });
     return existingContexts.length > 0;
   } catch (error) {

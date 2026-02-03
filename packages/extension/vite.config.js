@@ -30,6 +30,9 @@ export default defineConfig(({ mode }) => {
           service_worker: fileURLToPath(
             new URL('./src/background/service_worker.js', import.meta.url)
           ),
+          shared_worker: fileURLToPath(
+            new URL('./src/shared/shared_worker.js', import.meta.url)
+          ),
           service_offscreen: fileURLToPath(
             new URL('./src/offscreen/service_offscreen.html', import.meta.url)
           ),
@@ -43,6 +46,10 @@ export default defineConfig(({ mode }) => {
             // service_worker 输出到 background 目录
             if (chunkInfo.name === 'service_worker') {
               return 'background/service_worker.js';
+            }
+            // shared_worker 输出到 background/shared 目录
+            if (chunkInfo.name === 'shared_worker') {
+              return 'background/shared/shared_worker.js';
             }
             // service_offscreen 输出到 background 目录
             if (chunkInfo.name === 'service_offscreen') {
@@ -58,6 +65,9 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[name]-[hash][extname]',
         },
       },
+    },
+    optimizeDeps: {
+      include: ['@linxs/toolkit'],
     },
     plugins: [
       copy({
@@ -76,14 +86,6 @@ export default defineConfig(({ mode }) => {
           {
             src: 'src/offscreen/service_offscreen.html',
             dest: 'dist/background/offscreen',
-          },
-          {
-            src: 'src/shared/shared_worker.js',
-            dest: 'dist/background/shared',
-          },
-          {
-            src: 'src/shared/shared_worker_client.js',
-            dest: 'dist/background/shared',
           },
         ],
       }),

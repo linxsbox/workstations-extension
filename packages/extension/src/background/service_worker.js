@@ -1,4 +1,4 @@
-import { Logger } from "@linxs/toolkit";
+import { Logger } from '@linxs/toolkit';
 import ChromeStorage from '../modules/storage.js';
 import MessagingManager from '../modules/messaging.js';
 import { createOffscreenDocument } from '../modules/offscreen.js';
@@ -8,9 +8,7 @@ import {
 } from '../modules/scheduler.js';
 import { SERVICE_NAME } from 'pkg-utils/constants';
 
-const logger = new Logger('Service Worker', { showTimestamp: false });
-
-logger.info('启动');
+const logger = new Logger('Service Worker');
 
 /**
  * 初始化消息管理器

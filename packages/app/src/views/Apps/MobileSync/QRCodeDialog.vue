@@ -1,30 +1,55 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue';
-import { NModal, NButton, NSpin } from 'naive-ui';
+import { ref, computed, watch, nextTick } from 'vue';
+import { NModal, NButton, NSpin, useMessage } from 'naive-ui';
 import QRCode from 'qrcode';
 import { storeMobileSync, SYNC_STATUS } from '@/stores/miniapps/mobilesync';
+import { storeToRefs } from 'pinia';
 
 const mobileSyncStore = storeMobileSync();
+const {
+  status: storeStatus,
+  qrUrl,
+  connectedDevices,
+} = storeToRefs(mobileSyncStore);
+const message = useMessage();
 
 const props = defineProps({
   show: {
     type: Boolean,
     default: false,
   },
-  connectedDevices: {
-    type: Array,
-    default: () => [],
-  },
+});
+
+// 二维码生成状态
+const isGenerating = ref(false);
+const qrcodeCanvas = ref(null);
+
+// 计算连接状态文本
+const status = computed(() => {
+  switch (storeStatus.value) {
+    case SYNC_STATUS.IDLE:
+      return '未初始化';
+    case SYNC_STATUS.INITIALIZING:
+      return '初始化中...';
+    case SYNC_STATUS.READY:
+      return connectedDevices.value.length > 0 ? '已连接' : '等待连接';
+    case SYNC_STATUS.CONNECTED:
+      return '已连接';
+    case SYNC_STATUS.ERROR:
+      return '连接错误';
+    default:
+      return '未知状态';
+  }
 });
 
 // 关闭弹窗
-const handleClose = (value) => {
+const handleClose = () => {
   mobileSyncStore.closeQRDialog();
 };
 
 // 生成二维码
 const generateQRCode = async () => {
-  if (!props.qrUrl || !qrcodeCanvas.value) {
+  if (!qrUrl.value || !qrcodeCanvas.value) {
     console.warn('[QRCode Dialog] 缺少必要条件，跳过生成');
     return;
   }
@@ -32,7 +57,7 @@ const generateQRCode = async () => {
   isGenerating.value = true;
 
   try {
-    await QRCode.toCanvas(qrcodeCanvas.value, props.qrUrl, {
+    await QRCode.toCanvas(qrcodeCanvas.value, qrUrl.value, {
       width: 256,
       margin: 2,
       color: {
@@ -44,13 +69,51 @@ const generateQRCode = async () => {
     console.log('[QRCode Dialog] 二维码生成成功');
   } catch (error) {
     console.error('[QRCode Dialog] 二维码生成失败:', error);
+    message.error('二维码生成失败');
   } finally {
     isGenerating.value = false;
   }
 };
 
-const handleStartSync = () => {
-  mobileSyncStore.initialize();
+// 监听弹窗显示和 qrUrl 变化
+watch(
+  [() => props.show, qrUrl],
+  async ([show, url]) => {
+    if (show && url) {
+      await nextTick();
+      generateQRCode();
+    }
+  },
+  { immediate: true }
+);
+
+// 开启同步
+const handleStartSync = async () => {
+  try {
+    await mobileSyncStore.initialize();
+    // 初始化成功后，二维码会自动生成（通过 watch）
+  } catch (error) {
+    message.error(`初始化失败: ${error.message}`);
+  }
+};
+
+// 复制链接
+const handleCopyLink = async () => {
+  if (!qrUrl.value) return;
+
+  try {
+    await navigator.clipboard.writeText(qrUrl.value);
+    message.success('链接已复制到剪贴板');
+  } catch (error) {
+    console.error('[QRCode Dialog] 复制失败:', error);
+    message.error('复制失败');
+  }
+};
+
+// 刷新二维码
+const handleRefresh = () => {
+  generateQRCode();
+  message.success('二维码已刷新');
 };
 </script>
 
@@ -100,7 +163,7 @@ const handleStartSync = () => {
 
         <!-- 连接状态信息 -->
         <div
-          class="w-full px-4 py-3 bg-[var(--bg-secondary)] rounded flex flex-col gap-2.5"
+          class="w-full flex justify-between items-center gap-2.5 p-2 bg-[var(--bg-secondary)] rounded"
         >
           <!-- 第一行：连接状态 -->
           <div class="flex items-center justify-center gap-2">
@@ -143,7 +206,12 @@ const handleStartSync = () => {
           v-if="qrUrl"
           class="w-full px-3 py-3 bg-[var(--bg-secondary)] rounded"
         >
-          <div class="text-xs text-[var(--text-tertiary)] mb-2">连接地址：</div>
+          <div class="flex justify-between items-center text-xs text-[var(--text-tertiary)] mb-2">
+            <span>连接地址：</span>
+            <NButton text size="small" @click="handleCopyLink" title="复制链接">
+              复制
+            </NButton>
+          </div>
           <div class="flex items-center gap-2">
             <a
               :href="qrUrl"
@@ -153,9 +221,6 @@ const handleStartSync = () => {
             >
               {{ qrUrl }}
             </a>
-            <NButton text size="small" @click="handleCopyLink" title="复制链接">
-              复制
-            </NButton>
           </div>
         </div>
 

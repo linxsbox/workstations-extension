@@ -1,5 +1,5 @@
 import { Logger } from '@linxs/toolkit';
-const logger = new Logger('Messaging ', { showTimestamp: false });
+const logger = new Logger('Messaging');
 
 /**
  * 消息通信管理器
@@ -49,7 +49,13 @@ class MessagingManager {
       const { from, to, action, data, timestamp, service } = message;
 
       if (!action && !service) {
-        logger.warn('收到无动作的消息:', message);
+        logger.warn('收到无效消息:', message);
+        return false;
+      }
+
+      // 没找到 handler 直接返回
+      const handler = this.handlers.get(service);
+      if (!handler) {
         return false;
       }
 
@@ -66,33 +72,27 @@ class MessagingManager {
       // 记录消息信息
       logger.info('收到消息:', messageInfo);
 
-      const handler = this.handlers.get(service);
+      // 处理消息
+      try {
+        // 传递完整的消息信息给处理器
+        const response = handler(messageInfo, sender);
 
-      if (handler) {
-        try {
-          // 传递完整的消息信息给处理器
-          const response = handler(messageInfo, sender);
-
-          // 支持异步处理器
-          if (response instanceof Promise) {
-            response
-              .then((result) => sendResponse({ success: true, data: result }))
-              .catch((error) => {
-                logger.error(`处理 ${action} 失败:`, error);
-                sendResponse({ success: false, error: error.message });
-              });
-            return true; // 异步响应
-          } else {
-            sendResponse({ success: true, data: response });
-            return false;
-          }
-        } catch (error) {
-          logger.error(`处理 ${action} 异常:`, error);
-          sendResponse({ success: false, error: error.message });
+        // 支持异步处理器
+        if (response instanceof Promise) {
+          response
+            .then((result) => sendResponse({ success: true, data: result }))
+            .catch((error) => {
+              logger.error(`处理 ${action} 失败:`, error);
+              sendResponse({ success: false, error: error.message });
+            });
+          return true; // 异步响应
+        } else {
+          sendResponse({ success: true, data: response });
           return false;
         }
-      } else {
-        logger.warn(`未找到处理器: ${action}`);
+      } catch (error) {
+        logger.error(`处理 ${action} 异常:`, error);
+        sendResponse({ success: false, error: error.message });
         return false;
       }
     };

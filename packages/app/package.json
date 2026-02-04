@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@linxs/amors": "^0.4.0",
-    "@linxs/toolkit": "^0.5.2",
+    "@linxs/toolkit": "catalog:",
     "@linxs/toolkit-vue": "^0.1.5",
     "@vue/compiler-sfc": "^3.5.13",
     "@zumer/snapdom": "^2.0.1",

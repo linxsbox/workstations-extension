@@ -2,7 +2,7 @@
 
 import { Logger } from "@linxs/toolkit";
 
-const logger = new Logger('RSS Scheduler', { showTimestamp: false });
+const logger = new Logger('RSS Scheduler');
 
 
 

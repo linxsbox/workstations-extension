@@ -1,0 +1,34 @@
+/**
+ * SharedWorker 消息动作配置
+ */
+export const SHARED_WORKER_ACTIONS = {
+  /** 模块名称 */
+  MODULE_NAME: 'SHARED_WORKER',
+  SHARED_NAME: 'SHARED_WORKER',
+
+  /** 连接管理 */
+  REGISTER: 'REGISTER',
+  REGISTERED: 'REGISTERED',
+  UNREGISTER: 'UNREGISTER',
+  DISCONNECTED: 'DISCONNECTED',
+
+  /** 客户端管理 */
+  CLIENT_JOINED: 'CLIENT_JOINED',
+  CLIENT_LEFT: 'CLIENT_LEFT',
+  GET_CLIENTS: 'GET_CLIENTS',
+  CLIENT_LIST: 'CLIENT_LIST',
+
+  /** 统计信息 */
+  GET_STATS: 'GET_STATS',
+  STATS: 'STATS',
+
+  /** 心跳 */
+  PING: 'PING',
+  PONG: 'PONG',
+
+  /** 错误 */
+  ERROR: 'ERROR',
+
+  /** 广播 */
+  BROADCAST_ACK: 'BROADCAST_ACK',
+};

@@ -4,6 +4,12 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@linxs/toolkit':
+      specifier: ^0.5.4
+      version: 0.5.4
+
 importers:
 
   .:
@@ -21,8 +27,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0
       '@linxs/toolkit':
-        specifier: ^0.5.2
-        version: 0.5.2
+        specifier: 'catalog:'
+        version: 0.5.4
       '@linxs/toolkit-vue':
         specifier: ^0.1.5
         version: 0.1.5(vue@3.5.13)
@@ -97,8 +103,8 @@ importers:
   packages/extension:
     dependencies:
       '@linxs/toolkit':
-        specifier: ^0.5.2
-        version: 0.5.2
+        specifier: 'catalog:'
+        version: 0.5.4
       pkg-utils:
         specifier: workspace:*
         version: link:../utils
@@ -122,7 +128,11 @@ importers:
         specifier: 5.4.11
         version: 5.4.11(@types/node@25.0.10)(sass@1.71.0)(terser@5.46.0)
 
-  packages/utils: {}
+  packages/utils:
+    dependencies:
+      '@linxs/toolkit':
+        specifier: 'catalog:'
+        version: 0.5.4
 
 packages:
 
@@ -344,8 +354,8 @@ packages:
     peerDependencies:
       vue: ^3.4.0
 
-  '@linxs/toolkit@0.5.2':
-    resolution: {integrity: sha512-xXOdcCzVxTWS128pPojUVvbUAasPc/OgNVLmZV+cE2wd3jtW5ym5Ydy8/GPql+K19NnQiip/4if3/ZE34IKQLA==}
+  '@linxs/toolkit@0.5.4':
+    resolution: {integrity: sha512-nYP7yFSbCcwkNKjNcxxp8GX1aNwmXCcE841fwGR9B0Ly3Vl55uAD3LlmsKvS9rcHPTX7YoLRIhrYUs9SUwJSrQ==}
     engines: {node: '>=16', npm: '>=7'}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -1644,7 +1654,7 @@ snapshots:
     dependencies:
       vue: 3.5.13
 
-  '@linxs/toolkit@0.5.2': {}
+  '@linxs/toolkit@0.5.4': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

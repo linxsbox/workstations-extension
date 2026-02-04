@@ -5,6 +5,9 @@
  */
 
 import { createClient } from 'pkg-utils';
+import { Logger } from '@linxs/toolkit';
+
+const logger = new Logger('SharedClient');
 
 /**
  * SharedWorker 通信模式说明：
@@ -72,12 +75,12 @@ export class SharedClientService {
    */
   async initialize(clientName = 'SHARED_APP') {
     try {
-      console.log('[SharedClient] 开始初始化...', clientName);
+      logger.info('开始初始化...', clientName);
 
       // 创建 SharedWorker 客户端
       this.client = await createClient(clientName);
 
-      console.log('[SharedClient] 客户端创建成功');
+      logger.info('客户端创建成功');
 
       // 设置事件监听
       this.setupEventListeners();
@@ -88,11 +91,11 @@ export class SharedClientService {
       this.readyCallbacks.forEach(callback => callback());
       this.readyCallbacks = [];
 
-      console.log('[SharedClient] 初始化完成');
+      logger.info('初始化完成');
 
       return { success: true };
     } catch (error) {
-      console.error('[SharedClient] 初始化失败:', error);
+      logger.error('初始化失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -109,22 +112,22 @@ export class SharedClientService {
   setupEventListeners() {
     // 监听客户端加入
     this.client.on('clientJoined', (data) => {
-      console.log('[SharedClient] 新客户端加入:', data.name);
+      logger.info('新客户端加入:', data.name);
     });
 
     // 监听客户端离开
     this.client.on('clientLeft', (data) => {
-      console.log('[SharedClient] 客户端离开:', data.name);
+      logger.info('客户端离开:', data.name);
     });
 
     // 监听错误
     this.client.on('error', (data) => {
-      console.error('[SharedClient] 错误:', data);
+      logger.error('错误:', data);
     });
 
     // 监听断开连接
     this.client.on('disconnected', (data) => {
-      console.warn('[SharedClient] 连接断开:', data);
+      logger.warn('连接断开:', data);
       this.isReady = false;
     });
   }
@@ -150,7 +153,7 @@ export class SharedClientService {
    */
   onMessage(messageType, handler) {
     if (!this.client) {
-      console.error('[SharedClient] 客户端未初始化');
+      logger.error('客户端未初始化');
       return;
     }
 
@@ -165,7 +168,7 @@ export class SharedClientService {
    */
   offMessage(messageType) {
     if (!this.client) {
-      console.error('[SharedClient] 客户端未初始化');
+      logger.error('客户端未初始化');
       return;
     }
 
@@ -205,7 +208,7 @@ export class SharedClientService {
       const response = await this.client.sendTo(targetClient, data, timeout);
       return response;
     } catch (error) {
-      console.error(`[SharedClient] 发送消息到 ${targetClient} 失败:`, error);
+      logger.error(`发送消息到 ${targetClient} 失败:`, error);
       throw error;
     }
   }
@@ -238,7 +241,7 @@ export class SharedClientService {
       const response = await this.client.broadcast(data);
       return response;
     } catch (error) {
-      console.error('[SharedClient] 广播消息失败:', error);
+      logger.error('广播消息失败:', error);
       throw error;
     }
   }
@@ -268,7 +271,7 @@ export class SharedClientService {
       const clients = await this.client.getClients();
       return clients;
     } catch (error) {
-      console.error('[SharedClient] 获取客户端列表失败:', error);
+      logger.error('获取客户端列表失败:', error);
       throw error;
     }
   }
@@ -292,7 +295,7 @@ export class SharedClientService {
       const stats = await this.client.getStats();
       return stats;
     } catch (error) {
-      console.error('[SharedClient] 获取统计信息失败:', error);
+      logger.error('获取统计信息失败:', error);
       throw error;
     }
   }
@@ -317,7 +320,7 @@ export class SharedClientService {
       const result = await this.client.ping();
       return result;
     } catch (error) {
-      console.error('[SharedClient] Ping 失败:', error);
+      logger.error('Ping 失败:', error);
       throw error;
     }
   }
@@ -359,7 +362,7 @@ export class SharedClientService {
       this.client = null;
       this.isReady = false;
       this.messageHandlers.clear();
-      console.log('[SharedClient] 已断开连接');
+      logger.info('已断开连接');
     }
   }
 

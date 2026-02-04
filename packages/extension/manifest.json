@@ -36,7 +36,7 @@
   "host_permissions": ["http://*/*", "https://*/*"],
   "web_accessible_resources": [
     {
-      "resources": ["background/shared_worker.js"],
+      "resources": ["background/shared/shared_worker.js"],
       "matches": ["<all_urls>"],
       "use_dynamic_url": false
     }

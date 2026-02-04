@@ -2,28 +2,33 @@
  * WebRTC 模块
  * 提供 WebRTC 连接管理和数据通信功能
  */
-import { defaultStorage, Logger } from '@linxs/toolkit';
+import { defaultStorage, Logger, simpleUUID } from '@linxs/toolkit';
 import { WEBRTC_ACTIONS, APP_ACTIONS } from 'pkg-utils/constants';
 import { createClient } from 'pkg-utils';
 
-const logger = new Logger('WebRTC', { showTimestamp: false });
+const logger = new Logger('WebRTC');
 
 /**
  * WebRTC 管理器
  * 负责 WebRTC 连接的生命周期管理
+ *
+ * 职责：
+ * - 管理 Peer 实例
+ * - 管理连接
+ * - 通过回调上报事件（不直接发消息）
  */
 export class WebRTCManager {
-  constructor() {
+  /**
+   * @param {Object} eventEmitter - 事件发射器 {emit: (event, data) => void}
+   */
+  constructor(eventEmitter) {
     this.peer = null;
     this.peerId = null;
     this.connections = new Map();
-    this.sharedClient = null;
+    this.eventEmitter = eventEmitter;
 
     const { localStorage } = defaultStorage();
     this.local = localStorage;
-
-    // 初始化 SharedClient
-    this.initSharedClient();
   }
 
   /**
@@ -45,7 +50,7 @@ export class WebRTCManager {
     }
 
     // 3. 生成新的 Peer ID 并存储
-    const newPeerId = 'peer-' + Math.random().toString(36).substr(2, 9);
+    const newPeerId = 'peer-' + simpleUUID();
     logger.info('生成新的 Peer ID:', newPeerId);
     await this.local.set('webrtc_peer_id', newPeerId);
     this.peerId = newPeerId;
@@ -57,7 +62,7 @@ export class WebRTCManager {
    */
   async init() {
     try {
-      logger.info('开始初始化...');
+      logger.info('开始初始化 Peer...');
 
       // 获取或创建 Peer ID
       this.peerId = await this.getOrCreatePeerId();
@@ -72,7 +77,7 @@ export class WebRTCManager {
         config: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:global.stun.twilio.com:3478' },
+            { urls: 'stun:global.stun.twilio.com:19302' },
           ],
         },
       });
@@ -90,34 +95,37 @@ export class WebRTCManager {
    * 设置 Peer 事件监听器
    */
   setupPeerListeners() {
+    // Peer 连接成功
     this.peer.on('open', (id) => {
       this.peerId = id;
       logger.info('Peer 已打开, ID:', id);
 
-      chrome.runtime
-        .sendMessage({
-          module: WEBRTC_ACTIONS.MODULE_NAME,
-          action: WEBRTC_ACTIONS.READY,
-          data: { peerId: id },
-        })
-        .catch((err) => logger.error('发送就绪消息失败:', err));
+      // 通过事件回调上报
+      this.eventEmitter.emit('ready', { peerId: id });
     });
 
+    // 收到连接请求
     this.peer.on('connection', (conn) => {
-      logger.info('收到连接请求');
+      logger.info('收到连接请求:', conn.peer);
       this.handleConnection(conn);
     });
 
+    // 发生错误
     this.peer.on('error', (err) => {
       logger.error('发生错误:', err);
+      this.eventEmitter.emit('error', { error: err.message });
+    });
 
-      chrome.runtime
-        .sendMessage({
-          module: WEBRTC_ACTIONS.MODULE_NAME,
-          action: WEBRTC_ACTIONS.ERROR,
-          data: { error: err.message },
-        })
-        .catch((e) => logger.error('发送错误消息失败:', e));
+    // 断开连接
+    this.peer.on('disconnected', () => {
+      logger.warn('Peer 断开连接');
+      this.eventEmitter.emit('disconnected', {});
+    });
+
+    // 关闭
+    this.peer.on('close', () => {
+      logger.warn('Peer 已关闭');
+      this.eventEmitter.emit('closed', {});
     });
   }
 
@@ -129,22 +137,27 @@ export class WebRTCManager {
 
     conn.on('open', () => {
       logger.info('连接已建立:', conn.peer);
+      this.eventEmitter.emit('connection-opened', { peer: conn.peer });
     });
 
-    conn.on('data', async (data) => {
+    conn.on('data', (data) => {
       logger.info('收到数据:', data);
-
-      if (this.sharedClient) {
-        await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
-          type: WEBRTC_ACTIONS.MODULE_NAME,
-          data,
-        });
-      }
+      // 通过事件回调上报数据
+      this.eventEmitter.emit('data', { peer: conn.peer, data });
     });
 
     conn.on('close', () => {
       logger.info('连接已关闭:', conn.peer);
       this.connections.delete(conn.peer);
+      this.eventEmitter.emit('connection-closed', { peer: conn.peer });
+    });
+
+    conn.on('error', (err) => {
+      logger.error('连接错误:', err);
+      this.eventEmitter.emit('connection-error', {
+        peer: conn.peer,
+        error: err.message,
+      });
     });
   }
 
@@ -180,38 +193,195 @@ export class WebRTCManager {
     return {
       peerId: this.peerId,
       connected: this.peer && !this.peer.disconnected,
+      destroyed: this.peer && this.peer.destroyed,
       connections: Array.from(this.connections.keys()),
     };
-  }
-
-  /**
-   * 初始化 SharedClient
-   */
-  async initSharedClient() {
-    try {
-      logger.info('开始初始化 Shared Client...');
-
-      // 从 pkg-utils 导入并创建客户端
-      this.sharedClient = await createClient(WEBRTC_ACTIONS.MODULE_NAME);
-
-      logger.info('Shared Client 初始化成功:', this.sharedClient);
-    } catch (error) {
-      this.sharedClient = null;
-      logger.error('Shared Client 初始化失败:', error);
-    }
   }
 }
 
 /**
  * WebRTC 行为处理器
- * 处理各种 WebRTC 动作
+ * 处理各种 WebRTC 动作和消息通信
+ *
+ * 职责：
+ * - 处理来自 App 的 action (INIT, GET_STATUS 等)
+ * - 管理 SharedClient，处理双向通信
+ * - 接收 Manager 的事件，通过 SharedWorker 转发给 App
  */
 export class WebRTCActionHandler {
-  constructor(manager) {
-    /**
-     * @type {WebRTCManager}
-     */
-    this.manager = manager;
+  constructor() {
+    this.manager = null;
+    this.sharedClient = null;
+    this.initialized = false;
+  }
+
+  /**
+   * 初始化（仅在收到 INIT action 时调用一次）
+   */
+  async initialize() {
+    if (this.initialized) {
+      logger.warn('WebRTC 已初始化，跳过重复初始化');
+      return;
+    }
+
+    logger.info('开始初始化 WebRTC 模块...');
+
+    try {
+      // 1. 创建 WebRTCManager，注入事件回调
+      this.manager = new WebRTCManager({
+        emit: (event, data) => this.handleEvent(event, data),
+      });
+
+      // 2. 初始化 SharedClient（不等待 App）
+      logger.info('正在连接到 SharedWorker...');
+      this.sharedClient = await createClient(WEBRTC_ACTIONS.SHARED_NAME);
+      logger.info('SharedClient 创建成功');
+
+      // 3. 注册 SharedWorker 消息处理器
+      this.setupMessageHandlers();
+
+      this.initialized = true;
+      logger.info('WebRTC 模块初始化完成');
+    } catch (error) {
+      logger.error('WebRTC 模块初始化失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 注册 SharedWorker 消息处理器
+   */
+  setupMessageHandlers() {
+    // 处理来自 App 的查询状态请求
+    this.sharedClient.onMessage('GET_STATUS', (data, from) => {
+      logger.info('收到来自', from, '的 GET_STATUS 请求');
+      return this.manager.getStatus();
+    });
+
+    // 处理来自 App 的发送数据请求
+    this.sharedClient.onMessage('SEND_DATA', (data, from) => {
+      logger.info('收到来自', from, '的 SEND_DATA 请求:', data);
+      return this.manager.sendData(data.targetPeerId, data.data);
+    });
+
+    // 处理来自 App 的断开连接请求
+    this.sharedClient.onMessage('DISCONNECT', (data, from) => {
+      logger.info('收到来自', from, '的 DISCONNECT 请求');
+      return this.manager.disconnect();
+    });
+  }
+
+  /**
+   * 处理 Manager 的事件，转发给 App
+   */
+  async handleEvent(event, data) {
+    try {
+      switch (event) {
+        case 'ready':
+          // Peer 连接成功，通过 chrome.runtime.sendMessage 发送 READY 给 App
+          logger.info('发送 READY 消息给 App, Peer ID:', data.peerId);
+          await this.sendReadyToApp(data.peerId);
+          break;
+
+        case 'error':
+          // 发生错误，通知 App
+          logger.error('发送 ERROR 消息给 App:', data.error);
+          if (this.sharedClient) {
+            await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
+              type: WEBRTC_ACTIONS.ERROR,
+              data,
+            });
+          }
+          break;
+
+        case 'data':
+          // 收到移动端数据，转发给 App
+          logger.info('转发数据给 App, 来自:', data.peer);
+          if (this.sharedClient) {
+            await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
+              type: WEBRTC_ACTIONS.MODULE_NAME,
+              data,
+            });
+          }
+          break;
+
+        case 'connection-opened':
+          // 新连接建立
+          if (this.sharedClient) {
+            await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
+              type: WEBRTC_ACTIONS.CONNECTION_OPENED,
+              data,
+            });
+          }
+          break;
+
+        case 'connection-closed':
+          // 连接关闭
+          if (this.sharedClient) {
+            await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
+              type: WEBRTC_ACTIONS.CONNECTION_CLOSED,
+              data,
+            });
+          }
+          break;
+
+        case 'connection-error':
+          // 连接错误
+          if (this.sharedClient) {
+            await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
+              type: WEBRTC_ACTIONS.CONNECTION_ERROR,
+              data,
+            });
+          }
+          break;
+
+        case 'disconnected':
+          // Peer 断开
+          if (this.sharedClient) {
+            await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
+              type: WEBRTC_ACTIONS.DISCONNECTED,
+              data,
+            });
+          }
+          break;
+
+        case 'closed':
+          // Peer 关闭
+          if (this.sharedClient) {
+            await this.sharedClient.sendTo(APP_ACTIONS.SHARED_NAME, {
+              type: WEBRTC_ACTIONS.CLOSED,
+              data,
+            });
+          }
+          break;
+
+        default:
+          logger.warn('未处理的事件:', event);
+      }
+    } catch (error) {
+      logger.error('发送事件失败:', event, error);
+    }
+  }
+
+  /**
+   * 通过 chrome.runtime.sendMessage 发送 READY 给 App
+   */
+  async sendReadyToApp(peerId) {
+    try {
+      const message = {
+        from: WEBRTC_ACTIONS.MODULE_NAME,
+        to: APP_ACTIONS.MODULE_NAME,
+        action: WEBRTC_ACTIONS.READY,
+        data: { peerId },
+      };
+
+      // 直接通过 chrome.runtime.sendMessage 广播消息
+      // App 端的 chrome.runtime.onMessage 会接收到
+      await chrome.runtime.sendMessage(message);
+      logger.info('READY 消息已发送');
+    } catch (error) {
+      logger.error('发送 READY 消息失败:', error);
+    }
   }
 
   /**
@@ -220,23 +390,37 @@ export class WebRTCActionHandler {
   async handle({ action, data }) {
     switch (action) {
       case WEBRTC_ACTIONS.INIT:
+        // 收到 INIT，先初始化模块，再初始化 Peer
+        await this.initialize();
         const result = await this.manager.init();
-        return { ...result, data: { peerId: this.manager.peerId || null } };
+        return {
+          success: result.success,
+          message: result.success
+            ? '正在连接到 PeerJS 服务器...'
+            : result.error,
+          peerId: this.manager.peerId,
+        };
 
-      case WEBRTC_ACTIONS.GET_PEER_ID:
-        return { success: true, peerId: this.manager.peerId || null };
+      case WEBRTC_ACTIONS.GET_STATUS:
+        if (!this.initialized) {
+          return { success: false, error: 'WebRTC 未初始化' };
+        }
+        return { success: true, status: this.manager.getStatus() };
 
-      // case WEBRTC_ACTIONS.SEND_DATA:
-      //   return this.manager.sendData(data.targetPeerId, data.data);
+      case WEBRTC_ACTIONS.SEND_DATA:
+        if (!this.initialized) {
+          return { success: false, error: 'WebRTC 未初始化' };
+        }
+        return this.manager.sendData(data.targetPeerId, data.data);
 
-      // case WEBRTC_ACTIONS.DISCONNECT:
-      //   return this.manager.disconnect();
+      case WEBRTC_ACTIONS.DISCONNECT:
+        if (!this.initialized) {
+          return { success: false, error: 'WebRTC 未初始化' };
+        }
+        return this.manager.disconnect();
 
-      // case WEBRTC_ACTIONS.GET_STATUS:
-      //   return { success: true, status: this.manager.getStatus() };
-
-      // default:
-      //   return { success: false, error: `未知的动作: ${action}` };
+      default:
+        return { success: false, error: `未知的动作: ${action}` };
     }
   }
 }

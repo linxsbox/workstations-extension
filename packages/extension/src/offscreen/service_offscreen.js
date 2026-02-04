@@ -6,11 +6,15 @@ import {
   SERVICE_NAME,
 } from 'pkg-utils/constants';
 import MessagingManager from '../modules/messaging.js';
-import { WebRTCManager, WebRTCActionHandler } from '../modules/webrtc.js';
+import { WebRTCActionHandler } from '../modules/webrtc.js';
 
-const logger = new Logger('Service Offscreen', { showTimestamp: false });
+const logger = new Logger('Service Offscreen');
 
-const moduleHandler = new Map();
+/**
+ * 模块处理器管理
+ * 在外层管理所有模块实例
+ */
+const moduleHandlers = new Map();
 
 /**
  * 初始化消息管理器
@@ -22,38 +26,48 @@ const messagingManager = new MessagingManager();
  */
 messagingManager.registerHandlers({
   [SERVICE_NAME.OFFSCREEN]: async (message, sender) => {
-    // 解析消息格式
     const { from, to, action, data, timestamp, service } = message;
-    logger.info(`Service ${service} 收到消息 ID：`, sender.id);
-    logger.info(`from ${from} to ${to}, Action: ${action}`, timestamp);
 
-    let webrtcManager = null;
+    logger.info(`收到消息 - from: ${from}, to: ${to}, action: ${action}, service: ${service}`);
 
-    switch (to) {
-      case WEBRTC_ACTIONS.MODULE_NAME:
-        const module = moduleHandler.get(WEBRTC_ACTIONS.MODULE_NAME);
-        if (!moduleHandler.get(WEBRTC_ACTIONS.MODULE_NAME)) {
-          const webrtcManager = new WebRTCManager();
-          moduleHandler.set(
-            WEBRTC_ACTIONS.MODULE_NAME,
-            new WebRTCActionHandler(webrtcManager)
-          );
+    try {
+      // 根据 to 字段路由到对应模块
+      let handler = moduleHandlers.get(to);
+
+      // 如果模块未创建，创建新的 handler
+      if (!handler) {
+        logger.info(`创建新的模块 handler: ${to}`);
+
+        switch (to) {
+          case WEBRTC_ACTIONS.MODULE_NAME:
+            handler = new WebRTCActionHandler();
+            moduleHandlers.set(to, handler);
+            break;
+
+          case AUDIO_ACTIONS.MODULE_NAME:
+            // TODO: 实现 Audio 模块
+            logger.warn('Audio 模块暂未实现');
+            return { success: false, error: 'Audio 模块暂未实现' };
+
+          case ONNX_ACTIONS.MODULE_NAME:
+            // TODO: 实现 ONNX 模块
+            logger.warn('ONNX 模块暂未实现');
+            return { success: false, error: 'ONNX 模块暂未实现' };
+
+          default:
+            logger.error(`未知的模块: ${to}`);
+            return { success: false, error: `未知的模块: ${to}` };
         }
+      }
 
-        return module.handle(message);
+      // 调用 handler 处理消息
+      const result = await handler.handle({ action, data });
+      logger.info(`处理结果:`, result);
 
-      case AUDIO_ACTIONS.MODULE_NAME:
-        // TODO: 实现 Audio 模块
-        logger.info('收到', from, to, action);
-
-        break;
-      case ONNX_ACTIONS.MODULE_NAME:
-        // TODO: 实现 Onnx 模块
-        logger.info('收到', from, to, action);
-
-        break;
-      default:
-        break;
+      return result;
+    } catch (error) {
+      logger.error(`处理消息失败:`, error);
+      return { success: false, error: error.message };
     }
   },
 });

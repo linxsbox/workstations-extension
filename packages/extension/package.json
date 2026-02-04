@@ -9,7 +9,7 @@
     "build:ext": "vite build --mode production"
   },
   "dependencies": {
-    "@linxs/toolkit": "^0.5.2",
+    "@linxs/toolkit": "catalog:",
     "pkg-utils": "workspace:*"
   },
   "devDependencies": {

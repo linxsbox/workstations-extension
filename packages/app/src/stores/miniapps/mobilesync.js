@@ -4,8 +4,10 @@
  */
 
 import { defineStore } from 'pinia';
-import { initialize } from '@/services/webrtc';
+import { initialize, tryRestore as tryRestoreService } from '@/services/webrtc';
 import { WEBRTC_ACTIONS } from 'pkg-utils';
+import { getClients } from '@/services/shared';
+import { storageManager, WEBRTC_STORAGE_KEYS } from '@/stores/storage';
 
 /**
  * MobileSync 连接状态常量
@@ -40,11 +42,6 @@ export const storeMobileSync = defineStore('mobileSync', {
     isConnected: (state) => state.isReady && state.connections.length > 0,
 
     /**
-     * 当前状态（兼容旧代码）
-     */
-    currentStatus: (state) => state.status,
-
-    /**
      * 动态生成二维码 URL
      */
     qrUrl: (state) => {
@@ -66,15 +63,58 @@ export const storeMobileSync = defineStore('mobileSync', {
 
   actions: {
     /**
+     * 开启同步（统一入口）
+     * 自动判断是初始化还是恢复会话
+     */
+    async startSync() {
+      try {
+        // 1. 检查本地存储是否有 webrtc_peer_id
+        const savedPeerId = storageManager.get(WEBRTC_STORAGE_KEYS.PEER_ID);
+
+        if (!savedPeerId) {
+          // 情况1：没有 peerId → 需要初始化
+          console.log('[MobileSync] 没有保存的 Peer ID，执行初始化');
+          await this.initialize();
+          return;
+        }
+
+        // 情况2：有 peerId
+        console.log('[MobileSync] 发现保存的 Peer ID:', savedPeerId);
+
+        // 2. 检查 SharedWorker 是否有可用的 WebRTC 客户端
+        try {
+          const clients = await getClients();
+          const hasWebRTC = clients.some(
+            (client) => client.name === WEBRTC_ACTIONS.SHARED_NAME
+          );
+
+          if (hasWebRTC) {
+            // 情况2a：有连接 → 恢复会话
+            console.log('[MobileSync] 检测到 WebRTC 客户端在线，执行恢复');
+            await this.restoreSession();
+          } else {
+            // 情况2b：有 peerId 但连接断了 → 重新初始化
+            console.log('[MobileSync] WebRTC 客户端离线，重新初始化');
+            await this.initialize();
+          }
+        } catch (error) {
+          // SharedWorker 未连接，需要初始化
+          console.log('[MobileSync] SharedWorker 未连接，执行初始化:', error.message);
+          await this.initialize();
+        }
+      } catch (error) {
+        console.error('[MobileSync] 启动失败:', error);
+        this.status = SYNC_STATUS.ERROR;
+        this.errorMessage = error.message;
+        throw error;
+      }
+    },
+
+    /**
      * 初始化 WebRTC
-     * 用户点击"开启同步"时调用
+     * 创建新的 Peer 连接
      */
     async initialize() {
-      if (this.status !== SYNC_STATUS.IDLE) {
-        console.log('[MobileSync] 已初始化，跳过');
-        return;
-      }
-
       try {
         this.status = SYNC_STATUS.INITIALIZING;
         this.errorMessage = null;
@@ -83,13 +123,6 @@ export const storeMobileSync = defineStore('mobileSync', {
         this.setupEventListeners();
 
         // 调用 WebRTC Service 初始化
-        // 新流程：
-        // 1. 注册 chrome.runtime.onMessage 监听器（等待 READY）
-        // 2. 发送 INIT 给 Extension
-        // 3. Extension 初始化 Peer 和 SharedClient
-        // 4. Peer READY 后通过 chrome.runtime.sendMessage 发送 READY + peerId
-        // 5. App 收到 READY 后创建 SharedClient
-        // 6. 返回的 Promise 在收到 READY 后 resolve
         const result = await initialize();
 
         console.log('[MobileSync] 初始化完成，Peer ID:', result.peerId);
@@ -99,11 +132,45 @@ export const storeMobileSync = defineStore('mobileSync', {
         this.isReady = true;
         this.status = SYNC_STATUS.READY;
 
-        // initialize() 的 Promise 已经在收到 READY 后 resolve
-        // 不需要再等待额外的 Promise
         return result;
       } catch (error) {
         console.error('[MobileSync] 初始化失败:', error);
+        this.status = SYNC_STATUS.ERROR;
+        this.errorMessage = error.message;
+        throw error;
+      }
+    },
+
+    /**
+     * 恢复会话（内部方法）
+     * 当本地有 peerId 且 Extension 端连接仍存在时调用
+     */
+    async restoreSession() {
+      try {
+        console.log('[MobileSync] 恢复会话...');
+
+        this.status = SYNC_STATUS.INITIALIZING;
+        this.errorMessage = null;
+
+        // 注册事件监听器
+        this.setupEventListeners();
+
+        const result = await tryRestoreService();
+
+        if (result.restored) {
+          // 恢复成功，更新状态
+          this.peerId = result.peerId;
+          this.isReady = true;
+          this.status = result.connections.length > 0 ? SYNC_STATUS.CONNECTED : SYNC_STATUS.READY;
+          this.connections = result.connections || [];
+
+          console.log('[MobileSync] 会话已恢复, Peer ID:', result.peerId);
+          return result;
+        }
+
+        throw new Error('恢复失败');
+      } catch (error) {
+        console.error('[MobileSync] 会话恢复失败:', error);
         this.status = SYNC_STATUS.ERROR;
         this.errorMessage = error.message;
         throw error;
@@ -124,11 +191,12 @@ export const storeMobileSync = defineStore('mobileSync', {
      * 处理 WebRTC 消息
      */
     handleWebRTCMessage(event) {
-      const { type, data } = event.detail;
+      const { action, type, data, peerId, timestamp } = event.detail;
 
-      console.log('[MobileSync] 处理 WebRTC 消息:', type, data);
+      console.log('[MobileSync] 处理 WebRTC 消息:', action, { type, data, peerId });
 
-      switch (type) {
+      // 根据 action 分发处理
+      switch (action) {
         case WEBRTC_ACTIONS.READY:
           this.handleWebRTCReady(data);
           break;
@@ -137,7 +205,7 @@ export const storeMobileSync = defineStore('mobileSync', {
           this.handleWebRTCError(data);
           break;
 
-        case WEBRTC_ACTIONS.MODULE_NAME: // 来自移动端的数据
+        case WEBRTC_ACTIONS.DATA: // 来自移动端的数据
           this.handleReceivedData(data);
           break;
 
@@ -162,7 +230,7 @@ export const storeMobileSync = defineStore('mobileSync', {
           break;
 
         default:
-          console.warn('[MobileSync] 未处理的消息类型:', type);
+          console.warn('[MobileSync] 未处理的消息 action:', action);
       }
     },
 

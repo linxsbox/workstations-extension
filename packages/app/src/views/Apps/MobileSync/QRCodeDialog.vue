@@ -4,10 +4,12 @@ import { NModal, NButton, NSpin, useMessage } from 'naive-ui';
 import QRCode from 'qrcode';
 import { storeMobileSync, SYNC_STATUS } from '@/stores/miniapps/mobilesync';
 import { storeToRefs } from 'pinia';
+import { storageManager, WEBRTC_STORAGE_KEYS } from '@/stores/storage';
 
 const mobileSyncStore = storeMobileSync();
 const {
   status: storeStatus,
+  peerId,
   qrUrl,
   connectedDevices,
 } = storeToRefs(mobileSyncStore);
@@ -42,22 +44,28 @@ const status = computed(() => {
   }
 });
 
+// 计算按钮文案（根据是否有保存的 peerId）
+const buttonText = computed(() => {
+  const savedPeerId = storageManager.get(WEBRTC_STORAGE_KEYS.PEER_ID);
+  return savedPeerId ? '恢复同步' : '开启同步';
+});
+
 // 关闭弹窗
 const handleClose = () => {
   mobileSyncStore.closeQRDialog();
 };
 
-// 生成二维码
-const generateQRCode = async () => {
-  if (!qrUrl.value || !qrcodeCanvas.value) {
-    console.warn('[QRCode Dialog] 缺少必要条件，跳过生成');
+// 生成二维码（纯生成逻辑）
+const generateQRCode = async (url) => {
+  if (!qrcodeCanvas.value) {
+    console.warn('[QRCode Dialog] canvas 元素未就绪');
     return;
   }
 
   isGenerating.value = true;
 
   try {
-    await QRCode.toCanvas(qrcodeCanvas.value, qrUrl.value, {
+    await QRCode.toCanvas(qrcodeCanvas.value, url, {
       width: 256,
       margin: 2,
       color: {
@@ -75,25 +83,43 @@ const generateQRCode = async () => {
   }
 };
 
-// 监听弹窗显示和 qrUrl 变化
+// 监听状态变化，自动生成二维码
 watch(
-  [() => props.show, qrUrl],
-  async ([show, url]) => {
-    if (show && url) {
-      await nextTick();
-      generateQRCode();
+  () => storeStatus.value,
+  async (status) => {
+    // 检查状态是否为 READY
+    if (status !== SYNC_STATUS.READY) return;
+
+    // 检查弹窗是否显示
+    if (!props.show) return;
+
+    // 检查 peerId
+    if (!peerId.value) {
+      console.warn('[QRCode Dialog] peerId 为空');
+      return;
     }
+
+    // 检查 qrUrl
+    const url = qrUrl.value;
+    if (!url) {
+      console.warn('[QRCode Dialog] qrUrl 为空');
+      return;
+    }
+
+    // 条件满足，生成二维码
+    await nextTick();
+    await generateQRCode(url);
   },
   { immediate: true }
 );
 
-// 开启同步
+// 开启/恢复同步（调用 Store 统一入口）
 const handleStartSync = async () => {
   try {
-    await mobileSyncStore.initialize();
-    // 初始化成功后，二维码会自动生成（通过 watch）
+    await mobileSyncStore.startSync();
   } catch (error) {
-    message.error(`初始化失败: ${error.message}`);
+    console.error('[QRCode Dialog] 启动失败:', error);
+    message.error(`启动失败: ${error.message}`);
   }
 };
 
@@ -111,9 +137,11 @@ const handleCopyLink = async () => {
 };
 
 // 刷新二维码
-const handleRefresh = () => {
-  generateQRCode();
-  message.success('二维码已刷新');
+const handleRefresh = async () => {
+  if (qrUrl.value) {
+    await generateQRCode(qrUrl.value);
+    message.success('二维码已刷新');
+  }
 };
 </script>
 
@@ -130,7 +158,7 @@ const handleRefresh = () => {
     <div class="flex flex-col items-center gap-5">
       <!-- 未初始化状态 -->
       <div
-        v-if="mobileSyncStore.currentStatus === SYNC_STATUS.IDLE"
+        v-if="mobileSyncStore.status === SYNC_STATUS.IDLE"
         class="flex flex-col items-center gap-4 p-4 w-full"
       >
         <div class="text-5xl">📱</div>
@@ -143,7 +171,7 @@ const handleRefresh = () => {
           class="w-full mt-2"
           @click="handleStartSync"
         >
-          开启同步
+          {{ buttonText }}
         </NButton>
       </div>
 

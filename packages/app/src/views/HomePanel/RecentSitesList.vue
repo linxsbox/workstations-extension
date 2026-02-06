@@ -9,7 +9,7 @@ const homeStore = storeHome();
 const topSites = computed(() => homeStore.topSites);
 
 // 限制显示数量
-const displayLimit = 10;
+const displayLimit = 9;
 const displaySites = computed(() => topSites.value.slice(0, displayLimit));
 
 // 打开网站
@@ -19,7 +19,7 @@ const handleOpenSite = (url) => {
 </script>
 
 <template>
-  <NCard class="recent-sites-card w-full">
+  <NCard class="recent-sites-card max-w-[614px]">
     <template #header>
       <div class="flex justify-between items-center">
         <div class="text-sm font-medium">近期访问</div>

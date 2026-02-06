@@ -1,10 +1,12 @@
-
-
 import { Logger } from "@linxs/toolkit";
+import { MessageBuilder } from 'pkg-utils';
 
 const logger = new Logger('RSS Scheduler');
 
-
+// 创建消息构建器
+const messageBuilder = MessageBuilder.create({
+  from: 'scheduler',
+});
 
 // 使用 chrome.alarms API 实现定时任务
 const RSS_UPDATE_HOURS = [7, 8, 9, 10, 14, 18, 20, 22];
@@ -61,11 +63,15 @@ export const setupSchedulerListener = (onUpdate) => {
 
           // 向所有扩展页面发送更新消息
           try {
-            await chrome.runtime.sendMessage({
-              type: 'RSS_UPDATE_TRIGGER',
-              timestamp: Date.now(),
-              hour: currentHour
+            const message = messageBuilder.send({
+              to: 'app',
+              action: 'RSS_UPDATE_TRIGGER',
+              data: {
+                timestamp: Date.now(),
+                hour: currentHour
+              }
             });
+            await chrome.runtime.sendMessage(message);
           } catch (err) {
             // 如果没有页面监听，忽略错误
             logger.info('没有活动页面监听更新消息');

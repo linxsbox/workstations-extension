@@ -44,6 +44,13 @@ export const TASKS_STORAGE_KEYS = {
 };
 
 /**
+ * WebRTC 存储键
+ */
+export const WEBRTC_STORAGE_KEYS = {
+  PEER_ID: "webrtc_peer_id",
+};
+
+/**
  * 扩展存储键定义（使用 chrome.storage.local，降级到 localStorage）
  * 这些数据需要跨页面共享、长期保存
  */
@@ -51,6 +58,7 @@ export const EXTENSION_STORAGE_KEYS = {
   ...SYSTEM_STORAGE_KEYS,
   ...PLAYER_STORAGE_KEYS,
   ...RSS_STORAGE_KEYS,
+  ...WEBRTC_STORAGE_KEYS,
 };
 
 /**

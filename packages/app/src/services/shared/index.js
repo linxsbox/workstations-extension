@@ -75,12 +75,8 @@ export class SharedClientService {
    */
   async initialize(clientName = 'SHARED_APP') {
     try {
-      logger.info('开始初始化...', clientName);
-
       // 创建 SharedWorker 客户端
       this.client = await createClient(clientName);
-
-      logger.info('客户端创建成功');
 
       // 设置事件监听
       this.setupEventListeners();
@@ -88,14 +84,12 @@ export class SharedClientService {
       this.isReady = true;
 
       // 触发就绪回调
-      this.readyCallbacks.forEach(callback => callback());
+      this.readyCallbacks.forEach((callback) => callback());
       this.readyCallbacks = [];
-
-      logger.info('初始化完成');
 
       return { success: true };
     } catch (error) {
-      logger.error('初始化失败:', error);
+      logger.error('初始化失败：', error);
       return { success: false, error: error.message };
     }
   }
@@ -112,22 +106,22 @@ export class SharedClientService {
   setupEventListeners() {
     // 监听客户端加入
     this.client.on('clientJoined', (data) => {
-      logger.info('新客户端加入:', data.name);
+      logger.info('加入：', data);
     });
 
     // 监听客户端离开
     this.client.on('clientLeft', (data) => {
-      logger.info('客户端离开:', data.name);
+      logger.info('离开：', data);
     });
 
     // 监听错误
     this.client.on('error', (data) => {
-      logger.error('错误:', data);
+      logger.error('错误：', data);
     });
 
     // 监听断开连接
     this.client.on('disconnected', (data) => {
-      logger.warn('连接断开:', data);
+      logger.warn('连接断开：', data);
       this.isReady = false;
     });
   }
@@ -146,7 +140,7 @@ export class SharedClientService {
    * @example
    * // 监听来自 WebRTC 模块的消息
    * onMessage('WEBRTC', (data, from) => {
-   *   console.log('收到来自', from, '的 WebRTC 消息:', data);
+   *   console.log('收到来自', from, '的 WebRTC 消息：', data);
    *   // 返回响应（可选）
    *   return { received: true };
    * });
@@ -193,7 +187,7 @@ export class SharedClientService {
    *   type: 'GET_STATUS',
    *   action: 'GET_STATUS'
    * });
-   * console.log('WebRTC 状态:', response.status);
+   * console.log('WebRTC 状态：', response.status);
    */
   async sendTo(targetClient, data, timeout = 30000) {
     if (!this.client) {
@@ -241,7 +235,7 @@ export class SharedClientService {
       const response = await this.client.broadcast(data);
       return response;
     } catch (error) {
-      logger.error('广播消息失败:', error);
+      logger.error('广播消息失败：', error);
       throw error;
     }
   }
@@ -256,7 +250,7 @@ export class SharedClientService {
    *
    * @example
    * const clients = await getClients();
-   * console.log('在线客户端:', clients);
+   * console.log('在线客户端：', clients);
    * // [
    * //   { name: 'SHARED_APP', connectedAt: 1234567890, messageCount: 42 },
    * //   { name: 'WEBRTC', connectedAt: 1234567891, messageCount: 15 }
@@ -271,7 +265,7 @@ export class SharedClientService {
       const clients = await this.client.getClients();
       return clients;
     } catch (error) {
-      logger.error('获取客户端列表失败:', error);
+      logger.error('获取客户端列表失败：', error);
       throw error;
     }
   }
@@ -295,7 +289,7 @@ export class SharedClientService {
       const stats = await this.client.getStats();
       return stats;
     } catch (error) {
-      logger.error('获取统计信息失败:', error);
+      logger.error('获取统计信息失败：', error);
       throw error;
     }
   }
@@ -309,7 +303,7 @@ export class SharedClientService {
    *
    * @example
    * const { latency } = await ping();
-   * console.log('延迟:', latency, 'ms');
+   * console.log('延迟：', latency, 'ms');
    */
   async ping() {
     if (!this.client) {
@@ -320,7 +314,7 @@ export class SharedClientService {
       const result = await this.client.ping();
       return result;
     } catch (error) {
-      logger.error('Ping 失败:', error);
+      logger.error('Ping 失败：', error);
       throw error;
     }
   }
@@ -393,14 +387,16 @@ export const sharedClientService = new SharedClientService();
  * 初始化 SharedWorker 客户端
  * @param {string} clientName - 客户端名称（默认：'SHARED_APP'）
  */
-export const initSharedClient = (clientName) => sharedClientService.initialize(clientName);
+export const initSharedClient = (clientName) =>
+  sharedClientService.initialize(clientName);
 
 /**
  * 注册消息处理器
  * @param {string} type - 消息类型
  * @param {Function} handler - 处理函数
  */
-export const onMessage = (type, handler) => sharedClientService.onMessage(type, handler);
+export const onMessage = (type, handler) =>
+  sharedClientService.onMessage(type, handler);
 
 /**
  * 发送消息到指定客户端
@@ -408,7 +404,8 @@ export const onMessage = (type, handler) => sharedClientService.onMessage(type, 
  * @param {object} data - 消息数据
  * @param {number} timeout - 超时时间
  */
-export const sendTo = (target, data, timeout) => sharedClientService.sendTo(target, data, timeout);
+export const sendTo = (target, data, timeout) =>
+  sharedClientService.sendTo(target, data, timeout);
 
 /**
  * 广播消息给所有客户端

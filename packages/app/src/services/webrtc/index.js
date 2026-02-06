@@ -12,12 +12,10 @@ import {
   WEBRTC_ACTIONS,
   APP_ACTIONS,
   SERVICE_NAME,
-  createMessageBuilder,
+  MessageBuilder,
 } from 'pkg-utils';
 import { Logger } from '@linxs/toolkit';
 
-// 创建消息构建器
-const messageBuilder = createMessageBuilder(APP_ACTIONS.MODULE_NAME);
 const logger = new Logger('WebRTC Service');
 
 /**
@@ -29,6 +27,11 @@ const logger = new Logger('WebRTC Service');
 export class WebRTCService {
   constructor() {
     this.initialized = false;
+    // 创建消息构建器
+    this.messageBuilder = MessageBuilder.create({
+      from: APP_ACTIONS.MODULE_NAME,
+      service: SERVICE_NAME.OFFSCREEN,
+    });
   }
 
   /**
@@ -41,27 +44,20 @@ export class WebRTCService {
    */
   async initialize() {
     if (this.initialized) {
-      logger.info('已初始化，跳过');
       return { peerId: this._peerId };
     }
 
     try {
-      logger.info('开始初始化...');
-
       // 步骤 1: 注册 chrome.runtime.onMessage 监听 READY
       this.setupRuntimeMessageHandler();
 
-      // 步骤 2: 发送 INIT 给 Extension
-      logger.info('发送 INIT 到 Extension...');
-      const message = messageBuilder.send({
-        service: SERVICE_NAME.OFFSCREEN,
+      // 步骤 2: 发送 INIT 给 Extension (使用原有格式)
+      const message = this.messageBuilder.send({
         to: WEBRTC_ACTIONS.MODULE_NAME,
         action: WEBRTC_ACTIONS.INIT,
       });
 
       await chrome.runtime.sendMessage(message);
-
-      logger.info('INIT 已发送，等待 READY...');
 
       // 步骤 3: 等待 READY 消息
       return new Promise((resolve, reject) => {
@@ -106,7 +102,6 @@ export class WebRTCService {
     });
 
     this._runtimeMessageHandlerSetup = true;
-    logger.info('chrome.runtime.onMessage 监听器已注册');
   }
 
   /**
@@ -120,9 +115,7 @@ export class WebRTCService {
       this._peerId = data.peerId;
 
       // 初始化 SharedClient
-      logger.info('正在连接 SharedWorker...');
       await initSharedClient(APP_ACTIONS.SHARED_NAME);
-      logger.info('SharedClient 已连接');
 
       // 注册 SharedWorker 消息监听器
       this.setupSharedWorkerMessageHandlers();
@@ -154,20 +147,20 @@ export class WebRTCService {
    */
   setupSharedWorkerMessageHandlers() {
     onMessage(WEBRTC_ACTIONS.MODULE_NAME, (message, from) => {
-      logger.info('收到 SharedWorker 消息:', message.type, from);
-
       // 通过自定义事件分发给 Store
+      // 消息格式：{ from, to, action, type, data, peerId, timestamp }
       window.dispatchEvent(
         new CustomEvent('webrtc-message', {
           detail: {
+            action: message.action,
             type: message.type,
             data: message.data,
+            peerId: message.peerId,
+            timestamp: message.timestamp,
           },
         })
       );
     });
-
-    logger.info('SharedWorker 消息监听器已注册');
   }
 
   /**
@@ -188,6 +181,68 @@ export class WebRTCService {
       throw error;
     }
   }
+
+  /**
+   * 尝试恢复之前的会话
+   * 在 App 启动时调用
+   */
+  async tryRestore() {
+    try {
+      // 1. 检查本地存储是否有 peer_id
+      const result = await chrome.storage.local.get('webrtc_peer_id');
+      if (!result || !result.webrtc_peer_id) {
+        logger.info('未找到已保存的 Peer ID，跳过会话恢复');
+        return { restored: false };
+      }
+
+      logger.info('找到已保存的 Peer ID:', result.webrtc_peer_id);
+
+      // 2. 查询 Extension WebRTC 状态 (使用原有格式)
+      const message = this.messageBuilder.send({
+        to: WEBRTC_ACTIONS.MODULE_NAME,
+        action: WEBRTC_ACTIONS.GET_STATUS,
+      });
+
+      const response = await chrome.runtime.sendMessage(message);
+
+      // 3. 检查状态
+      // Extension 返回格式: { success: true, status: { peerId, connected, destroyed, connections } }
+      if (response.success && response.status && response.status.peerId) {
+        logger.info('Extension WebRTC 仍在运行，准备恢复会话');
+        // Extension 的 Peer 还在运行
+        this._peerId = response.status.peerId;
+
+        // 4. 恢复 SharedClient 连接
+        logger.info('初始化 SharedClient 连接...');
+        await initSharedClient(APP_ACTIONS.SHARED_NAME);
+        this.setupSharedWorkerMessageHandlers();
+        this.setupRuntimeMessageHandler();
+
+        this.initialized = true;
+
+        logger.info('会话恢复成功');
+        return {
+          restored: true,
+          peerId: response.status.peerId,
+          connections: response.status.connections || [],
+        };
+      }
+
+      // Extension 的 Peer 已经关闭，清除本地存储
+      logger.info('Extension WebRTC 已关闭，清除本地存储');
+      await chrome.storage.local.remove('webrtc_peer_id');
+      return { restored: false };
+    } catch (error) {
+      logger.error('会话恢复失败:', error);
+      // 清除可能已损坏的数据
+      try {
+        await chrome.storage.local.remove('webrtc_peer_id');
+      } catch (e) {
+        // 忽略清除失败
+      }
+      return { restored: false, error: error.message };
+    }
+  }
 }
 
 // 创建单例实例
@@ -196,3 +251,4 @@ export const webrtcService = new WebRTCService();
 // 导出便捷方法
 export const initialize = () => webrtcService.initialize();
 export const getStatus = () => webrtcService.getStatus();
+export const tryRestore = () => webrtcService.tryRestore();

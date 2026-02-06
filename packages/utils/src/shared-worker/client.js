@@ -68,9 +68,10 @@ export class SharedWorkerClient {
     return new Promise((resolve, reject) => {
       try {
         // 创建 SharedWorker 连接，指定 type: 'module' 以支持 ES modules
+        // 注意：name 参数是 SharedWorker 实例的名称，所有客户端必须使用相同的 name 才能共享同一个实例
         this.worker = new SharedWorker(this.workerPath, {
           type: 'module',
-          name: this.clientName
+          name: SWA.SHARED_NAME  // 使用固定名称，确保所有客户端连接到同一个 SharedWorker 实例
         });
         this.port = this.worker.port;
 
@@ -88,7 +89,6 @@ export class SharedWorkerClient {
         // 注册客户端
         this._register()
           .then(() => {
-            logger.info(`${this.clientName} 已连接并注册`);
             this._emit('connected', { clientName: this.clientName });
             this._startHeartbeat();
             resolve(this);
@@ -161,7 +161,6 @@ export class SharedWorkerClient {
     this.isRegistered = false;
 
     this._emit('disconnected', { clientName: this.clientName });
-    logger.info(`${this.clientName} 已断开连接`);
   }
 
   /**
@@ -342,13 +341,11 @@ export class SharedWorkerClient {
   _handleMessage(msg) {
     // 处理系统消息
     if (msg.type === SWA.CLIENT_JOINED) {
-      logger.info('客户端加入:', msg.name);
       this._emit('clientJoined', msg);
       return;
     }
 
     if (msg.type === SWA.CLIENT_LEFT) {
-      logger.info('客户端离开:', msg.name);
       this._emit('clientLeft', msg);
       return;
     }

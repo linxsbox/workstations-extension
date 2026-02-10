@@ -1,8 +1,9 @@
 <script setup>
-import PlayerApp from "@/components/player/PlayerApp.vue";
-import NotesApp from "@/views/Apps/Notes/AppIndex.vue";
-import TaskManagerApp from "@/views/Apps/TaskManager/AppIndex.vue";
-import MobileSyncApp from "@/views/Apps/MobileSync/AppIndex.vue";
+import PlayerApp from '@/components/player/PlayerApp.vue';
+import NotesApp from '@/views/Apps/Notes/AppIndex.vue';
+import TaskManagerApp from '@/views/Apps/TaskManager/AppIndex.vue';
+import MobileSyncApp from '@/views/Apps/MobileSync/AppIndex.vue';
+import TestApp from '@/views/Apps/TestApp/AppIndex.vue';
 
 // 扩展区域：应用快捷入口
 // 包括：播放器、笔记、任务管理、手机同步、其他便捷应用等
@@ -23,6 +24,7 @@ import MobileSyncApp from "@/views/Apps/MobileSync/AppIndex.vue";
     <MobileSyncApp />
 
     <!-- 其他应用快捷入口可在此添加 -->
+    <TestApp />
   </div>
 </template>
 
@@ -42,7 +44,7 @@ import MobileSyncApp from "@/views/Apps/MobileSync/AppIndex.vue";
 
 // 统一的 APP 标签样式
 .app-label {
-  @apply text-xs font-medium text-center max-w-[60px] whitespace-nowrap overflow-hidden text-ellipsis;
+  @apply text-xs font-medium text-center max-w-[60px] truncate;
   color: var(--text-secondary);
 }
 </style>

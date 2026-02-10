@@ -49,14 +49,10 @@ const handleOpenSite = (url) => {
             />
           </div>
           <div class="site-info flex-1 min-w-0 flex flex-col">
-            <div
-              class="site-title text-[12px] font-medium overflow-hidden text-ellipsis whitespace-nowrap"
-            >
+            <div class="site-title text-[12px] font-medium truncate">
               {{ site.title }}
             </div>
-            <div
-              class="site-domain text-[10px] overflow-hidden text-ellipsis whitespace-nowrap"
-            >
+            <div class="site-domain text-[10px] truncate">
               {{ site.domainUrl }}
             </div>
           </div>

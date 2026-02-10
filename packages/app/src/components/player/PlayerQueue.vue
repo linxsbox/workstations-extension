@@ -1,11 +1,11 @@
 <script setup>
-import { storeToRefs } from "pinia";
-import { NPopconfirm, NScrollbar } from "naive-ui";
-import { sec2time } from "@/utils/time";
-import { storePlayer } from "@/stores/global/player";
-import IconQueueMusic from "@/components/common/Icons/IconQueueMusic.vue";
-import IconPlaylistRemove from "@/components/common/Icons/IconPlaylistRemove.vue";
-import IconDelete from "@/components/common/Icons/IconDelete.vue";
+import { storeToRefs } from 'pinia';
+import { NPopconfirm, NScrollbar } from 'naive-ui';
+import { sec2time } from '@/utils/time';
+import { storePlayer } from '@/stores/global/player';
+import IconQueueMusic from '@/components/common/Icons/IconQueueMusic.vue';
+import IconPlaylistRemove from '@/components/common/Icons/IconPlaylistRemove.vue';
+import IconDelete from '@/components/common/Icons/IconDelete.vue';
 
 const player = storePlayer();
 const { playQueue, duration } = storeToRefs(player);
@@ -30,7 +30,10 @@ const handlePlayTrack = (trackId) => {
   if (isCurrentTrack(trackId)) {
     const currentTrack = playQueue.value.getCurrentTrack();
     // 检查是否已加载音频，且加载的是正确的音频源
-    if (player.getPlayStatus.src && player.getPlayStatus.src === currentTrack?.src) {
+    if (
+      player.getPlayStatus.src &&
+      player.getPlayStatus.src === currentTrack?.src
+    ) {
       // 已加载正确的音频，切换播放状态
       player.togglePlay();
     } else {
@@ -53,8 +56,8 @@ const handleRemoveTrack = (trackId, event) => {
 const getTrackStyle = (track) => {
   const { color, rgb } = track.album?.theme || {};
   return {
-    ...(color && { "--album-theme-color": color }),
-    ...(rgb && { "--album-theme-rgb": rgb }),
+    ...(color && { '--album-theme-color': color }),
+    ...(rgb && { '--album-theme-rgb': rgb }),
   };
 };
 </script>
@@ -66,7 +69,7 @@ const getTrackStyle = (track) => {
     >
       <div class="flex items-center gap-2">
         <IconQueueMusic class="text-xl flex-shrink-0 text-[var(--text-secondary)]" />
-        <h3 class="m-0 text-sm font-semibold text-[var(--text-primary)]" >
+        <h3 class="m-0 text-sm font-semibold text-[var(--text-primary)]">
           播放列表 ({{ playQueue.getTrackCount() }})
         </h3>
       </div>
@@ -106,11 +109,11 @@ const getTrackStyle = (track) => {
       >
         <!-- 歌曲信息 -->
         <div class="flex-1 min-w-0 overflow-hidden">
-          <div class="album-title text-[13px] font-medium whitespace-nowrap overflow-hidden text-ellipsis mb-1">
-            {{ track.title || "未知歌曲" }}
+          <div class="album-title text-[13px] font-medium truncate mb-1">
+            {{ track.title || '未知歌曲' }}
           </div>
-          <div class="album-artist text-[11px] whitespace-nowrap overflow-hidden text-ellipsis">
-            {{ track.artist || "未知艺术家" }}
+          <div class="album-artist text-[11px] truncate">
+            {{ track.artist || '未知艺术家' }}
           </div>
         </div>
 
@@ -156,7 +159,10 @@ const getTrackStyle = (track) => {
 
 .queue-item {
   position: relative;
-  background-color: rgba(var(--album-theme-rgb, var(--play-button-bg-color-default)), 0.05);
+  background-color: rgba(
+    var(--album-theme-rgb, var(--play-button-bg-color-default)),
+    0.05
+  );
   border-left: 3px solid;
   border-color: transparent;
   transition: background-color 0.2s;
@@ -166,7 +172,10 @@ const getTrackStyle = (track) => {
   }
 
   &:hover {
-    background-color: rgba(var(--album-theme-rgb, var(--play-button-bg-color-default)), 0.15);
+    background-color: rgba(
+      var(--album-theme-rgb, var(--play-button-bg-color-default)),
+      0.15
+    );
 
     .delete-btn {
       opacity: 1;

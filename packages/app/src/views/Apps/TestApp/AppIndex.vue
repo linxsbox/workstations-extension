@@ -8,6 +8,18 @@ const showText = ref(false);
 const handleShowText = () => {
   showText.value = true;
 };
+
+// 保存卡片数据状态（持久化）
+const cardData = ref({
+  coverUrl: '',
+  title: '歌曲标题',
+  artist: '艺术家',
+});
+
+// 监听卡片数据变化
+const handleCardChange = (newData) => {
+  cardData.value = { ...cardData.value, ...newData };
+};
 </script>
 
 <template>
@@ -15,7 +27,7 @@ const handleShowText = () => {
     <div @click="handleShowText">测试 {{ showText }}</div>
 
     <ShareCardDialog v-model:show="showText">
-      <ShareMusicCard />
+      <ShareMusicCard :data="cardData" @change="handleCardChange" />
     </ShareCardDialog>
   </div>
 </template>

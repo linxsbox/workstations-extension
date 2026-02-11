@@ -40,6 +40,9 @@ provide('isLoading', isLoading);
 
 // 关闭对话框
 const handleClose = () => {
+  // 重置整个 cardControlState 到初始状态
+  Object.assign(cardControlState, createCardControlState());
+
   emit('update:show', false);
   emit('close');
 };
@@ -99,7 +102,7 @@ const handleShareLink = async () => {
     @update:show="(value) => emit('update:show', value)"
     :bordered="false"
     :closable="false"
-    :mask-closable="true"
+    :mask-closable="false"
     transform-origin="center"
     class="share-card-modal"
   >

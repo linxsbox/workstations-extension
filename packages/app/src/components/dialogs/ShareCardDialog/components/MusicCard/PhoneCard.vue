@@ -7,6 +7,7 @@ import IconSkipPrevious from '@/components/common/Icons/IconSkipPrevious.vue';
 import IconSkipNext from '@/components/common/Icons/IconSkipNext.vue';
 import IconPlaylistPlay from '@/components/common/Icons/IconPlaylistPlay.vue';
 import IconFavoriteBorder from '@/components/common/Icons/IconFavoriteBorder.vue';
+import { useImageBrightness } from '@/composables/shareCard/useImageBrightness';
 
 const props = defineProps({
   coverUrl: {
@@ -27,6 +28,11 @@ const emit = defineEmits(['upload-cover', 'select-lyrics']);
 
 const progress = ref(50);
 const playOffset = computed(() => 100 - progress.value);
+
+// 计算背景图片亮度
+const { isDark } = useImageBrightness(() => props.coverUrl, {
+  threshold: 180,
+});
 
 // 背景样式（有封面时使用封面作为模糊背景）
 const backgroundStyle = computed(() => {
@@ -54,7 +60,7 @@ const handleLyricsClick = () => {
     <!-- 背景层 -->
     <div
       class="background-layer absolute top-0 left-0 right-0 bottom-0 inset-0 z-[1]"
-      :class="{ active: coverUrl }"
+      :class="{ active: coverUrl, bright: isDark === false }"
       :style="backgroundStyle"
     ></div>
 
@@ -89,12 +95,9 @@ const handleLyricsClick = () => {
         <!-- 标题和艺术家 -->
         <div class="song-meta flex flex-col gap-1">
           <!-- 标题 -->
-          <div class="title-text text-xl font-bold truncate">
-            {{ title }} 标题
-          </div>
-
+          <div class="title-text text-xl font-bold truncate">{{ title || '标题'}}</div>
           <!-- 艺术家 -->
-          <div class="artist-text text-base truncate">{{ artist }} 艺术家</div>
+          <div class="artist-text text-base truncate">{{ artist || '艺术家'}}</div>
         </div>
 
         <!-- 歌词 -->
@@ -155,6 +158,15 @@ const handleLyricsClick = () => {
       filter: blur(48px);
       backdrop-filter: blur(0px);
       // 稍微放大背景，避免模糊后边缘出现空白
+    }
+
+    // 高亮背景时添加深色遮罩
+    &.bright::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-color: var(--color-black-alpha-6);
     }
   }
 

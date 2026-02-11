@@ -22,8 +22,6 @@ const QR_OPTIONS = {
 
 // 生成二维码的辅助函数
 const tryGenerateQRCode = async () => {
-  console.log(cardControlState.qrcode);
-
   if (cardControlState.qrcode) {
     await generateQRCode(cardControlState.qrcode, QR_OPTIONS);
   }
@@ -31,7 +29,6 @@ const tryGenerateQRCode = async () => {
 
 // 初始化时生成二维码
 onMounted(async () => {
-  cardControlState.qrcode = '';
   await nextTick();
   tryGenerateQRCode();
 });

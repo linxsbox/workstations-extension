@@ -21,12 +21,34 @@ export const storeRss = defineStore({
     currentList: [],
     // 标记是否已初始化监听器
     isListenerInitialized: false,
+    // 分享卡片对话框状态
+    showShareDialog: false,
+    shareItemLink: null,
   }),
 
   getters: {
     // 获取所有 RSS 源
     getSources: (state) => state.sources,
     getCurrentList: (state) => state.currentList,
+
+    // 获取当前要分享的项目
+    getShareItem: (state) => {
+      if (!state.shareItemLink) return null;
+
+      // 从当前列表中查找
+      const item = state.currentList.find(i => i.link === state.shareItemLink);
+      if (item) return item;
+
+      // 如果当前列表中没有，从所有源中查找
+      for (const source of state.sources) {
+        const foundItem = source.list?.find(i => i.link === state.shareItemLink);
+        if (foundItem) {
+          return { ...foundItem, source };  // 附带源信息
+        }
+      }
+
+      return null;
+    },
   },
 
   actions: {
@@ -38,6 +60,18 @@ export const storeRss = defineStore({
     // 关闭添加源对话框
     closeAddDialog() {
       this.showAddDialog = false;
+    },
+
+    // 打开分享对话框
+    openShareDialog(itemLink) {
+      this.shareItemLink = itemLink;
+      this.showShareDialog = true;
+    },
+
+    // 关闭分享对话框
+    closeShareDialog() {
+      this.showShareDialog = false;
+      this.shareItemLink = null;
     },
 
     // 添加 RSS 源

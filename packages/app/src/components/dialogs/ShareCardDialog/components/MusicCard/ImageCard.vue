@@ -90,13 +90,13 @@ const handleCoverClick = () => {
           </div>
 
           <!-- 标题和艺术家 -->
-          <div class="song-meta flex justify-center items-center gap-1">
+          <div class="song-meta flex justify-center items-center gap-1 overflow-hidden">
             <!-- 标题 -->
-            <div class="title-text text-base truncate">{{ title }} 标题</div>
+            <div class="title-text text-base truncate">{{ title || '标题' }}</div>
             <span>-</span>
             <!-- 艺术家 -->
             <div class="artist-text text-xs truncate pt-1 opacity-80">
-              {{ artist }} 艺术家
+              {{ artist || '艺术家' }}
             </div>
           </div>
 

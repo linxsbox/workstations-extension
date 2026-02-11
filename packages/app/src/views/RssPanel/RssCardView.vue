@@ -8,7 +8,6 @@ import PlayButton from "@/components/player/PlayButton.vue";
 import AddToQueueButton from "@/components/player/AddToQueueButton.vue";
 import IconFiberNew from "@/components/common/Icons/IconFiberNew.vue";
 import IconShare from "@/components/common/Icons/IconShare.vue";
-import ShareCardDialog from "@/components/dialogs/ShareCardDialog/ShareCardDialog.vue";
 import { storePlayer } from "@/stores/global/player";
 import { storeRss } from "@/stores/modules/rss";
 
@@ -121,37 +120,14 @@ const handleAddToQueueError = (error) => {
   message.error(`添加失败: ${error?.message || "未知错误"}`);
 };
 
-// 分享相关
-const showShareCard = ref(false);
-
-// 获取分享图片
-const getShareImage = computed(() => {
-  const albumInfo = getAlbumInfo();
-  return albumInfo?.image || albumInfo?.cover || "";
-});
-
-// 获取分享内容
-const getShareContent = computed(() => {
-  return props.data.title || "";
-});
-
-// 获取分享链接
-const getShareLink = computed(() => {
-  return props.data.link || "";
-});
-
 // 点击分享按钮
 const handleShare = () => {
-  if (!getShareLink.value) {
+  if (!props.data.link) {
     message.warning("该内容没有可分享的链接");
     return;
   }
-  showShareCard.value = true;
-};
-
-// 关闭分享卡片
-const handleCloseShare = () => {
-  showShareCard.value = false;
+  // 通过 store 打开分享对话框
+  rssStore.openShareDialog(props.data.link);
 };
 </script>
 
@@ -225,33 +201,6 @@ const handleCloseShare = () => {
         class="new-badge absolute -top-3 right-1 z-[1] text-2xl text-[var(--color-error)]"
       />
     </div>
-
-    <!-- 分享卡片 -->
-    <ShareCardDialog
-      v-model:show="showShareCard"
-      :image="getShareImage"
-      :qrcodeContent="getShareLink"
-      :qrcodeSize="64"
-      :showShareLink="true"
-      @close="handleCloseShare"
-    >
-      <div class="share-content-wrapper">
-        <!-- 标题 -->
-        <div class="share-title font-bold text-lg mb-2">
-          {{ getShareContent }}
-        </div>
-        <!-- 描述 -->
-        <div class="description text-sm break-words line-clamp-2">
-          {{ props.data.description || props.data.summary }}
-        </div>
-        <!-- 来源和作者信息 -->
-        <div v-if="!getShareImage" class="share-meta text-sm text-gray-400 mt-1">
-          <span v-if="props.album?.title">来源：{{ props.album.title }}</span>
-          <span v-if="props.album?.title && props.data.author"> - </span>
-          <span v-if="props.data.author">{{ props.data.author }}</span>
-        </div>
-      </div>
-    </ShareCardDialog>
   </section>
 </template>
 

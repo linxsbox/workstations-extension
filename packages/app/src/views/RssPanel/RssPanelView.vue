@@ -1,13 +1,16 @@
 <script setup>
 import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { NScrollbar } from "naive-ui";
 import RssTabBar from "./RssTabBar.vue";
 import RssListView from "./RssListView.vue";
 import IconRss from "@/components/common/Icons/IconRss.vue";
+import ShareCardDialog from "@/components/dialogs/ShareCardDialog/ShareCardDialog.vue";
+import ShareMusicCard from "@/components/dialogs/ShareCardDialog/components/MusicCard/IndexView.vue";
 import { storeRss } from "@/stores/modules/rss";
 
 const store = storeRss();
-const { getCurrentList } = storeToRefs(store);
+const { getCurrentList, showShareDialog, getShareItem } = storeToRefs(store);
 
 // 切换 tab 触发 list 刷新
 const handleSwitchTab = (tabId) => {
@@ -17,6 +20,28 @@ const handleSwitchTab = (tabId) => {
 // 打开订阅源管理
 const handleRssManageClick = () => {
   store.openAddDialog();
+};
+
+// 准备分享数据
+const shareData = computed(() => {
+  const item = getShareItem.value;
+  if (!item) return {};
+
+  // 从 album 或 source 获取封面和作者信息
+  const album = item.album || item.source;
+
+  return {
+    coverUrl: album?.image || album?.cover || '',
+    title: item.title || '',
+    artist: album?.author || item.author || album?.title || '',
+    qrcode: item.link || '', // 原文链接用于生成二维码
+  };
+});
+
+// 监听卡片数据变化（可选，如果需要同步更新）
+const handleCardChange = (newData) => {
+  // 暂时不需要处理，因为分享卡片是临时的
+  console.log('Card data changed:', newData);
 };
 </script>
 
@@ -33,11 +58,17 @@ const handleRssManageClick = () => {
         <span class="text-sm">订阅源管理</span>
       </button>
     </div>
+
     <NScrollbar class="flex-1 p-4" content-class="flex h-[inherit] gap-3">
       <template v-for="item in getCurrentList" :key="item.id">
         <RssListView :data="item" />
       </template>
     </NScrollbar>
+
+    <!-- 分享卡片对话框 -->
+    <ShareCardDialog v-model:show="showShareDialog">
+      <ShareMusicCard :data="shareData" @change="handleCardChange" />
+    </ShareCardDialog>
   </div>
 </template>
 

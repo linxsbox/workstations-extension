@@ -1,6 +1,5 @@
 <script setup>
-import { computed, ref, inject } from 'vue';
-import { NSlider, NInput } from 'naive-ui';
+import { computed } from 'vue';
 import UseageView from '../Panels/UseageView.vue';
 import PlayButton from '@/components/player/PlayButton.vue';
 import IconPlaylistPlay from '@/components/common/Icons/IconPlaylistPlay.vue';
@@ -20,7 +19,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['upload-cover', 'select-lyrics']);
+const emit = defineEmits(['upload-cover']);
 
 // 背景样式（有封面时使用封面作为模糊背景）
 const backgroundStyle = computed(() => {

@@ -1,19 +1,17 @@
 <script setup>
-import { inject, ref } from 'vue';
-import { NRadioGroup, NRadio, NRadioButton, NCheckbox, NInput } from 'naive-ui';
+import { inject, ref, computed } from 'vue';
+import { NRadioGroup, NRadioButton, NCheckbox, NInput } from 'naive-ui';
 import { DEFAULT_CARD_CONTROL_STATE } from '@/composables/shareCard/useControlPanel';
-import { SHARE_CARD_TYPE, SHARE_CARD_TYPE_LIST } from '@/constants/shareCard';
-
-const props = defineProps({});
-
-const emit = defineEmits([]);
-const currentSize = ref(SHARE_CARD_TYPE.PLAYER);
+import { SHARE_CARD_TYPE_LIST } from '@/constants/shareCard';
 
 // 注入共享的卡片控制状态（提供默认值）
 const cardControlState = inject('cardControlState', DEFAULT_CARD_CONTROL_STATE);
 
 // 注入加载状态
 const isLoading = inject('isLoading', ref(false));
+
+// 注入可用的卡片类型列表（如果没有则使用全部）
+const availableCardTypes = inject('availableCardTypes', computed(() => SHARE_CARD_TYPE_LIST));
 </script>
 
 <template>
@@ -23,8 +21,8 @@ const isLoading = inject('isLoading', ref(false));
     <div class="flex items-center gap-3 flex-wrap">
       <NRadioGroup v-model:value="cardControlState.cardType" size="small">
         <NRadioButton
-          v-for="size in SHARE_CARD_TYPE_LIST"
-          :key="size"
+          v-for="size in availableCardTypes"
+          :key="size.value"
           :value="size.value"
         >
           {{ size.label }}
@@ -68,8 +66,3 @@ const isLoading = inject('isLoading', ref(false));
     <slot name="custom-controls"></slot>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.share-control-panel {
-}
-</style>

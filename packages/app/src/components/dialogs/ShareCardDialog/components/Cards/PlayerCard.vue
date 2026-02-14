@@ -26,10 +26,6 @@ const emit = defineEmits(['upload-cover']);
 // 进度条值（静态，不可交互）
 const progress = ref(28);
 
-// 中间文字内容（可编辑）
-const greetingText = ref('hi');
-const messageText = ref('Good morning');
-
 // 计算背景图片亮度
 const { isDark } = useImageBrightness(() => props.coverUrl, {
   threshold: 170,
@@ -46,16 +42,6 @@ const backgroundStyle = computed(() => {
 // 触发上传背景图
 const handlePlayerCardClick = () => {
   emit('upload-cover');
-};
-
-// 处理文字编辑
-const handleTextInput = (event, type) => {
-  const text = event.target.innerText;
-  if (type === 'greeting') {
-    greetingText.value = text;
-  } else if (type === 'message') {
-    messageText.value = text;
-  }
 };
 </script>
 
@@ -147,7 +133,6 @@ const handleTextInput = (event, type) => {
           class="text-content relative z-10 flex flex-col justify-center items-center gap-2 size-full text-[15px]"
           :class="[isDark ? 'text-white/85' : ' text-black/75']"
           contenteditable="true"
-          @input="handleTextInput($event, 'greeting')"
         ></div>
       </div>
 

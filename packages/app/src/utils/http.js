@@ -1,11 +1,12 @@
 import { Amors } from '@linxs/amors';
+import { NETWORK } from '@/constants/timing';
 
 /**
  * 创建一个基础的 HTTP 请求管理器
  * 用于公开 API 请求，不需要认证
  */
 const http = new Amors({
-  timeout: 30000,
+  timeout: NETWORK.REQUEST_TIMEOUT,
   interceptors: {
     request: ({ config, context }) => {
       // context 包含: url, config, options, method

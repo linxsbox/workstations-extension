@@ -11,6 +11,7 @@ import NoteCard from "@/views/Apps/Notes/NoteCard.vue";
 import RecentSitesList from "./RecentSitesList.vue";
 import IconAddTask from "@/components/common/Icons/IconAddTask.vue";
 import IconAssignmentAdd from "@/components/common/Icons/IconAssignmentAdd.vue";
+import motivationalTexts from "./motivationalTexts.json";
 
 const tasksStore = storeTasks();
 const notesStore = storeNotes();
@@ -35,9 +36,95 @@ const dateInfo = computed(() => {
   };
 });
 
-// 获取励志文案（可以后续扩展为随机或API获取）
+/**
+ * 根据日期生成伪随机数种子
+ * @param {Date} date - 日期对象
+ * @returns {number} 随机种子
+ */
+const getDateSeed = (date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return year * 10000 + month * 100 + day;
+};
+
+/**
+ * 基于种子的伪随机数生成器
+ * @param {number} seed - 随机种子
+ * @returns {number} 0-1之间的随机数
+ */
+const seededRandom = (seed) => {
+  const x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+};
+
+/**
+ * 从数组中随机选择n个不重复的元素
+ * @param {Array} array - 源数组
+ * @param {number} count - 选择数量
+ * @param {number} seed - 随机种子
+ * @returns {Array} 选中的元素数组
+ */
+const randomSelectFromArray = (array, count, seed) => {
+  const selected = [];
+  const indices = [...Array(array.length).keys()];
+
+  for (let i = 0; i < count && indices.length > 0; i++) {
+    const randomIndex = Math.floor(seededRandom(seed + i) * indices.length);
+    const selectedIndex = indices[randomIndex];
+    selected.push(array[selectedIndex]);
+    indices.splice(randomIndex, 1);
+  }
+
+  return selected;
+};
+
+/**
+ * 获取当前时间段应该显示的励志文案
+ */
 const motivationalText = computed(() => {
-  return "每一个不曾起舞的日子，都是对生命的辜负。";
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const currentTime = hour + minute / 60;
+
+  // 22:00～07:00 (22时～次日7时)：休息提示
+  if (currentTime >= 22 || currentTime < 7) {
+    return "🌙 该休息了，早睡早起身体好";
+  }
+
+  // 12:00～13:00：午休提示
+  if (currentTime >= 12 && currentTime < 13) {
+    return "😴 午休时间，小憩一会儿吧";
+  }
+
+  // 获取今天的随机4句文案
+  const seed = getDateSeed(now);
+  const todayTexts = randomSelectFromArray(motivationalTexts.texts, 4, seed);
+
+  // 根据时间段返回对应的文案
+  // 07:00～09:30：第1句
+  if (currentTime >= 7 && currentTime < 9.5) {
+    return todayTexts[0];
+  }
+
+  // 09:30～12:00：第2句
+  if (currentTime >= 9.5 && currentTime < 12) {
+    return todayTexts[1];
+  }
+
+  // 13:00～17:30：第3句
+  if (currentTime >= 13 && currentTime < 17.5) {
+    return todayTexts[2];
+  }
+
+  // 17:30～22:00：第4句
+  if (currentTime >= 17.5 && currentTime < 22) {
+    return todayTexts[3];
+  }
+
+  // 默认返回第一句（兜底）
+  return todayTexts[0];
 });
 
 // ========== 新增操作处理 ==========

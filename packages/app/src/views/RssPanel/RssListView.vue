@@ -5,6 +5,7 @@ import { debounce } from "@linxs/toolkit";
 import RssCardView from "./RssCardView.vue";
 import IconRefresh from "@/components/common/Icons/IconRefresh.vue";
 import { storeRss } from "@/stores/modules/rss";
+import { COOLDOWN, UI_DELAYS } from "@/constants/timing";
 
 const props = defineProps({
   data: {
@@ -28,9 +29,8 @@ const showRefreshBtn = computed(() => {
 
   const now = Date.now();
   const lastUpdate = props.data.lastUpdateTime || 0;
-  const cooldown = 5 * 60 * 1000; // 5分钟
 
-  return now - lastUpdate >= cooldown;
+  return now - lastUpdate >= COOLDOWN.FIVE_MINUTES;
 });
 
 // 点击刷新（使用 debounce 防止重复点击）
@@ -44,12 +44,12 @@ const handleRefresh = debounce(async () => {
     await rssStore.updateSource(props.data.sourceUrl, true);
   } catch (_) {
   } finally {
-    // 500ms 后关闭动画
+    // 关闭动画
     setTimeout(() => {
       isRefreshing.value = false;
-    }, 500);
+    }, UI_DELAYS.DEBOUNCE_MEDIUM);
   }
-}, 300);
+}, UI_DELAYS.DEBOUNCE_SHORT);
 
 // 构建播客信息
 const getAlbum = () => {

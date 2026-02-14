@@ -6,7 +6,7 @@ import RssTabBar from "./RssTabBar.vue";
 import RssListView from "./RssListView.vue";
 import IconRss from "@/components/common/Icons/IconRss.vue";
 import ShareCardDialog from "@/components/dialogs/ShareCardDialog/ShareCardDialog.vue";
-import ShareMusicCard from "@/components/dialogs/ShareCardDialog/components/MusicCard/IndexView.vue";
+import ShareCard from "@/components/dialogs/ShareCardDialog/components/Cards/IndexView.vue";
 import { storeRss } from "@/stores/modules/rss";
 
 const store = storeRss();
@@ -67,7 +67,7 @@ const handleCardChange = (newData) => {
 
     <!-- 分享卡片对话框 -->
     <ShareCardDialog v-model:show="showShareDialog">
-      <ShareMusicCard :data="shareData" @change="handleCardChange" />
+      <ShareCard :data="shareData" @change="handleCardChange" />
     </ShareCardDialog>
   </div>
 </template>

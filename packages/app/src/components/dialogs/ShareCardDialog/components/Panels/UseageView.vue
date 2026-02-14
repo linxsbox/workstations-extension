@@ -4,8 +4,6 @@ import { formatDate } from '@linxs/toolkit';
 import { useQRCode } from '@/composables/shareCard/useQRCode';
 import { DEFAULT_CARD_CONTROL_STATE } from '@/composables/shareCard/useControlPanel';
 
-const props = defineProps({});
-
 // 注入共享的卡片控制状态（提供默认值）
 const cardControlState = inject('cardControlState', DEFAULT_CARD_CONTROL_STATE);
 

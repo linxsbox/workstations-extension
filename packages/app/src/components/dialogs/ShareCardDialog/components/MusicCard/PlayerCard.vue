@@ -32,7 +32,7 @@ const messageText = ref('Good morning');
 
 // 计算背景图片亮度
 const { isDark } = useImageBrightness(() => props.coverUrl, {
-  threshold: 180,
+  threshold: 170,
 });
 
 // 背景样式（有封面时使用封面作为模糊背景）
@@ -66,7 +66,7 @@ const handleTextInput = (event, type) => {
     <!-- 背景层 -->
     <div
       class="background-layer absolute inset-0 z-[1]"
-      :class="{ active: coverUrl, bright: isDark === false }"
+      :class="{ active: coverUrl, bright: !isDark }"
       :style="backgroundStyle"
     ></div>
 
@@ -144,7 +144,8 @@ const handleTextInput = (event, type) => {
       >
         <!-- 可编辑文字 -->
         <div
-          class="text-content relative z-10 flex flex-col justify-center items-center gap-2 size-full text-[15px] text-white/85"
+          class="text-content relative z-10 flex flex-col justify-center items-center gap-2 size-full text-[15px]"
+          :class="[isDark ? 'text-white/85' : ' text-black/75']"
           contenteditable="true"
           @input="handleTextInput($event, 'greeting')"
         ></div>

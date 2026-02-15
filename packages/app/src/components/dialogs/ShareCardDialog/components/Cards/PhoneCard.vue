@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { NSlider, NInput } from 'naive-ui';
+import { NSlider } from 'naive-ui';
 import PlayButton from '@/components/player/PlayButton.vue';
 import IconRepeat from '@/components/common/Icons/IconRepeat.vue';
 import IconSkipPrevious from '@/components/common/Icons/IconSkipPrevious.vue';

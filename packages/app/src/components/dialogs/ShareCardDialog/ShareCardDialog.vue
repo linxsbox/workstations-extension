@@ -1,9 +1,10 @@
 <script setup>
-import { provide, reactive, ref } from 'vue';
+import { provide, reactive, ref, computed } from 'vue';
 import { NButton, NModal, useMessage } from 'naive-ui';
 import { clipboard } from '@linxs/toolkit';
 import { useCardExport } from '@/composables/shareCard/useCardExport';
 import { createCardControlState } from '@/composables/shareCard/useControlPanel';
+import { getCardTypesByGroups } from '@/constants/shareCard';
 import ControlView from './components/Panels/ControlView.vue';
 
 const props = defineProps({
@@ -19,6 +20,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // 支持的卡片分组：['music'] | ['text'] | ['music', 'text'] | undefined(全部)
+  cardGroups: {
+    type: Array,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits(['update:show', 'close']);
@@ -32,6 +38,14 @@ const cardControlState = reactive(createCardControlState());
 // 提供给子组件
 provide('cardControlState', cardControlState);
 
+// 计算当前可用的卡片类型列表
+const availableCardTypes = computed(() => {
+  return getCardTypesByGroups(props.cardGroups);
+});
+
+// 提供给 ControlView
+provide('availableCardTypes', availableCardTypes);
+
 // 操作加载状态
 const isLoading = ref(false);
 
@@ -40,11 +54,14 @@ provide('isLoading', isLoading);
 
 // 关闭对话框
 const handleClose = () => {
-  // 重置整个 cardControlState 到初始状态
-  Object.assign(cardControlState, createCardControlState());
-
   emit('update:show', false);
   emit('close');
+};
+
+// 对话框完全关闭后重置状态
+const handleAfterLeave = () => {
+  // 在对话框动画完成后重置状态，避免用户看到闪烁
+  Object.assign(cardControlState, createCardControlState());
 };
 
 // 复制卡片
@@ -100,6 +117,7 @@ const handleShareLink = async () => {
   <NModal
     :show="show"
     @update:show="(value) => emit('update:show', value)"
+    @after-leave="handleAfterLeave"
     :bordered="false"
     :closable="false"
     :mask-closable="false"

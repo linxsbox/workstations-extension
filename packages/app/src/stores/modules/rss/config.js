@@ -1,3 +1,5 @@
+import { COOLDOWN } from '@/constants/timing';
+
 export const RssSourceTypeEnum = {
   XIAOYUZHOU: "xiaoyuzhou",
   PRESET: "preset",
@@ -5,7 +7,7 @@ export const RssSourceTypeEnum = {
 };
 
 // RSS 更新冷却时间配置
-export const RSS_UPDATE_COOLDOWN = 5 * 60 * 1000; // 5分钟
+export const RSS_UPDATE_COOLDOWN = COOLDOWN.FIVE_MINUTES; // 5分钟
 export const RSS_BATCH_UPDATE_INTERVAL = 1; // 批量更新间隔（小时）
 
 export const RSS_SOURCE_TYPES = [

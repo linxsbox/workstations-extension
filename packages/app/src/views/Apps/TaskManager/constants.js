@@ -2,6 +2,8 @@
  * 任务管理器常量定义
  */
 
+import { COOLDOWN } from '@/constants/timing';
+
 // 任务状态
 export const TASK_STATUS = {
   PENDING: "pending", // 待启动
@@ -18,7 +20,7 @@ export const EXECUTION_RULE = {
 // 时间限制（毫秒）
 export const TIME_LIMITS = {
   MIN_EXPECTED_MINUTES: 1, // 预期时间最小值（分钟）
-  MIN_SCHEDULED_DELAY: 5 * 60 * 1000, // 计划时间最小延迟（5分钟）
+  MIN_SCHEDULED_DELAY: COOLDOWN.FIVE_MINUTES, // 计划时间最小延迟（5分钟）
   MAX_EXPECTED_HOURS: 8, // 预期时间最大小时数
   MAX_EXPECTED_MINUTES: 60, // 预期时间最大分钟数
 };
